@@ -2,7 +2,8 @@ package its.questions.gen
 
 import its.model.nodes.LogicalOp
 
-class AggregationQuestion(text: String, val op: LogicalOp, val result: Boolean, options : List<AnswerOption>) : Question(text, options) {
+class AggregationQuestion(shouldBeFinal : Boolean, text: String, val op: LogicalOp, val result: Boolean, options : List<AnswerOption>)
+    : Question(shouldBeFinal, text, options) {
     override fun ask(): AnswerStatus {
         println(text)
         println("(Агрегирующий вопрос - укажите номер ответа с отрицанием, чтобы показать что он влияет отрицательно)")
@@ -28,7 +29,12 @@ class AggregationQuestion(text: String, val op: LogicalOp, val result: Boolean, 
         } else{
             //TODO("Вывод объяснений для агрегационного вопроса")
             println("Это неверно.")
-            if(getExplanationHelped()) AnswerStatus.EXPLAINED else AnswerStatus.STUCK
+            if(!shouldBeFinal)
+                AnswerStatus.INCORRECT_CONTINUE
+            else if(getExplanationHelped())
+                AnswerStatus.INCORRECT_EXPLAINED
+            else
+                AnswerStatus.INCORRECT_STUCK
         }
     }
 

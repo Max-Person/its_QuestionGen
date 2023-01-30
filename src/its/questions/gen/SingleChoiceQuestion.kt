@@ -1,6 +1,7 @@
 package its.questions.gen
 
-class SingleChoiceQuestion(text: String, options : List<AnswerOption>) : Question(text, options){
+class SingleChoiceQuestion(shouldBeFinal : Boolean, text: String, options : List<AnswerOption>)
+    : Question(shouldBeFinal, text, options){
     init{
         require(options.count { it.isTrue } == 1)
         require(options.all { it.isInverted == null })
@@ -23,7 +24,12 @@ class SingleChoiceQuestion(text: String, options : List<AnswerOption>) : Questio
             AnswerStatus.CORRECT
         } else{
             println(shuffle[answer-1].explanation)
-            if(getExplanationHelped()) AnswerStatus.EXPLAINED else AnswerStatus.STUCK
+            if(!shouldBeFinal)
+                AnswerStatus.INCORRECT_CONTINUE
+            else if(getExplanationHelped())
+                AnswerStatus.INCORRECT_EXPLAINED
+            else
+                AnswerStatus.INCORRECT_STUCK
         }
     }
 }

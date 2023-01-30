@@ -4,15 +4,16 @@ import java.lang.NumberFormatException
 import java.util.*
 
 //NOTE:SUBJECT_TO_CHANGE: формат вопросов надо будет поменять для соответствия ТЗ, да и в принципе
-abstract class Question(val text: String, val options : List<AnswerOption>) {
+abstract class Question(val shouldBeFinal : Boolean, val text: String, val options : List<AnswerOption>) {
     init{
         require(options.all { it.isTrue || it.explanation != null })
     }
 
     enum class AnswerStatus{
         CORRECT,
-        EXPLAINED,
-        STUCK,
+        INCORRECT_CONTINUE,
+        INCORRECT_EXPLAINED,
+        INCORRECT_STUCK,
     }
 
     data class AnswerOption(
