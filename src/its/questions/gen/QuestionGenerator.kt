@@ -8,12 +8,19 @@ import its.questions.gen.visitors.GetUsedVariables
 import its.questions.inputs.EntityDictionary
 import its.questions.inputs.QVarModel
 import its.questions.inputs.usesQDictionaries
+import its.questions.questiontypes.Question
+import its.questions.questiontypes.SingleChoiceQuestion
 
 class QuestionGenerator(dir : String) {
-    private val entityDictionary : EntityDictionary = EntityDictionary()
-    private val answers: Map<String, String>
-
+    internal val entityDictionary : EntityDictionary = EntityDictionary()
+    internal val answers: Map<String, String>
     private val knownVariables = mutableMapOf<String, String>()
+
+    val templating = TemplatingUtils(this)
+    private fun String.process() : String {
+        return templating.process(this)
+    }
+
     init{
         require(DomainModel.usesQDictionaries())
         entityDictionary.fromCSV(dir + "entities.csv")
@@ -54,11 +61,13 @@ class QuestionGenerator(dir : String) {
             val varData = (DomainModel.decisionTreeVarsDictionary.get(variable) as QVarModel)
             val q = SingleChoiceQuestion(
                 false,
-                varData.valueSearchTemplate!!,
-                entityDictionary.filter { it.clazz.name == varData.className || it.calculatedClasses.any { clazz -> clazz.name == varData.className } }
-                    .map { Question.AnswerOption(it.specificName, it.variable == varData, "") }
+                varData.valueSearchTemplate!!.process(),
+                entityDictionary.filter { !knownVariables.containsValue(it.alias) &&
+                        (it.clazz.name == varData.className || it.calculatedClasses.any { clazz -> clazz.name == varData.className }) }
+                    .map { Question.AnswerOption(it.specificName, it.variable == varData, it.variableErrorExplanations[varData.name]?.process()) }
             )
-            q.ask()
+            if(q.ask() == Question.AnswerStatus.INCORRECT_EXPLAINED)
+                return
         }
     }
 

@@ -1,4 +1,4 @@
-package its.questions.gen
+package its.questions.questiontypes
 
 import its.model.nodes.LogicalOp
 

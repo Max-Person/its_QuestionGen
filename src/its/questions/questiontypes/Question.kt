@@ -1,4 +1,4 @@
-package its.questions.gen
+package its.questions.questiontypes
 
 import java.lang.NumberFormatException
 import java.util.*
@@ -23,18 +23,14 @@ abstract class Question(val shouldBeFinal : Boolean, val text: String, val optio
         val isInverted: Boolean? = null
     )
 
+    private val scanner = Scanner(System.`in`)
+
     protected fun getAnswers(): List<Int>{
         print("Ваш ответ: ")
-        val scanner = Scanner(System.`in`)
         val input = scanner.nextLine()
         while(true){
             try{
-                input.split(',').map{str ->
-                    str.toInt()
-                }.run {
-                    scanner.close()
-                    return this
-                }
+                return input.split(',').map{str ->str.toInt()}
             }catch (e: NumberFormatException){
                 print("Неверный формат ввода. Введите ответ заново: ")
             }
@@ -43,7 +39,6 @@ abstract class Question(val shouldBeFinal : Boolean, val text: String, val optio
 
     protected fun getExplanationHelped() : Boolean{
         println("Понятна ли вам ошибка? Введите Y если да, и N если нет и вы хотите рассмотреть ошибки дальше: ")
-        val scanner = Scanner(System.`in`)
         var input = scanner.nextLine()
         while (input.lowercase() != "y" && input.lowercase() != "n"){
             print("Неверный формат ввода. Введите ответ заново: ")

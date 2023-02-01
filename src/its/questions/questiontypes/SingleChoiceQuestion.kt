@@ -1,4 +1,4 @@
-package its.questions.gen
+package its.questions.questiontypes
 
 class SingleChoiceQuestion(shouldBeFinal : Boolean, text: String, options : List<AnswerOption>)
     : Question(shouldBeFinal, text, options){
@@ -8,6 +8,9 @@ class SingleChoiceQuestion(shouldBeFinal : Boolean, text: String, options : List
     }
 
     override fun ask(): AnswerStatus {
+        if(options.size == 1)
+            return AnswerStatus.CORRECT
+        println()
         println(text)
         println("(Вопрос с единственным вариантом ответа)")
         val shuffle = options.shuffled()
