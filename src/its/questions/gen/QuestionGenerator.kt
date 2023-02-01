@@ -4,7 +4,10 @@ import its.model.DomainModel
 import its.model.nodes.*
 import its.questions.addAllNew
 import its.questions.fileToMap
+import its.questions.gen.TemplatingUtils._static.replaceAlternatives
 import its.questions.gen.visitors.GetConsideredNodes
+import its.questions.gen.visitors.GetCorrectEndingNode
+import its.questions.gen.visitors.GetEndingNodes
 import its.questions.gen.visitors.GetUsedVariables
 import its.questions.inputs.EntityDictionary
 import its.questions.inputs.QVarModel
@@ -28,19 +31,30 @@ class QuestionGenerator(dir : String) {
         answers = fileToMap(dir + "answers.txt", ':')
     }
 
-    fun start(from : StartNode){
+    fun start(from : StartNode, assumedResult : Boolean){
         knownVariables.addAll(from.initVariables.keys)
-        process(from.main)
+        process(from.main, assumedResult)
     }
 
     fun init(from : StartNode) {
         knownVariables.addAll(from.initVariables.keys)
     }
 
-    fun process(branch: ThoughtBranch){
+    fun process(branch: ThoughtBranch, assumedResult : Boolean){
         val considered = branch.use(GetConsideredNodes(answers))
 
         if(!determineVariableValues(considered)) return
+
+        val endingNodes = branch.accept(GetEndingNodes())
+        val correctEndingNode = branch.accept(GetCorrectEndingNode(considered))
+        val q = SingleChoiceQuestion(
+            false,
+            "Почему вы считаете, что " + branch.additionalInfo["description"]!!.replaceAlternatives(assumedResult).process() + "?",
+            endingNodes
+                .map{Question.AnswerOption(it.additionalInfo["endingCause"]!!.replaceAlternatives(assumedResult).process(),it == correctEndingNode.first, "")}
+        )
+        q.ask()
+
 
     }
 

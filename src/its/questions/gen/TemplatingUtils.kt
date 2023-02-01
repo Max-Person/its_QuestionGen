@@ -36,10 +36,18 @@ class TemplatingUtils(val q : QuestionGenerator) {
         private val templatingParser  = TypeParser.newBuilder()
             .registerParser(Case::class.java) { s: String, h: ParserHelper -> Case.fromString(s) }
             .build()
-    }
 
-    private fun String.toCase(case: Case?) : String{
-        return Padeg.getAppointmentPadeg(this, (case?: Case.Nom).ordinal+1)
+        @JvmStatic
+        fun String.toCase(case: Case?) : String{
+            return Padeg.getAppointmentPadeg(this, (case?: Case.Nom).ordinal+1)
+        }
+
+        @JvmStatic
+        fun String.replaceAlternatives(condition: Boolean) : String{
+            return this.replace(Regex("\\[(.*)\\|(.*)]")){
+                it.groupValues[if(condition) 1 else  2]
+            }
+        }
     }
 
     fun process(str: String) : String{
