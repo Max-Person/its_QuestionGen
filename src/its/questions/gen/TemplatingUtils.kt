@@ -50,16 +50,16 @@ class TemplatingUtils(val q : QuestionGenerator) {
 
     @StrSubMethod("val")
     fun getVariableValue(varName: String, case: Case) : String{
-        return q.entityDictionary.first { it.variable?.name == varName }.specificName.toCase(case)
+        return q.entityDictionary.getByVariable(varName)!!.specificName.toCase(case)
     }
 
     @StrSubMethod("obj")
     fun getEntity(alias: String, case: Case) : String{
-        return q.entityDictionary.first { it.alias == alias }.specificName.toCase(case)
+        return q.entityDictionary.get(alias)!!.specificName.toCase(case)
     }
 
     @StrSubMethod("class")
     fun getVariableClassname(varName: String, case: Case) : String{
-        return q.entityDictionary.first { it.variable?.name == varName }.clazz.textName.toCase(case)
+        return q.entityDictionary.getByVariable(varName)!!.clazz.textName.toCase(case)
     }
 }

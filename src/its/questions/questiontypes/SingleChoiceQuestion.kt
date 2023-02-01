@@ -27,6 +27,7 @@ class SingleChoiceQuestion(shouldBeFinal : Boolean, text: String, options : List
             AnswerStatus.CORRECT
         } else{
             println(shuffle[answer-1].explanation)
+            println("В данном случае правильным ответом является ${options.first { it.isTrue }.text}.")
             if(!shouldBeFinal)
                 AnswerStatus.INCORRECT_CONTINUE
             else if(getExplanationHelped())

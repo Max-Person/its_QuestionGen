@@ -21,6 +21,10 @@ class EntityDictionary : DictionaryBase<EntityInfo>(EntityInfo::class) {
         return values.firstOrNull { it.alias == name }
     }
 
+    fun getByVariable(varName: String): EntityInfo? {
+        return values.firstOrNull { it.variable?.name == varName }
+    }
+
     override fun validate() {/*Не нужно т.к EntityInfo валидируют сами себя при создании*/}
 }
 

@@ -17,3 +17,7 @@ internal fun fileToMap(filePath : String, delimiter: Char): Map<String, String> 
 
     return data
 }
+
+internal fun <T> MutableCollection<T>.addAllNew(o : Collection<T>){
+    o.forEach { if(!this.contains(it)) this.add(it) }
+}
