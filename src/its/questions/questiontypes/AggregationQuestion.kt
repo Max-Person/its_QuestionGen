@@ -2,43 +2,64 @@ package its.questions.questiontypes
 
 import its.model.nodes.LogicalOp
 
-class AggregationQuestion(shouldBeFinal : Boolean, text: String, val op: LogicalOp, val result: Boolean, options : List<AnswerOption>)
-    : Question(shouldBeFinal, text, options) {
-    override fun ask(): AnswerStatus {
+class AggregationQuestion<AssocType : Any>(val text: String, val op: LogicalOp, val result: Boolean, options : List<AnswerOption<AssocType>>) {
+    val options : MutableList<AnswerOption<AssocType>>
+    init{
+        this.options = options.toMutableList()
+    }
+
+    data class AnswerOption<AssocType>(
+        val assocValue: AssocType,
+        val text: String,
+        val isTrue: Boolean,
+        val textActual: String? = null,
+        val isInverted: Boolean = false,
+        val isDistractor: Boolean = false,
+    ){
+        internal fun actual() : Boolean{
+            return if(isInverted == null || !isInverted) !isTrue else isTrue
+        }
+    }
+
+    private fun Int.option() : AnswerOption<AssocType>{
+        return if(this > 0) options[this-1] else options[-this-1]
+    }
+
+    private fun Int.isCorrect() : Boolean{
+        return if(this > 0) this.option().isTrue else !this.option().isTrue
+    }
+
+    fun ask(): Set<AssocType> {
+        println()
         println(text)
         println("(Агрегирующий вопрос - укажите номер ответа с отрицанием, чтобы показать что он влияет отрицательно)")
-        val shuffle = options.shuffled()
-        shuffle.forEachIndexed {i, option -> println("   ${i+1}. ${option.text}") }
+        options.shuffle()
+        options.forEachIndexed {i, option -> println("   ${i+1}. ${option.text}") }
 
         var answers = getAnswers()
-        while(answers.any { it-1 !in shuffle.indices  && -(it-1) !in shuffle.indices }){
-            println("Неверный формат ввода для вопроса с единственным вариантом ответа.")
+        while(answers.any { it-1 !in options.indices  && -it-1 !in options.indices }){
+            println("Неверный формат ввода для агрегирующего вопроса.")
             answers = getAnswers()
         }
 
-        var correct = true
-        shuffle.forEachIndexed { i, option ->
-            correct = correct
-                    && if(option.isTrue) answers.contains(i+1) else answers.contains(-(i+1)) //очередная опция указана в ответе
-                    && ((op == LogicalOp.AND && result == false && option.actual() == true ) //или может быть опущена
-                        || (op == LogicalOp.OR && result == true && option.actual() == false ))
-        }
 
-        return if(correct){
-            AnswerStatus.CORRECT
+        val incorrectOptions = answers.filter { it.option().isDistractor || !it.isCorrect()  }.map{it.option()}
+        val missedOptions = options.filterIndexed{i, option -> !option.isDistractor && !answers.contains(i+1) && !answers.contains(-(i+1)) &&
+                !(op == LogicalOp.AND && result == false && option.actual() == true ) && !(op == LogicalOp.OR && result == true && option.actual() == false )}
+
+        return if(incorrectOptions.isEmpty() && missedOptions.isEmpty()){
+            emptySet()
         } else{
-            //TODO("Вывод объяснений для агрегационного вопроса")
-            println("Это неверно.")
-            if(!shouldBeFinal)
-                AnswerStatus.INCORRECT_CONTINUE
-            else if(getExplanationHelped())
-                AnswerStatus.INCORRECT_EXPLAINED
-            else
-                AnswerStatus.INCORRECT_STUCK
+            if(!incorrectOptions.isEmpty())
+                println("Это неверно, поскольку ${incorrectOptions.joinToString(separator = ", ", transform = {it.textActual!!})}.")
+            if(!missedOptions.isEmpty())
+                println(if(incorrectOptions.isEmpty()) "Это неверно, поскольку вы " else "Вы также " +
+                        "не упомянули, что ${missedOptions.joinToString(separator = ", ", transform = {it.textActual!!})}")
+            val out = mutableSetOf<AssocType>()
+            out.addAll(incorrectOptions.filter { !it.isDistractor }.map{it.assocValue})
+            out.addAll(missedOptions.map{it.assocValue})
+            out
         }
     }
 
-    private fun AnswerOption.actual() : Boolean{
-        return if(isInverted == null || !isInverted) !isTrue else isTrue
-    }
 }

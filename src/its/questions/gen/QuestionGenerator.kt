@@ -5,14 +5,12 @@ import its.model.nodes.*
 import its.questions.addAllNew
 import its.questions.fileToMap
 import its.questions.gen.TemplatingUtils._static.replaceAlternatives
-import its.questions.gen.visitors.GetConsideredNodes
-import its.questions.gen.visitors.GetCorrectEndingNode
-import its.questions.gen.visitors.GetEndingNodes
-import its.questions.gen.visitors.GetUsedVariables
+import its.questions.gen.visitors.*
 import its.questions.inputs.EntityDictionary
 import its.questions.inputs.QVarModel
 import its.questions.inputs.usesQDictionaries
-import its.questions.questiontypes.Question
+import its.questions.questiontypes.AnswerOption
+import its.questions.questiontypes.AnswerStatus
 import its.questions.questiontypes.SingleChoiceQuestion
 
 class QuestionGenerator(dir : String) {
@@ -40,22 +38,28 @@ class QuestionGenerator(dir : String) {
         knownVariables.addAll(from.initVariables.keys)
     }
 
-    fun process(branch: ThoughtBranch, assumedResult : Boolean){
+    fun process(branch: ThoughtBranch, assumedResult : Boolean) : AnswerStatus{
         val considered = branch.use(GetConsideredNodes(answers))
 
-        if(!determineVariableValues(considered)) return
+        if(!determineVariableValues(considered)) return AnswerStatus.INCORRECT_EXPLAINED
 
-        val endingNodes = branch.accept(GetEndingNodes())
-        val correctEndingNode = branch.accept(GetCorrectEndingNode(considered))
+        val endingSearch = GetEndingNodes(considered)
+        branch.use(endingSearch)
+        val endingNodes = endingSearch.set
+        val correctEndingNode = endingSearch.correct
         val q = SingleChoiceQuestion(
             false,
             "Почему вы считаете, что " + branch.additionalInfo["description"]!!.replaceAlternatives(assumedResult).process() + "?",
             endingNodes
-                .map{Question.AnswerOption(it.additionalInfo["endingCause"]!!.replaceAlternatives(assumedResult).process(),it == correctEndingNode.first, "")}
+                .map{ AnswerOption(it.additionalInfo["endingCause"]?:"".replaceAlternatives(assumedResult).process(),it == correctEndingNode, "") }
         )
-        q.ask()
+        val correctChosen = q.ask() == AnswerStatus.CORRECT
+        if(correctChosen)
+            return correctEndingNode.use(AskNodeQuestions(this))
+        else
+            TODO("Обработка разных конечных узлов")
 
-
+        return AnswerStatus.CORRECT
     }
 
     //region Вопросы о значениях переменных
@@ -89,7 +93,7 @@ class QuestionGenerator(dir : String) {
         order.forEach { varName ->
             val q = variableValueQuestion(varName, false)
             val answered = q.ask()
-            if(answered == Question.AnswerStatus.CORRECT){
+            if(answered == AnswerStatus.CORRECT){
                 knownVariables.add(varName)
             }
             else
@@ -110,7 +114,7 @@ class QuestionGenerator(dir : String) {
         return knownVariables.any { entityDictionary.getByVariable(it)?.alias == entityAlias }
     }
 
-    private fun variableValueQuestion(varName : String, hasUncheckedPrerequisites : Boolean) : Question {
+    private fun variableValueQuestion(varName : String, hasUncheckedPrerequisites : Boolean) : SingleChoiceQuestion {
         val varData = (DomainModel.decisionTreeVarsDictionary.get(varName) as QVarModel)
         return SingleChoiceQuestion(
             hasUncheckedPrerequisites,
@@ -118,8 +122,8 @@ class QuestionGenerator(dir : String) {
             entityDictionary
                 //Выбрать объекты, которые еще не были присвоены (?) и класс которых подходит под класс искомой переменной
                 .filter { !isEntityAssigned(it.alias) && (it.clazz.name == varData.className || it.calculatedClasses.any { clazz -> clazz.name == varData.className }) }
-                .map { Question.AnswerOption(it.specificName, it.variable == varData, it.variableErrorExplanations[varData.name]?.process()) }
-                .plus(Question.AnswerOption("Отсутствует", entityDictionary.none{it.variable == varData}, "Это неверно."))
+                .map { AnswerOption(it.specificName, it.variable == varData, it.variableErrorExplanations[varData.name]?.process()) }
+                .plus(AnswerOption("Отсутствует", entityDictionary.none{it.variable == varData}, "Это неверно."))
         )
     }
     //endregion

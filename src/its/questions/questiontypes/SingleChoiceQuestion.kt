@@ -1,13 +1,11 @@
 package its.questions.questiontypes
 
-class SingleChoiceQuestion(shouldBeFinal : Boolean, text: String, options : List<AnswerOption>)
-    : Question(shouldBeFinal, text, options){
+class SingleChoiceQuestion(val shouldBeFinal : Boolean, val text: String, val options : List<AnswerOption>){
     init{
         require(options.count { it.isTrue } == 1)
-        require(options.all { it.isInverted == null })
     }
 
-    override fun ask(): AnswerStatus {
+    fun ask(): AnswerStatus {
         if(options.size == 1)
             return AnswerStatus.CORRECT
         println()

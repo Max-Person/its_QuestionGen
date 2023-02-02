@@ -39,19 +39,19 @@ class TemplatingUtils(val q : QuestionGenerator) {
 
         @JvmStatic
         fun String.toCase(case: Case?) : String{
-            return Padeg.getAppointmentPadeg(this, (case?: Case.Nom).ordinal+1)
+            return Padeg.getAppointmentPadeg(this, (case?: Case.Nom).ordinal+1).replace(Regex("\\s+"), " ")
         }
 
         @JvmStatic
         fun String.replaceAlternatives(condition: Boolean) : String{
             return this.replace(Regex("\\[(.*)\\|(.*)]")){
                 it.groupValues[if(condition) 1 else  2]
-            }
+            }.replace(Regex("\\s+"), " ")
         }
     }
 
     fun process(str: String) : String{
-        return sub.process(str)
+        return sub.process(str).replace(Regex("\\s+"), " ")
     }
 
     private val sub = StrSubstitutionCore(this, templatingParser)
