@@ -1,5 +1,6 @@
 package its.questions.gen.visitors
 
+import its.model.expressions.Literal
 import its.model.nodes.*
 import its.model.nodes.visitors.DecisionTreeBehaviour
 import its.questions.gen.QuestionGenerator
@@ -57,29 +58,45 @@ class AskNodeQuestions(val q : QuestionGenerator) : DecisionTreeBehaviour<Answer
             "Хотите ли вы разобраться подробнее?",
             incorrect.map {
                 val branchAnswer = q.answers[it.additionalInfo[ALIAS_ATR]].toBoolean()
-                "Почему " + q.templating.process(it.additionalInfo["description"]!!.replaceAlternatives(branchAnswer)) + "?" to it }
-            ).ask()
+                "Почему " + q.templating.process(it.additionalInfo["description"]!!.replaceAlternatives(branchAnswer)) + "?" to it
+            }.plus("Мне все понятно." to null)
+        ).ask()
 
-        return q.process(branch, !q.answers[branch.additionalInfo[ALIAS_ATR]].toBoolean())
+        if(branch == null)
+            return AnswerStatus.INCORRECT_EXPLAINED
+        else
+            return q.process(branch, !q.answers[branch.additionalInfo[ALIAS_ATR]].toBoolean())
     }
 
     override fun process(node: PredeterminingFactorsNode): AnswerStatus {
-        TODO("Not yet implemented")
+        return AnswerStatus.CORRECT
     }
 
     override fun process(node: QuestionNode): AnswerStatus {
-        TODO("Not yet implemented")
+        val answer = Literal.fromString(q.answers[node.additionalInfo[ALIAS_ATR]]!!, node.type, node.enumOwner)
+        val question = q.templating.process(node.additionalInfo["question"]!!)
+        val q1 = SingleChoiceQuestion(
+            false,
+            question,
+            node.next.keys.map { AnswerOption(
+                q.templating.process(node.next.additionalInfo(it)?.get("text")?:it.use(LiteralToString(q))),
+                it == answer,
+                q.templating.process(node.next.additionalInfo(answer)?.get("explanation")?:"Это неверно."),
+                )}
+        )
+
+        return q1.ask()
     }
 
     override fun process(node: StartNode): AnswerStatus {
-        TODO("Not yet implemented")
+        return AnswerStatus.CORRECT
     }
 
     override fun process(branch: ThoughtBranch): AnswerStatus {
-        TODO("Not yet implemented")
+        return AnswerStatus.CORRECT
     }
 
     override fun process(node: UndeterminedResultNode): AnswerStatus {
-        TODO("Not yet implemented")
+        return AnswerStatus.CORRECT
     }
 }

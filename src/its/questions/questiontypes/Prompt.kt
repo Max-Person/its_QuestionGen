@@ -12,6 +12,6 @@ class Prompt<Info>(val text: String, val options : List<Pair<String, Info>>){
             answers = getAnswers()
         }
         val answer = answers.single()
-        return options[answer].second
+        return options[answer-1].second
     }
 }

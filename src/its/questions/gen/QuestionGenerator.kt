@@ -51,7 +51,7 @@ class QuestionGenerator(dir : String) {
             false,
             "Почему вы считаете, что " + branch.additionalInfo["description"]!!.replaceAlternatives(assumedResult).process() + "?",
             endingNodes
-                .map{ AnswerOption(it.additionalInfo["endingCause"]?:"".replaceAlternatives(assumedResult).process(),it == correctEndingNode, "") }
+                .map{ AnswerOption((it.additionalInfo["endingCause"]?:"").replaceAlternatives(assumedResult).process(),it == correctEndingNode, "") }
         )
         val correctChosen = q.ask() == AnswerStatus.CORRECT
         if(correctChosen)
