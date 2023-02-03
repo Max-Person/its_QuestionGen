@@ -6,7 +6,9 @@ import its.questions.addAllNew
 import its.questions.fileToMap
 import its.questions.gen.TemplatingUtils._static.replaceAlternatives
 import its.questions.gen.visitors.*
+import its.questions.gen.visitors.GetNodesLCA._static.getNodesLCA
 import its.questions.inputs.EntityDictionary
+import its.questions.inputs.QClassModel
 import its.questions.inputs.QVarModel
 import its.questions.inputs.usesQDictionaries
 import its.questions.questiontypes.AnswerOption
@@ -16,7 +18,7 @@ import its.questions.questiontypes.SingleChoiceQuestion
 class QuestionGenerator(dir : String) {
     internal val entityDictionary : EntityDictionary = EntityDictionary()
     internal val answers: Map<String, String>
-    private val knownVariables = mutableSetOf<String>()
+    internal val knownVariables = mutableSetOf<String>()
 
     val templating = TemplatingUtils(this)
     private fun String.process() : String {
@@ -41,7 +43,8 @@ class QuestionGenerator(dir : String) {
     fun process(branch: ThoughtBranch, assumedResult : Boolean) : AnswerStatus{
         val considered = branch.use(GetConsideredNodes(answers))
 
-        if(!determineVariableValues(considered)) return AnswerStatus.INCORRECT_EXPLAINED
+        if(determineVariableValues(considered) == AnswerStatus.INCORRECT_EXPLAINED)
+            return AnswerStatus.INCORRECT_EXPLAINED
 
         val endingSearch = GetEndingNodes(considered)
         branch.use(endingSearch)
@@ -51,20 +54,29 @@ class QuestionGenerator(dir : String) {
             false,
             "Почему вы считаете, что " + branch.additionalInfo["description"]!!.replaceAlternatives(assumedResult).process() + "?",
             endingNodes
-                .map{ AnswerOption((it.additionalInfo["endingCause"]?:"").replaceAlternatives(assumedResult).process(),it == correctEndingNode, "") }
+                .map{ AnswerOption((it.additionalInfo["endingCause"]?:"").replaceAlternatives(assumedResult).process(),it == correctEndingNode, "", it) }
         )
-        val correctChosen = q.ask() == AnswerStatus.CORRECT
-        if(correctChosen)
-            return correctEndingNode.use(AskNodeQuestions(this))
-        else
-            TODO("Обработка разных конечных узлов")
 
-        return AnswerStatus.CORRECT
+        val answer = q.askWithInfo()
+        var askingNode : DecisionTreeNode? = if(answer.first == AnswerStatus.CORRECT) correctEndingNode else branch.getNodesLCA(correctEndingNode, answer.second as DecisionTreeNode)!!
+        lateinit var status : AnswerStatus
+        do{
+            status = askingNode!!.use(AskNodeQuestions(this))
+            if(status != AnswerStatus.INCORRECT_EXPLAINED){
+                val nextStep = askingNode.use(AskNextStepQuestions(this, branch))
+                status = nextStep.first
+                askingNode = nextStep.second
+            }
+
+        }
+        while (status != AnswerStatus.INCORRECT_EXPLAINED && askingNode != null)
+
+        return if(askingNode == null) AnswerStatus.CORRECT else AnswerStatus.INCORRECT_EXPLAINED
     }
 
     //region Вопросы о значениях переменных
 
-    private fun determineVariableValues(consideredNodes: List<DecisionTreeNode>) : Boolean{
+    private fun determineVariableValues(consideredNodes: List<DecisionTreeNode>) : AnswerStatus{
         //Определить список переменных и от каких других переменных они зависят
         val variablePrerequisites = mutableMapOf<String, Set<String>>()
         consideredNodes.forEach {
@@ -89,18 +101,17 @@ class QuestionGenerator(dir : String) {
         val order = mutableListOf<String>()
         decidingVariables.forEach {order.addAllNew(variableOrder(it, variablePrerequisites))}
 
+        var answered = AnswerStatus.CORRECT
         //задать вопросы
         order.forEach { varName ->
             val q = variableValueQuestion(varName, false)
-            val answered = q.ask()
-            if(answered == AnswerStatus.CORRECT){
-                knownVariables.add(varName)
-            }
-            else
-                return false //TODO обработка нескольких ошибок подряд
+            answered = q.ask()
+            knownVariables.add(varName)
+            if(answered == AnswerStatus.INCORRECT_EXPLAINED)
+                return answered
         }
 
-        return true
+        return answered
     }
 
     private fun variableOrder(varName: String, variablePrerequisites : Map<String, Set<String>>) : List<String>{
@@ -116,14 +127,15 @@ class QuestionGenerator(dir : String) {
 
     private fun variableValueQuestion(varName : String, hasUncheckedPrerequisites : Boolean) : SingleChoiceQuestion {
         val varData = (DomainModel.decisionTreeVarsDictionary.get(varName) as QVarModel)
+        val clazz = DomainModel.classesDictionary.get(varData.className) as QClassModel
         return SingleChoiceQuestion(
-            hasUncheckedPrerequisites,
+            !hasUncheckedPrerequisites,
             varData.valueSearchTemplate!!.process(),
             entityDictionary
                 //Выбрать объекты, которые еще не были присвоены (?) и класс которых подходит под класс искомой переменной
                 .filter { !isEntityAssigned(it.alias) && (it.clazz.name == varData.className || it.calculatedClasses.any { clazz -> clazz.name == varData.className }) }
                 .map { AnswerOption(it.specificName, it.variable == varData, it.variableErrorExplanations[varData.name]?.process()) }
-                .plus(AnswerOption("Отсутствует", entityDictionary.none{it.variable == varData}, "Это неверно."))
+                .plus(AnswerOption("Такой ${clazz.textName} отсутствует", entityDictionary.none{it.variable == varData}, ""))
         )
     }
     //endregion

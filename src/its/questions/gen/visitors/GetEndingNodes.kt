@@ -40,7 +40,8 @@ class GetEndingNodes(val consideredNodes: List<DecisionTreeNode>) : DecisionTree
     }
 
     override fun process(node: PredeterminingFactorsNode) {
-        node.undetermined.getEndingNodes()
+        node.predetermining.values.forEach { it.getEndingNodes() }
+        node.undetermined?.getEndingNodes()
         if(node.undetermined is BranchResultNode)
             set.add(node)
         if(node.undetermined is BranchResultNode && consideredNodes.contains(node.undetermined))

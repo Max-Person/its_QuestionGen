@@ -53,8 +53,8 @@ class AggregationQuestion<AssocType : Any>(val text: String, val op: LogicalOp, 
             if(!incorrectOptions.isEmpty())
                 println("Это неверно, поскольку ${incorrectOptions.joinToString(separator = ", ", transform = {it.textActual!!})}.")
             if(!missedOptions.isEmpty())
-                println(if(incorrectOptions.isEmpty()) "Это неверно, поскольку вы " else "Вы также " +
-                        "не упомянули, что ${missedOptions.joinToString(separator = ", ", transform = {it.textActual!!})}")
+                println((if(incorrectOptions.isEmpty()) "Это неверно, поскольку вы " else "Вы также ") +
+                        "не упомянули, что ${missedOptions.joinToString(separator = ", ", transform = {it.textActual!!})} - это влияет на ситуацию в данном случае.")
             val out = mutableSetOf<AssocType>()
             out.addAll(incorrectOptions.filter { !it.isDistractor }.map{it.assocValue})
             out.addAll(missedOptions.map{it.assocValue})

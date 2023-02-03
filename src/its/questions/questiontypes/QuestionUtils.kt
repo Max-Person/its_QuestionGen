@@ -14,7 +14,8 @@ enum class AnswerStatus{
 data class AnswerOption(
     val text: String,
     val isTrue: Boolean,
-    val explanation: String? = null
+    val explanation: String? = null,
+    val assocValue: Any? = null,
 )
 
 private val scanner = Scanner(System.`in`)

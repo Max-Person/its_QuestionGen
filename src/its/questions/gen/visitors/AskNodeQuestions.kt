@@ -76,7 +76,7 @@ class AskNodeQuestions(val q : QuestionGenerator) : DecisionTreeBehaviour<Answer
         val answer = Literal.fromString(q.answers[node.additionalInfo[ALIAS_ATR]]!!, node.type, node.enumOwner)
         val question = q.templating.process(node.additionalInfo["question"]!!)
         val q1 = SingleChoiceQuestion(
-            false,
+            true,
             question,
             node.next.keys.map { AnswerOption(
                 q.templating.process(node.next.additionalInfo(it)?.get("text")?:it.use(LiteralToString(q))),

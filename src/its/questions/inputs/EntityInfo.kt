@@ -7,7 +7,6 @@ class EntityInfo(
     className: String,
     calculatedClassNames: List<String>,
     val specificName: String,
-    val generalName: String,
     variableName: String? = null,
     variableErrorExplanations: Map<String, String> = mapOf(),
 ) {
