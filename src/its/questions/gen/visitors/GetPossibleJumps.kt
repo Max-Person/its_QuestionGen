@@ -39,7 +39,9 @@ class GetPossibleJumps( val knownVariables : Set<String>) : DecisionTreeBehaviou
     }
 
     override fun process(node: PredeterminingFactorsNode): List<DecisionTreeNode> {
-        return listOf(node).plus(node.undetermined.getPossibleJumps()) //TODO логика обработки предрешающих факторов
+        val l = mutableListOf<DecisionTreeNode>(node)
+        node.next.values.forEach{l.addAll(it.getPossibleJumps())}
+        return l
     }
 
     override fun process(node: QuestionNode): List<DecisionTreeNode> {
@@ -57,6 +59,6 @@ class GetPossibleJumps( val knownVariables : Set<String>) : DecisionTreeBehaviou
     }
 
     override fun process(node: UndeterminedResultNode): List<DecisionTreeNode> {
-        return listOf<DecisionTreeNode>().plus(node.linkedPredetermining.getPossibleJumps()) //TODO
+        return listOf<DecisionTreeNode>()
     }
 }

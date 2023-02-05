@@ -50,9 +50,7 @@ class GetConsideredNodes(val answers: Map<String, String>) : DecisionTreeBehavio
 
     override fun process(node: PredeterminingFactorsNode): List<DecisionTreeNode> {
         val out = mutableListOf<DecisionTreeNode>(node)
-        node.predetermining.forEach{out.addAll(it.getConsideredNodes())}
-        if(node.getAnswer() == "undetermined")
-            out.addAll(node.undetermined.getConsideredNodes())
+        out.addAll(node.next[node.getAnswer()]!!.getConsideredNodes())
         return out.toList()
     }
 

@@ -69,7 +69,40 @@ class AskNodeQuestions(val q : QuestionGenerator) : DecisionTreeBehaviour<Answer
     }
 
     override fun process(node: PredeterminingFactorsNode): AnswerStatus {
-        return AnswerStatus.CORRECT
+        val answer = q.answers[node.additionalInfo[ALIAS_ATR]]!!
+        val question = q.templating.process(node.additionalInfo["question"]!!)
+        val q1 = SingleChoiceQuestion(
+            false,
+            question,
+            node.next.info.map { AnswerOption(
+                q.templating.process(it.additionalInfo["text"]!!),
+                it.key == answer,
+                "Это неверно, " + q.templating.process(it.additionalInfo["explanation"]!!.replaceAlternatives(false) + ". В этой ситуации " + node.next.additionalInfo(answer)!!["explanation"]!!.replaceAlternatives(true)),
+                it.decidingBranch
+            )}
+        )
+
+        val chosen = q1.askWithInfo()
+        if(chosen.first == AnswerStatus.CORRECT) return AnswerStatus.CORRECT
+
+        val incorrectBranch = chosen.second as ThoughtBranch?
+        val correctBranch = node.next.getFull(answer)!!.decidingBranch
+        val options = mutableListOf<Pair<String, ThoughtBranch?>>()
+        if(incorrectBranch != null)
+            options.add("Почему " + q.templating.process(incorrectBranch.additionalInfo["description"]!!.replaceAlternatives(false)) + "?" to incorrectBranch)
+        if(correctBranch != null)
+            options.add("Почему " + q.templating.process(correctBranch.additionalInfo["description"]!!.replaceAlternatives(true)) + "?" to correctBranch)
+        options.add("Мне все понятно." to null)
+
+        val branch = Prompt(
+            "Хотите ли вы разобраться подробнее?",
+            options
+        ).ask()
+
+        if(branch == null)
+            return AnswerStatus.INCORRECT_EXPLAINED
+        else
+            return q.process(branch, !q.answers[branch.additionalInfo[ALIAS_ATR]].toBoolean())
     }
 
     override fun process(node: QuestionNode): AnswerStatus {
@@ -81,7 +114,7 @@ class AskNodeQuestions(val q : QuestionGenerator) : DecisionTreeBehaviour<Answer
             node.next.keys.map { AnswerOption(
                 q.templating.process(node.next.additionalInfo(it)?.get("text")?:it.use(LiteralToString(q))),
                 it == answer,
-                q.templating.process(node.next.additionalInfo(answer)?.get("explanation")?:"Это неверно."),
+                q.templating.process(node.next.additionalInfo(answer)?.get("explanation")?:""),
                 )}
         )
 

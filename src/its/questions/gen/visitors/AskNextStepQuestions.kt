@@ -107,20 +107,23 @@ class AskNextStepQuestions(
     }
 
     override fun process(node: PredeterminingFactorsNode): Pair<AnswerStatus, DecisionTreeNode?> {
+        val answer = q.answers[node.additionalInfo[ALIAS_ATR]]!!
+        val correct = node.next[answer]
         val jumps = node.getPossibleJumps(q.knownVariables)
-        var options = jumps.filter { it !is BranchResultNode }.map{AnswerOption(
+
+        var options = jumps.filter { it !is BranchResultNode}.map{AnswerOption(
             q.templating.process(it.additionalInfo["asNextStep"]!!),
-            it == node.undetermined,
-            q.templating.process(q.templating.process(node.additionalInfo["undeterminedExplanation"]?: ""))
+            it == correct,
+            q.templating.process(node.next.additionalInfo(answer)?.get("nextStepExplanation")?:"")
         )}
         options = options.plus(AnswerOption(
             "Можно заключить, что " + q.templating.process(currentBranch.additionalInfo["description"]!!.replaceAlternatives(true)),
-            node.undetermined is BranchResultNode && (node.undetermined as BranchResultNode).value == BooleanLiteral(true),
-            q.templating.process(q.templating.process(node.additionalInfo["undeterminedExplanation"]?: ""))
+            correct is BranchResultNode && correct.value == BooleanLiteral(true),
+            q.templating.process(node.next.additionalInfo(answer)?.get("nextStepExplanation")?:"")
         )).plus(AnswerOption(
             "Можно заключить, что " + q.templating.process(currentBranch.additionalInfo["description"]!!.replaceAlternatives(false)),
-            node.undetermined is BranchResultNode && (node.undetermined as BranchResultNode).value == BooleanLiteral(false),
-            q.templating.process(q.templating.process(node.additionalInfo["undeterminedExplanation"]?: ""))
+            correct is BranchResultNode && correct.value == BooleanLiteral(false),
+            q.templating.process(node.next.additionalInfo(answer)?.get("nextStepExplanation")?:"")
         ))
 
         val q1 = SingleChoiceQuestion(
@@ -128,7 +131,7 @@ class AskNextStepQuestions(
             q.templating.process(node.additionalInfo["nextStepQuestion"]?: defaultNextStepQuestion),
             options
         )
-        return q1.ask() to node.undetermined
+        return q1.ask() to node.next[answer]
     }
 
     override fun process(node: QuestionNode): Pair<AnswerStatus, DecisionTreeNode?> {

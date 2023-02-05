@@ -43,8 +43,10 @@ class QuestionGenerator(dir : String) {
     fun process(branch: ThoughtBranch, assumedResult : Boolean) : AnswerStatus{
         val considered = branch.use(GetConsideredNodes(answers))
 
-        if(determineVariableValues(considered) == AnswerStatus.INCORRECT_EXPLAINED)
+        if(determineVariableValues(considered) == AnswerStatus.INCORRECT_EXPLAINED){
+            println("Итак, мы обсудили, почему " + branch.additionalInfo["description"]!!.replaceAlternatives(!assumedResult).process())
             return AnswerStatus.INCORRECT_EXPLAINED
+        }
 
         val endingSearch = GetEndingNodes(considered)
         branch.use(endingSearch)
@@ -71,6 +73,7 @@ class QuestionGenerator(dir : String) {
         }
         while (status != AnswerStatus.INCORRECT_EXPLAINED && askingNode != null)
 
+        println("Итак, мы обсудили, почему " + branch.additionalInfo["description"]!!.replaceAlternatives(!assumedResult).process())
         return if(askingNode == null) AnswerStatus.CORRECT else AnswerStatus.INCORRECT_EXPLAINED
     }
 
@@ -92,7 +95,7 @@ class QuestionGenerator(dir : String) {
                 decidingVariables.addAll(it.expr.accept(GetUsedVariables()))
             }
             else if(it is FindActionNode && it.nextIfNone != null){
-                decidingVariables.addAll(it.selectorExpr.accept(GetUsedVariables()))
+                decidingVariables.add(it.variable.name)
             }
         }
         decidingVariables = decidingVariables.filter { !knownVariables.contains(it) }.toMutableSet()

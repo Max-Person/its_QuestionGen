@@ -69,29 +69,15 @@ class GetNodesLCA(val a : DecisionTreeNode, val b : DecisionTreeNode) : Decision
     }
 
     override fun process(node: PredeterminingFactorsNode): Int {
-        val a_pred = node.predetermining.firstOrNull{it.getNodesLCA() and a_found != 0}
-        val b_pred = node.predetermining.firstOrNull{it.getNodesLCA() and b_found != 0}
-        if(a_pred != null && b_pred != null){
-            if(a_pred != b_pred){
-                lca = a //В равноправной ситуации выбирается a
-            }
-            return a_found or b_found
-        }
-        else if(a_pred == null && b_pred != null){
-            if(node == a || node.undetermined.getNodesLCA() and a_found != 0){
-                lca = b
-                return a_found or b_found
-            }
-            return b_found
-        }
-        else if(a_pred != null && b_pred == null){
-            if(node == b || node.undetermined.getNodesLCA() and b_found != 0){
-                lca = a
-                return a_found or b_found
-            }
-            return a_found
-        }
-        else return node.undetermined.getNodesLCA()
+        var res = none_found
+        if(node == a)
+            res = res or a_found
+        if(node == b)
+            res = res or b_found
+        node.next.values.forEach { res = res or it.getNodesLCA() }
+        if(res and a_found != 0 && res and b_found != 0 && lca == null)
+            lca = node
+        return res
     }
 
     override fun process(node: QuestionNode): Int {
