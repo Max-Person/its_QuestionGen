@@ -1,17 +1,17 @@
 package its.questions.questiontypes
 
 //TODO сделать большой рефакторинг
-class SingleChoiceQuestion(val shouldBeFinal : Boolean, val text: String, val options : List<AnswerOption>){
+class SingleChoiceQuestion(val text: String, val options : List<AnswerOption>){
     init{
         require(options.count { it.isTrue } == 1)
     }
-    fun ask(): AnswerStatus{
+    fun ask(): Boolean{
         return askWithInfo().first
     }
 
-    fun askWithInfo(): Pair<AnswerStatus, Any?> {
+    fun askWithInfo(): Pair<Boolean, Any?> {
         if(options.size == 1)
-            return AnswerStatus.CORRECT to options.first().assocValue
+            return true to options.first().assocValue
         println()
         println(text)
         println("(Вопрос с единственным вариантом ответа)")
@@ -26,19 +26,14 @@ class SingleChoiceQuestion(val shouldBeFinal : Boolean, val text: String, val op
         val answer = answers.single()
 
         return if(shuffle[answer-1].isTrue){
-            AnswerStatus.CORRECT
+            true
         } else{
             if(shuffle[answer-1].explanation.isNullOrBlank())
                 println("Это неверно. В данном случае правильным ответом является '${options.first { it.isTrue }.text}'.")
             else
                 println(shuffle[answer-1].explanation)
 
-            if(!shouldBeFinal)
-                AnswerStatus.INCORRECT_CONTINUE
-            else if(getExplanationHelped())
-                AnswerStatus.INCORRECT_EXPLAINED
-            else
-                AnswerStatus.INCORRECT_STUCK
+            false
         } to shuffle[answer-1].assocValue
     }
 }

@@ -4,6 +4,7 @@ class Prompt<Info>(val text: String, val options : List<Pair<String, Info>>){
     fun ask(): Info {
         println()
         println(text)
+        println("(элемент управления, не является вопросом)")
         options.forEachIndexed {i, option -> println(" ${i+1}. ${option.first}") }
 
         var answers = getAnswers()

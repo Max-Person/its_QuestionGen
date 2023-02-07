@@ -12,7 +12,7 @@ import its.questions.inputs.QClassModel
 import its.questions.inputs.QVarModel
 import its.questions.inputs.usesQDictionaries
 import its.questions.questiontypes.AnswerOption
-import its.questions.questiontypes.AnswerStatus
+import its.questions.questiontypes.Prompt
 import its.questions.questiontypes.SingleChoiceQuestion
 
 class QuestionGenerator(dir : String) {
@@ -40,12 +40,11 @@ class QuestionGenerator(dir : String) {
         knownVariables.addAll(from.initVariables.keys)
     }
 
-    fun process(branch: ThoughtBranch, assumedResult : Boolean) : AnswerStatus{
+    fun process(branch: ThoughtBranch, assumedResult : Boolean){
         val considered = branch.use(GetConsideredNodes(answers))
 
-        if(determineVariableValues(considered) == AnswerStatus.INCORRECT_EXPLAINED){
+        if(determineVariableValues(branch, considered) == true){
             println("Итак, мы обсудили, почему " + branch.additionalInfo["description"]!!.replaceAlternatives(!assumedResult).process())
-            return AnswerStatus.INCORRECT_EXPLAINED
         }
 
         val endingSearch = GetEndingNodes(considered)
@@ -53,33 +52,44 @@ class QuestionGenerator(dir : String) {
         val endingNodes = endingSearch.set
         val correctEndingNode = endingSearch.correct
         val q = SingleChoiceQuestion(
-            false,
             "Почему вы считаете, что " + branch.additionalInfo["description"]!!.replaceAlternatives(assumedResult).process() + "?",
             endingNodes
-                .map{ AnswerOption((it.additionalInfo["endingCause"]?:"").replaceAlternatives(assumedResult).process(),it == correctEndingNode, "", it) }
+                .map{ AnswerOption((it.additionalInfo["endingCause"]?:"").replaceAlternatives(assumedResult).process(),it == correctEndingNode, "Это неверно. Давайте немного вернемся назад.", it) }
         )
 
         val answer = q.askWithInfo()
-        var askingNode : DecisionTreeNode? = if(answer.first == AnswerStatus.CORRECT) correctEndingNode else branch.getNodesLCA(correctEndingNode, answer.second as DecisionTreeNode)!!
-        lateinit var status : AnswerStatus
+        var askingNode : DecisionTreeNode? = if(answer.first) correctEndingNode else branch.getNodesLCA(correctEndingNode, answer.second as DecisionTreeNode)!!
+        var stepAnswer : Boolean
         do{
-            status = askingNode!!.use(AskNodeQuestions(this))
-            if(status != AnswerStatus.INCORRECT_EXPLAINED){
-                val nextStep = askingNode.use(AskNextStepQuestions(this, branch))
-                status = nextStep.first
-                askingNode = nextStep.second
-            }
+            stepAnswer = askingNode!!.use(AskNodeQuestions(this))
+            if(!stepAnswer && shouldEndBranch(branch))
+                break
+
+            val nextStep = askingNode.use(AskNextStepQuestions(this, branch))
+            stepAnswer = nextStep.first
+            askingNode = nextStep.second
+
+            if(!stepAnswer && askingNode !is BranchResultNode && shouldEndBranch(branch))
+                break
 
         }
-        while (status != AnswerStatus.INCORRECT_EXPLAINED && askingNode != null)
+        while (stepAnswer && askingNode != null)
 
         println("Итак, мы обсудили, почему " + branch.additionalInfo["description"]!!.replaceAlternatives(!assumedResult).process())
-        return if(askingNode == null) AnswerStatus.CORRECT else AnswerStatus.INCORRECT_EXPLAINED
+        return
+    }
+
+    private fun shouldEndBranch(currentBranch : ThoughtBranch) : Boolean{
+        val branchAnswer = answers[currentBranch.additionalInfo[ALIAS_ATR]].toBoolean()
+        return Prompt(
+            "Понятно ли вам, почему " + currentBranch.additionalInfo["description"]!!.replaceAlternatives(branchAnswer).process() + "?",
+            listOf("Да" to true, "Нет, продолжить рассматривать дальше" to false)
+        ).ask()
     }
 
     //region Вопросы о значениях переменных
 
-    private fun determineVariableValues(consideredNodes: List<DecisionTreeNode>) : AnswerStatus{
+    private fun determineVariableValues(currentBranch: ThoughtBranch, consideredNodes: List<DecisionTreeNode>) : Boolean{
         //Определить список переменных и от каких других переменных они зависят
         val variablePrerequisites = mutableMapOf<String, Set<String>>()
         consideredNodes.forEach {
@@ -104,17 +114,16 @@ class QuestionGenerator(dir : String) {
         val order = mutableListOf<String>()
         decidingVariables.forEach {order.addAllNew(variableOrder(it, variablePrerequisites))}
 
-        var answered = AnswerStatus.CORRECT
         //задать вопросы
         order.forEach { varName ->
-            val q = variableValueQuestion(varName, false)
-            answered = q.ask()
+            val q = variableValueQuestion(varName)
+            val answer = q.ask()
             knownVariables.add(varName)
-            if(answered == AnswerStatus.INCORRECT_EXPLAINED)
-                return answered
+            if(!answer && shouldEndBranch(currentBranch))
+                return true
         }
 
-        return answered
+        return false
     }
 
     private fun variableOrder(varName: String, variablePrerequisites : Map<String, Set<String>>) : List<String>{
@@ -128,11 +137,10 @@ class QuestionGenerator(dir : String) {
         return knownVariables.any { entityDictionary.getByVariable(it)?.alias == entityAlias }
     }
 
-    private fun variableValueQuestion(varName : String, hasUncheckedPrerequisites : Boolean) : SingleChoiceQuestion {
+    private fun variableValueQuestion(varName : String) : SingleChoiceQuestion {
         val varData = (DomainModel.decisionTreeVarsDictionary.get(varName) as QVarModel)
         val clazz = DomainModel.classesDictionary.get(varData.className) as QClassModel
         return SingleChoiceQuestion(
-            !hasUncheckedPrerequisites,
             varData.valueSearchTemplate!!.process(),
             entityDictionary
                 //Выбрать объекты, которые еще не были присвоены (?) и класс которых подходит под класс искомой переменной

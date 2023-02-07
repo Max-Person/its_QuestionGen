@@ -12,17 +12,17 @@ import its.questions.questiontypes.*
 class AskNextStepQuestions(
     val q : QuestionGenerator,
     val currentBranch : ThoughtBranch,
-) : DecisionTreeBehaviour<Pair<AnswerStatus, DecisionTreeNode?>> {
+) : DecisionTreeBehaviour<Pair<Boolean, DecisionTreeNode?>> {
 
     companion object {
         const val defaultNextStepQuestion = "Какой следующий шаг необходим для решения задачи?"
     }
 
-    override fun process(node: BranchResultNode): Pair<AnswerStatus, DecisionTreeNode?> {
-        return AnswerStatus.CORRECT to null
+    override fun process(node: BranchResultNode): Pair<Boolean, DecisionTreeNode?> {
+        return true to null
     }
 
-    override fun process(node: CycleAggregationNode): Pair<AnswerStatus, DecisionTreeNode?> {
+    override fun process(node: CycleAggregationNode): Pair<Boolean, DecisionTreeNode?> {
         val answer = q.answers[node.additionalInfo[ALIAS_ATR]].toBoolean()
         val correct = node.next[answer]
         val jumps = node.getPossibleJumps(q.knownVariables)
@@ -43,14 +43,13 @@ class AskNextStepQuestions(
         ))
 
         val q1 = SingleChoiceQuestion(
-            true,
             q.templating.process(node.additionalInfo["nextStepQuestion"]?.replaceAlternatives(answer)?:defaultNextStepQuestion),
             options
         )
         return q1.ask() to node.next[answer]
     }
 
-    override fun process(node: FindActionNode): Pair<AnswerStatus, DecisionTreeNode?> {
+    override fun process(node: FindActionNode): Pair<Boolean, DecisionTreeNode?> {
         val answer = q.answers[node.additionalInfo[ALIAS_ATR]]!!
         val correct = node.next[answer]
         val jumps = node.getPossibleJumps(q.knownVariables)
@@ -71,14 +70,13 @@ class AskNextStepQuestions(
         ))
 
         val q1 = SingleChoiceQuestion(
-            true,
-            q.templating.process(node.additionalInfo["nextStepQuestion"]?: defaultNextStepQuestion),
+            q.templating.process(node.next.additionalInfo(answer)?.get("nextStepQuestion")?: defaultNextStepQuestion),
             options
         )
         return q1.ask() to node.next[answer]
     }
 
-    override fun process(node: LogicAggregationNode): Pair<AnswerStatus, DecisionTreeNode?> {
+    override fun process(node: LogicAggregationNode): Pair<Boolean, DecisionTreeNode?> {
         val answer = q.answers[node.additionalInfo[ALIAS_ATR]].toBoolean()
         val correct = node.next[answer]
         val jumps = node.getPossibleJumps(q.knownVariables)
@@ -99,14 +97,13 @@ class AskNextStepQuestions(
         ))
 
         val q1 = SingleChoiceQuestion(
-            true,
             q.templating.process(node.additionalInfo["nextStepQuestion"]?.replaceAlternatives(answer)?:defaultNextStepQuestion),
             options
         )
         return q1.ask() to node.next[answer]
     }
 
-    override fun process(node: PredeterminingFactorsNode): Pair<AnswerStatus, DecisionTreeNode?> {
+    override fun process(node: PredeterminingFactorsNode): Pair<Boolean, DecisionTreeNode?> {
         val answer = q.answers[node.additionalInfo[ALIAS_ATR]]!!
         val correct = node.next[answer]
         val jumps = node.getPossibleJumps(q.knownVariables)
@@ -127,14 +124,13 @@ class AskNextStepQuestions(
         ))
 
         val q1 = SingleChoiceQuestion(
-            true,
             q.templating.process(node.additionalInfo["nextStepQuestion"]?: defaultNextStepQuestion),
             options
         )
         return q1.ask() to node.next[answer]
     }
 
-    override fun process(node: QuestionNode): Pair<AnswerStatus, DecisionTreeNode?> {
+    override fun process(node: QuestionNode): Pair<Boolean, DecisionTreeNode?> {
         val answer = Literal.fromString(q.answers[node.additionalInfo[ALIAS_ATR]]!!, node.type, node.enumOwner)
         val correct = node.next[answer]
         val jumps = node.getPossibleJumps(q.knownVariables)
@@ -154,7 +150,6 @@ class AskNextStepQuestions(
             q.templating.process(node.next.additionalInfo(answer)?.get("nextStepExplanation")?:"")
         ))
         val q1 = SingleChoiceQuestion(
-            true,
             q.templating.process(node.additionalInfo["nextStepQuestion"]?: defaultNextStepQuestion),
             options
         )
@@ -162,15 +157,15 @@ class AskNextStepQuestions(
         return q1.ask() to node.next[answer]
     }
 
-    override fun process(node: StartNode): Pair<AnswerStatus, DecisionTreeNode?> {
-        return AnswerStatus.CORRECT to node.main
+    override fun process(node: StartNode): Pair<Boolean, DecisionTreeNode?> {
+        return true to node.main
     }
 
-    override fun process(branch: ThoughtBranch): Pair<AnswerStatus, DecisionTreeNode?> {
-        return AnswerStatus.CORRECT to branch.start
+    override fun process(branch: ThoughtBranch): Pair<Boolean, DecisionTreeNode?> {
+        return true to branch.start
     }
 
-    override fun process(node: UndeterminedResultNode): Pair<AnswerStatus, DecisionTreeNode?> {
-        return AnswerStatus.CORRECT to null
+    override fun process(node: UndeterminedResultNode): Pair<Boolean, DecisionTreeNode?> {
+        return true to null
     }
 }

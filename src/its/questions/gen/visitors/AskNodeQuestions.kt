@@ -7,32 +7,32 @@ import its.questions.gen.QuestionGenerator
 import its.questions.gen.TemplatingUtils._static.replaceAlternatives
 import its.questions.questiontypes.*
 
-class AskNodeQuestions(val q : QuestionGenerator) : DecisionTreeBehaviour<AnswerStatus> {
-    override fun process(node: BranchResultNode): AnswerStatus {
-        return AnswerStatus.CORRECT
+class AskNodeQuestions(val q : QuestionGenerator) : DecisionTreeBehaviour<Boolean> {
+    override fun process(node: BranchResultNode): Boolean {
+        return true
     }
 
-    override fun process(node: CycleAggregationNode): AnswerStatus {
+    override fun process(node: CycleAggregationNode): Boolean {
         TODO("Not yet implemented")
     }
 
-    override fun process(node: FindActionNode): AnswerStatus {
-        //TODO разобраться как задавать вопросы на развилки в действиях
-        return AnswerStatus.CORRECT
+    override fun process(node: FindActionNode): Boolean {
+        val answer = q.answers[node.additionalInfo[ALIAS_ATR]]!!
+        println("\nМы уже говорили о том, что ${q.templating.process(node.additionalInfo["explanation"]!!.replaceAlternatives(answer == "found"))}")
+        return true
     }
 
-    override fun process(node: LogicAggregationNode): AnswerStatus {
+    override fun process(node: LogicAggregationNode): Boolean {
         val answer = q.answers[node.additionalInfo[ALIAS_ATR]].toBoolean()
         val descr = q.templating.process(node.additionalInfo["description"]!!.replaceAlternatives(true))
         val q1 = SingleChoiceQuestion(
-            false,
             "Верно ли, что $descr?",
             listOf(
                 AnswerOption("Верно", answer, "Это неверно." ),
                 AnswerOption("Неверно", !answer, "Это неверно." ),)
         )
-        if(q1.ask() == AnswerStatus.CORRECT)
-            return AnswerStatus.CORRECT
+        if(q1.ask() == true)
+            return true
 
         val descrIncorrect = q.templating.process(node.additionalInfo["description"]!!.replaceAlternatives(!answer))
         val q2 = AggregationQuestion(
@@ -52,7 +52,7 @@ class AskNodeQuestions(val q : QuestionGenerator) : DecisionTreeBehaviour<Answer
 
         val incorrect = q2.ask()
         if(incorrect.isEmpty())
-            return AnswerStatus.CORRECT
+            return true
 
         val branch = Prompt(
             "Хотите ли вы разобраться подробнее?",
@@ -62,17 +62,16 @@ class AskNodeQuestions(val q : QuestionGenerator) : DecisionTreeBehaviour<Answer
             }.plus("Мне все понятно." to null)
         ).ask()
 
-        if(branch == null)
-            return AnswerStatus.INCORRECT_EXPLAINED
-        else
-            return q.process(branch, !q.answers[branch.additionalInfo[ALIAS_ATR]].toBoolean())
+        if(branch != null)
+            q.process(branch, !q.answers[branch.additionalInfo[ALIAS_ATR]].toBoolean())
+
+        return false
     }
 
-    override fun process(node: PredeterminingFactorsNode): AnswerStatus {
+    override fun process(node: PredeterminingFactorsNode): Boolean {
         val answer = q.answers[node.additionalInfo[ALIAS_ATR]]!!
         val question = q.templating.process(node.additionalInfo["question"]!!)
         val q1 = SingleChoiceQuestion(
-            false,
             question,
             node.next.info.map { AnswerOption(
                 q.templating.process(it.additionalInfo["text"]!!),
@@ -83,7 +82,7 @@ class AskNodeQuestions(val q : QuestionGenerator) : DecisionTreeBehaviour<Answer
         )
 
         val chosen = q1.askWithInfo()
-        if(chosen.first == AnswerStatus.CORRECT) return AnswerStatus.CORRECT
+        if(chosen.first == true) return true
 
         val incorrectBranch = chosen.second as ThoughtBranch?
         val correctBranch = node.next.getFull(answer)!!.decidingBranch
@@ -99,17 +98,16 @@ class AskNodeQuestions(val q : QuestionGenerator) : DecisionTreeBehaviour<Answer
             options
         ).ask()
 
-        if(branch == null)
-            return AnswerStatus.INCORRECT_EXPLAINED
-        else
-            return q.process(branch, !q.answers[branch.additionalInfo[ALIAS_ATR]].toBoolean())
+        if(branch != null)
+            q.process(branch, !q.answers[branch.additionalInfo[ALIAS_ATR]].toBoolean())
+
+        return false
     }
 
-    override fun process(node: QuestionNode): AnswerStatus {
+    override fun process(node: QuestionNode): Boolean {
         val answer = Literal.fromString(q.answers[node.additionalInfo[ALIAS_ATR]]!!, node.type, node.enumOwner)
         val question = q.templating.process(node.additionalInfo["question"]!!)
         val q1 = SingleChoiceQuestion(
-            true,
             question,
             node.next.keys.map { AnswerOption(
                 q.templating.process(node.next.additionalInfo(it)?.get("text")?:it.use(LiteralToString(q))),
@@ -121,15 +119,15 @@ class AskNodeQuestions(val q : QuestionGenerator) : DecisionTreeBehaviour<Answer
         return q1.ask()
     }
 
-    override fun process(node: StartNode): AnswerStatus {
-        return AnswerStatus.CORRECT
+    override fun process(node: StartNode): Boolean {
+        return true
     }
 
-    override fun process(branch: ThoughtBranch): AnswerStatus {
-        return AnswerStatus.CORRECT
+    override fun process(branch: ThoughtBranch): Boolean {
+        return true
     }
 
-    override fun process(node: UndeterminedResultNode): AnswerStatus {
-        return AnswerStatus.CORRECT
+    override fun process(node: UndeterminedResultNode): Boolean {
+        return true
     }
 }
