@@ -5,6 +5,7 @@ import its.model.nodes.visitors.DecisionTreeBehaviour
 
 class GetNodesLCA(val a : DecisionTreeNode, val b : DecisionTreeNode) : DecisionTreeBehaviour<Int> {
     var lca : DecisionTreeNode? = null
+    var previous : DecisionTreeNode? = null
 
     companion object _static{
         const val none_found = 0
@@ -16,6 +17,13 @@ class GetNodesLCA(val a : DecisionTreeNode, val b : DecisionTreeNode) : Decision
             val v = GetNodesLCA(a, b)
             this.use(v)
             return v.lca
+        }
+
+        @JvmStatic
+        fun DecisionTreeNode.getNodesPreLCA(a : DecisionTreeNode, b : DecisionTreeNode) : DecisionTreeNode?{
+            val v = GetNodesLCA(a, b)
+            this.use(v)
+            return v.previous
         }
     }
 
@@ -39,8 +47,12 @@ class GetNodesLCA(val a : DecisionTreeNode, val b : DecisionTreeNode) : Decision
         if(node == b)
             res = res or b_found
         node.next.values.forEach { res = res or it.getNodesLCA() }
-        if(res and a_found != 0 && res and b_found != 0 && lca == null)
-            lca = node
+        if(res and a_found != 0 && res and b_found != 0 ){
+            if(lca == null)
+                lca = node
+            else if(previous == null)
+                previous = node
+        }
         return res
     }
 
@@ -51,8 +63,12 @@ class GetNodesLCA(val a : DecisionTreeNode, val b : DecisionTreeNode) : Decision
         if(node == b)
             res = res or b_found
         node.next.values.forEach { res = res or it.getNodesLCA() }
-        if(res and a_found != 0 && res and b_found != 0 && lca == null)
-            lca = node
+        if(res and a_found != 0 && res and b_found != 0 ){
+            if(lca == null)
+                lca = node
+            else if(previous == null)
+                previous = node
+        }
         return res
     }
 
@@ -63,8 +79,12 @@ class GetNodesLCA(val a : DecisionTreeNode, val b : DecisionTreeNode) : Decision
         if(node == b)
             res = res or b_found
         node.next.values.forEach { res = res or it.getNodesLCA() }
-        if(res and a_found != 0 && res and b_found != 0 && lca == null)
-            lca = node
+        if(res and a_found != 0 && res and b_found != 0 ){
+            if(lca == null)
+                lca = node
+            else if(previous == null)
+                previous = node
+        }
         return res
     }
 
@@ -75,8 +95,12 @@ class GetNodesLCA(val a : DecisionTreeNode, val b : DecisionTreeNode) : Decision
         if(node == b)
             res = res or b_found
         node.next.values.forEach { res = res or it.getNodesLCA() }
-        if(res and a_found != 0 && res and b_found != 0 && lca == null)
-            lca = node
+        if(res and a_found != 0 && res and b_found != 0 ){
+            if(lca == null)
+                lca = node
+            else if(previous == null)
+                previous = node
+        }
         return res
     }
 
@@ -87,8 +111,12 @@ class GetNodesLCA(val a : DecisionTreeNode, val b : DecisionTreeNode) : Decision
         if(node == b)
             res = res or b_found
         node.next.values.forEach { res = res or it.getNodesLCA() }
-        if(res and a_found != 0 && res and b_found != 0 && lca == null)
-            lca = node
+        if(res and a_found != 0 && res and b_found != 0 ){
+            if(lca == null)
+                lca = node
+            else if(previous == null)
+                previous = node
+        }
         return res
     }
 
@@ -99,8 +127,12 @@ class GetNodesLCA(val a : DecisionTreeNode, val b : DecisionTreeNode) : Decision
         if(node == b)
             res = res or b_found
         res = res or node.main.getNodesLCA()
-        if(res and a_found != 0 && res and b_found != 0 && lca == null)
-            lca = node
+        if(res and a_found != 0 && res and b_found != 0 ){
+            if(lca == null)
+                lca = node
+            else if(previous == null)
+                previous = node
+        }
         return res
     }
 
@@ -111,8 +143,12 @@ class GetNodesLCA(val a : DecisionTreeNode, val b : DecisionTreeNode) : Decision
         if(branch == b)
             res = res or b_found
         res = res or branch.start.getNodesLCA()
-        if(res and a_found != 0 && res and b_found != 0 && lca == null)
-            lca = branch
+        if(res and a_found != 0 && res and b_found != 0 ){
+            if(lca == null)
+                lca = branch
+            else if(previous == null)
+                previous = branch
+        }
         return res
     }
 

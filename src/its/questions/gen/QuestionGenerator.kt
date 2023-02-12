@@ -7,6 +7,7 @@ import its.questions.fileToMap
 import its.questions.gen.TemplatingUtils._static.replaceAlternatives
 import its.questions.gen.visitors.*
 import its.questions.gen.visitors.GetNodesLCA._static.getNodesLCA
+import its.questions.gen.visitors.GetNodesLCA._static.getNodesPreLCA
 import its.questions.inputs.EntityDictionary
 import its.questions.inputs.QClassModel
 import its.questions.inputs.QVarModel
@@ -44,7 +45,8 @@ class QuestionGenerator(dir : String) {
         val considered = branch.use(GetConsideredNodes(answers))
 
         if(determineVariableValues(branch, considered) == true){
-            println("Итак, мы обсудили, почему " + branch.additionalInfo["description"]!!.replaceAlternatives(!assumedResult).process())
+            println("\nИтак, мы обсудили, почему " + branch.additionalInfo["description"]!!.replaceAlternatives(!assumedResult).process())
+            return
         }
 
         val endingSearch = GetEndingNodes(considered)
@@ -54,11 +56,20 @@ class QuestionGenerator(dir : String) {
         val q = SingleChoiceQuestion(
             "Почему вы считаете, что " + branch.additionalInfo["description"]!!.replaceAlternatives(assumedResult).process() + "?",
             endingNodes
-                .map{ AnswerOption((it.additionalInfo["endingCause"]?:"").replaceAlternatives(assumedResult).process(),it == correctEndingNode, "Это неверно. Давайте немного вернемся назад.", it) }
+                .map{ AnswerOption((it.additionalInfo["endingCause"]?:"").replaceAlternatives(assumedResult).process(),it == correctEndingNode, "Это неверно. Давайте разберемся.", it) }
         )
 
-        val answer = q.askWithInfo()
-        var askingNode : DecisionTreeNode? = if(answer.first) correctEndingNode else branch.getNodesLCA(correctEndingNode, answer.second as DecisionTreeNode)!!
+        val endingNodeAnswer = q.askWithInfo()
+        var askingNode : DecisionTreeNode? = if(endingNodeAnswer.first) correctEndingNode else branch.getNodesLCA(correctEndingNode, endingNodeAnswer.second as DecisionTreeNode)!!
+        if(askingNode != endingNodeAnswer.second){
+            val preLCA = branch.getNodesPreLCA(correctEndingNode, endingNodeAnswer.second as DecisionTreeNode)!!
+            val stepAnswer = preLCA.use(AskNextStepQuestions(this, branch)).first
+
+            if(!stepAnswer && shouldEndBranch(branch)){
+                println("\nИтак, мы обсудили, почему " + branch.additionalInfo["description"]!!.replaceAlternatives(!assumedResult).process())
+                return
+            }
+        }
         var stepAnswer : Boolean
         do{
             stepAnswer = askingNode!!.use(AskNodeQuestions(this))
@@ -75,7 +86,7 @@ class QuestionGenerator(dir : String) {
         }
         while (stepAnswer && askingNode != null)
 
-        println("Итак, мы обсудили, почему " + branch.additionalInfo["description"]!!.replaceAlternatives(!assumedResult).process())
+        println("\nИтак, мы обсудили, почему " + branch.additionalInfo["description"]!!.replaceAlternatives(!assumedResult).process())
         return
     }
 

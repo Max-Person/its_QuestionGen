@@ -167,7 +167,19 @@ class AskNextStepQuestions(
     }
 
     override fun process(branch: ThoughtBranch): Pair<Boolean, DecisionTreeNode?> {
-        return true to branch.start
+        val jumps = branch.getPossibleJumps(q.knownVariables)
+
+        val options = jumps.filter { it !is BranchResultNode}.map{AnswerOption(
+            q.templating.process(it.additionalInfo["asNextStep"]!!),
+            it == branch.start,
+            q.templating.process(branch.additionalInfo["nextStepExplanation"]?:"")
+        )}
+        val q1 = SingleChoiceQuestion(
+            q.templating.process(branch.additionalInfo["nextStepQuestion"]?: defaultNextStepQuestion),
+            options
+        )
+
+        return q1.ask() to branch.start
     }
 
     override fun process(node: UndeterminedResultNode): Pair<Boolean, DecisionTreeNode?> {

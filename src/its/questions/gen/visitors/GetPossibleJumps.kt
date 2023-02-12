@@ -23,15 +23,19 @@ class GetPossibleJumps( val knownVariables : Set<String>) : DecisionTreeBehaviou
     }
 
     override fun process(node: CycleAggregationNode): List<DecisionTreeNode> {
-        if(!knownVariables.containsAll(node.selectorExpr.accept(GetUsedVariables())))
-            return listOf()
-        return listOf(node).plus(node.next[true]!!.getPossibleJumps()).plus(node.next[false]!!.getPossibleJumps())
+        val l = mutableListOf<DecisionTreeNode>()
+        if(knownVariables.containsAll(node.selectorExpr.accept(GetUsedVariables())))
+            l.add(node)
+        node.next.values.forEach{l.addAll(it.getPossibleJumps())}
+        return l
     }
 
     override fun process(node: FindActionNode): List<DecisionTreeNode> {
-        if(!knownVariables.containsAll(node.selectorExpr.accept(GetUsedVariables())))
-            return listOf()
-        return listOf(node).plus(node.nextIfFound.getPossibleJumps()).let { if(node.nextIfNone != null) it.plus(node.nextIfNone!!.getPossibleJumps()) else it }
+        val l = mutableListOf<DecisionTreeNode>()
+        if(knownVariables.containsAll(node.selectorExpr.accept(GetUsedVariables())))
+            l.add(node)
+        node.next.values.forEach{l.addAll(it.getPossibleJumps())}
+        return l
     }
 
     override fun process(node: LogicAggregationNode): List<DecisionTreeNode> {
@@ -45,7 +49,9 @@ class GetPossibleJumps( val knownVariables : Set<String>) : DecisionTreeBehaviou
     }
 
     override fun process(node: QuestionNode): List<DecisionTreeNode> {
-        val l = mutableListOf<DecisionTreeNode>(node)
+        val l = mutableListOf<DecisionTreeNode>()
+        if(knownVariables.containsAll(node.expr.accept(GetUsedVariables())))
+            l.add(node)
         node.next.values.forEach{l.addAll(it.getPossibleJumps())}
         return l
     }
