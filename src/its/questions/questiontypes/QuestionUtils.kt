@@ -15,10 +15,10 @@ private val scanner = Scanner(System.`in`)
 
 internal fun getAnswers(): List<Int>{
     print("Ваш ответ: ")
-    val input = scanner.nextLine()
     while(true){
         try{
-            return input.split(',').map{str ->str.toInt()}
+            val input = scanner.nextLine()
+            return if(input.isBlank()) emptyList() else input.split(',').map{ str ->str.toInt()}
         }catch (e: NumberFormatException){
             print("Неверный формат ввода. Введите ответ заново: ")
         }
