@@ -24,26 +24,27 @@ class AskNextStepQuestions(
 
     override fun process(node: CycleAggregationNode): Pair<Boolean, DecisionTreeNode?> {
         val answer = q.answers[node.additionalInfo[ALIAS_ATR]].toBoolean()
+        val outcomeInfo = node.next.additionalInfo(answer)!!
         val correct = node.next[answer]
         val jumps = node.getPossibleJumps(q.knownVariables)
 
         var options = jumps.filter { it !is BranchResultNode}.map{AnswerOption(
             q.templating.process(it.additionalInfo["asNextStep"]!!),
             it == correct,
-            q.templating.process(node.next.additionalInfo(answer)?.get("nextStepExplanation")?.replaceAlternatives(answer)?:"")
+            q.templating.process(outcomeInfo["nextStepExplanation"]?.replaceAlternatives(answer)?:"")
         )}
         options = options.plus(AnswerOption(
-            "Можно заключить, что " + q.templating.process(currentBranch.additionalInfo["description"]!!.replaceAlternatives(true)),
+            (outcomeInfo["nextStepBranchResult"]?:"Можно заключить, что ${q.templating.process(currentBranch.additionalInfo["description"]!!)}").replaceAlternatives(true),
             correct is BranchResultNode && correct.value == BooleanLiteral(true),
-            q.templating.process(node.next.additionalInfo(answer)?.get("nextStepExplanation")?.replaceAlternatives(answer)?:"")
+            q.templating.process(outcomeInfo["nextStepExplanation"]?.replaceAlternatives(answer)?:"")
         )).plus(AnswerOption(
-            "Можно заключить, что " + q.templating.process(currentBranch.additionalInfo["description"]!!.replaceAlternatives(false)),
+            (outcomeInfo["nextStepBranchResult"]?:"Можно заключить, что ${q.templating.process(currentBranch.additionalInfo["description"]!!)}").replaceAlternatives(false),
             correct is BranchResultNode && correct.value == BooleanLiteral(false),
-            q.templating.process(node.next.additionalInfo(answer)?.get("nextStepExplanation")?.replaceAlternatives(answer)?:"")
+            q.templating.process(outcomeInfo["nextStepExplanation"]?.replaceAlternatives(answer)?:"")
         ))
 
         val q1 = SingleChoiceQuestion(
-            q.templating.process(node.additionalInfo["nextStepQuestion"]?.replaceAlternatives(answer)?:defaultNextStepQuestion),
+            q.templating.process(outcomeInfo["nextStepQuestion"]?.replaceAlternatives(answer)?:defaultNextStepQuestion),
             options
         )
         return q1.ask() to node.next[answer]
@@ -51,26 +52,27 @@ class AskNextStepQuestions(
 
     override fun process(node: FindActionNode): Pair<Boolean, DecisionTreeNode?> {
         val answer = q.answers[node.additionalInfo[ALIAS_ATR]]!!
+        val outcomeInfo = node.next.additionalInfo(answer)!!
         val correct = node.next[answer]
         val jumps = node.getPossibleJumps(q.knownVariables)
 
         var options = jumps.filter { it !is BranchResultNode }.map{AnswerOption(
             q.templating.process(it.additionalInfo["asNextStep"]!!),
             it == node.next[answer],
-            q.templating.process(node.next.additionalInfo(answer)?.get("nextStepExplanation")?:"")
+            q.templating.process(outcomeInfo["nextStepExplanation"]?:"")
         )}
         options = options.plus(AnswerOption(
-            "Можно заключить, что " + q.templating.process(currentBranch.additionalInfo["description"]!!.replaceAlternatives(true)),
+            (outcomeInfo["nextStepBranchResult"]?:"Можно заключить, что ${q.templating.process(currentBranch.additionalInfo["description"]!!)}").replaceAlternatives(true),
             correct is BranchResultNode && correct.value == BooleanLiteral(true),
-            q.templating.process(node.next.additionalInfo(answer)?.get("nextStepExplanation")?:"")
+            q.templating.process(outcomeInfo["nextStepExplanation"]?:"")
         )).plus(AnswerOption(
-            "Можно заключить, что " + q.templating.process(currentBranch.additionalInfo["description"]!!.replaceAlternatives(false)),
+            (outcomeInfo["nextStepBranchResult"]?:"Можно заключить, что ${q.templating.process(currentBranch.additionalInfo["description"]!!)}").replaceAlternatives(false),
             correct is BranchResultNode && correct.value == BooleanLiteral(false),
-            q.templating.process(node.next.additionalInfo(answer)?.get("nextStepExplanation")?:"")
+            q.templating.process(outcomeInfo["nextStepExplanation"]?:"")
         ))
 
         val q1 = SingleChoiceQuestion(
-            q.templating.process(node.next.additionalInfo(answer)?.get("nextStepQuestion")?: defaultNextStepQuestion),
+            q.templating.process(outcomeInfo["nextStepQuestion"]?: defaultNextStepQuestion),
             options
         )
         return q1.ask() to node.next[answer]
@@ -78,26 +80,27 @@ class AskNextStepQuestions(
 
     override fun process(node: LogicAggregationNode): Pair<Boolean, DecisionTreeNode?> {
         val answer = q.answers[node.additionalInfo[ALIAS_ATR]].toBoolean()
+        val outcomeInfo = node.next.additionalInfo(answer)!!
         val correct = node.next[answer]
         val jumps = node.getPossibleJumps(q.knownVariables)
 
         var options = jumps.filter { it !is BranchResultNode}.map{AnswerOption(
             q.templating.process(it.additionalInfo["asNextStep"]!!),
             it == correct,
-            q.templating.process(node.next.additionalInfo(answer)?.get("nextStepExplanation")?.replaceAlternatives(answer)?:"")
+            q.templating.process(outcomeInfo["nextStepExplanation"]?.replaceAlternatives(answer)?:"")
         )}
         options = options.plus(AnswerOption(
-            "Можно заключить, что " + q.templating.process(currentBranch.additionalInfo["description"]!!.replaceAlternatives(true)),
+            (outcomeInfo["nextStepBranchResult"]?:"Можно заключить, что ${q.templating.process(currentBranch.additionalInfo["description"]!!)}").replaceAlternatives(true),
             correct is BranchResultNode && correct.value == BooleanLiteral(true),
-            q.templating.process(node.next.additionalInfo(answer)?.get("nextStepExplanation")?.replaceAlternatives(answer)?:"")
+            q.templating.process(outcomeInfo["nextStepExplanation"]?.replaceAlternatives(answer)?:"")
         )).plus(AnswerOption(
-            "Можно заключить, что " + q.templating.process(currentBranch.additionalInfo["description"]!!.replaceAlternatives(false)),
+            (outcomeInfo["nextStepBranchResult"]?:"Можно заключить, что ${q.templating.process(currentBranch.additionalInfo["description"]!!)}").replaceAlternatives(false),
             correct is BranchResultNode && correct.value == BooleanLiteral(false),
-            q.templating.process(node.next.additionalInfo(answer)?.get("nextStepExplanation")?.replaceAlternatives(answer)?:"")
+            q.templating.process(outcomeInfo["nextStepExplanation"]?.replaceAlternatives(answer)?:"")
         ))
 
         val q1 = SingleChoiceQuestion(
-            q.templating.process(node.additionalInfo["nextStepQuestion"]?.replaceAlternatives(answer)?:defaultNextStepQuestion),
+            q.templating.process(outcomeInfo["nextStepQuestion"]?.replaceAlternatives(answer)?:defaultNextStepQuestion),
             options
         )
         return q1.ask() to node.next[answer]
@@ -105,26 +108,27 @@ class AskNextStepQuestions(
 
     override fun process(node: PredeterminingFactorsNode): Pair<Boolean, DecisionTreeNode?> {
         val answer = q.answers[node.additionalInfo[ALIAS_ATR]]!!
+        val outcomeInfo = node.next.additionalInfo(answer)!!
         val correct = node.next[answer]
         val jumps = node.getPossibleJumps(q.knownVariables)
 
         var options = jumps.filter { it !is BranchResultNode}.map{AnswerOption(
             q.templating.process(it.additionalInfo["asNextStep"]!!),
             it == correct,
-            q.templating.process(node.next.additionalInfo(answer)?.get("nextStepExplanation")?:"")
+            q.templating.process(outcomeInfo["nextStepExplanation"]?:"")
         )}
         options = options.plus(AnswerOption(
-            "Можно заключить, что " + q.templating.process(currentBranch.additionalInfo["description"]!!.replaceAlternatives(true)),
+            (outcomeInfo["nextStepBranchResult"]?:"Можно заключить, что ${q.templating.process(currentBranch.additionalInfo["description"]!!)}").replaceAlternatives(true),
             correct is BranchResultNode && correct.value == BooleanLiteral(true),
-            q.templating.process(node.next.additionalInfo(answer)?.get("nextStepExplanation")?:"")
+            q.templating.process(outcomeInfo["nextStepExplanation"]?:"")
         )).plus(AnswerOption(
-            "Можно заключить, что " + q.templating.process(currentBranch.additionalInfo["description"]!!.replaceAlternatives(false)),
+            (outcomeInfo["nextStepBranchResult"]?:"Можно заключить, что ${q.templating.process(currentBranch.additionalInfo["description"]!!)}").replaceAlternatives(false),
             correct is BranchResultNode && correct.value == BooleanLiteral(false),
-            q.templating.process(node.next.additionalInfo(answer)?.get("nextStepExplanation")?:"")
+            q.templating.process(outcomeInfo["nextStepExplanation"]?:"")
         ))
 
         val q1 = SingleChoiceQuestion(
-            q.templating.process(node.additionalInfo["nextStepQuestion"]?: defaultNextStepQuestion),
+            q.templating.process(outcomeInfo["nextStepQuestion"]?: defaultNextStepQuestion),
             options
         )
         return q1.ask() to node.next[answer]
@@ -132,25 +136,26 @@ class AskNextStepQuestions(
 
     override fun process(node: QuestionNode): Pair<Boolean, DecisionTreeNode?> {
         val answer = Literal.fromString(q.answers[node.additionalInfo[ALIAS_ATR]]!!, node.type, node.enumOwner)
+        val outcomeInfo = node.next.additionalInfo(answer)!!
         val correct = node.next[answer]
         val jumps = node.getPossibleJumps(q.knownVariables)
 
         var options = jumps.filter { it !is BranchResultNode}.map{AnswerOption(
             q.templating.process(it.additionalInfo["asNextStep"]!!),
             it == correct,
-            q.templating.process(node.next.additionalInfo(answer)?.get("nextStepExplanation")?:"")
+            q.templating.process(outcomeInfo["nextStepExplanation"]?:"")
         )}
         options = options.plus(AnswerOption(
-            "Можно заключить, что " + q.templating.process(currentBranch.additionalInfo["description"]!!.replaceAlternatives(true)),
+            (outcomeInfo["nextStepBranchResult"]?:"Можно заключить, что ${q.templating.process(currentBranch.additionalInfo["description"]!!)}").replaceAlternatives(true),
             correct is BranchResultNode && correct.value == BooleanLiteral(true),
-            q.templating.process(node.next.additionalInfo(answer)?.get("nextStepExplanation")?:"")
+            q.templating.process(outcomeInfo["nextStepExplanation"]?:"")
         )).plus(AnswerOption(
-            "Можно заключить, что " + q.templating.process(currentBranch.additionalInfo["description"]!!.replaceAlternatives(false)),
+            (outcomeInfo["nextStepBranchResult"]?:"Можно заключить, что ${q.templating.process(currentBranch.additionalInfo["description"]!!)}").replaceAlternatives(false),
             correct is BranchResultNode && correct.value == BooleanLiteral(false),
-            q.templating.process(node.next.additionalInfo(answer)?.get("nextStepExplanation")?:"")
+            q.templating.process(outcomeInfo["nextStepExplanation"]?:"")
         ))
         val q1 = SingleChoiceQuestion(
-            q.templating.process(node.additionalInfo["nextStepQuestion"]?: defaultNextStepQuestion),
+            q.templating.process(outcomeInfo["nextStepQuestion"]?: defaultNextStepQuestion),
             options
         )
 
