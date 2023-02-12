@@ -144,9 +144,12 @@ class QuestionGenerator(dir : String) {
             varData.valueSearchTemplate!!.process(),
             entityDictionary
                 //Выбрать объекты, которые еще не были присвоены (?) и класс которых подходит под класс искомой переменной
-                .filter { !isEntityAssigned(it.alias) && (it.clazz.name == varData.className || it.calculatedClasses.any { clazz -> clazz.name == varData.className }) }
-                .map { AnswerOption(it.specificName, it.variable == varData, it.variableErrorExplanations[varData.name]?.process()) }
-                .plus(AnswerOption("Такой ${clazz.textName} отсутствует", entityDictionary.none{it.variable == varData}, ""))
+                .filter { !isEntityAssigned(it.alias) &&
+                        (it.clazz.name == varData.className || it.calculatedClasses.any { clazz -> clazz.name == varData.className }) &&
+                        (it.variable == varData || it.variableErrorExplanations.containsKey(varName))
+                }
+                .map { AnswerOption(it.specificName, it.variable == varData, it.variableErrorExplanations[varData.name]?.process() + " Правильный ответ в данном случае - ${entityDictionary.getByVariable(varName)!!.specificName}.") }
+                .plus(AnswerOption("Такой ${clazz.textName} отсутствует", entityDictionary.none{it.variable == varData}, "Правильный ответ в данном случае - ${entityDictionary.getByVariable(varName)!!.specificName}."))
         )
     }
     //endregion
