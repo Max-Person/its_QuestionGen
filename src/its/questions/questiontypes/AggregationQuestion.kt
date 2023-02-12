@@ -48,6 +48,7 @@ class AggregationQuestion<AssocType : Any>(val text: String, val op: LogicalOp, 
                 !(op == LogicalOp.AND && result == false && option.actual() == true ) && !(op == LogicalOp.OR && result == true && option.actual() == false )}
 
         return if(incorrectOptions.isEmpty() && missedOptions.isEmpty()){
+            println("Верно.")
             emptySet()
         } else{
             if(!incorrectOptions.isEmpty())

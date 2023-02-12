@@ -26,6 +26,7 @@ class SingleChoiceQuestion(val text: String, val options : List<AnswerOption>){
         val answer = answers.single()
 
         return if(shuffle[answer-1].isTrue){
+            println("Верно.")
             true
         } else{
             if(shuffle[answer-1].explanation.isNullOrBlank())
