@@ -31,14 +31,22 @@ class AskNodeQuestions(val q : QuestionGenerator) : DecisionTreeBehaviour<Boolea
                 AnswerOption("Верно", answer, "Это неверно." ),
                 AnswerOption("Неверно", !answer, "Это неверно." ),)
         )
-        if(q1.ask() == true)
-            return true
+        /*if(q1.ask() == true)
+            return true*/
 
         val descrIncorrect = q.templating.process(node.additionalInfo["description"]!!.replaceAlternatives(!answer))
+        val fullExplanation = "${
+            q.templating.process(node.additionalInfo["description"]!!.replaceAlternatives(answer))
+        }, потому что ${
+            node.thoughtBranches
+                .filter{q.answers[it.additionalInfo[ALIAS_ATR]].toBoolean() == answer}
+                .joinToString(separator = ", ", transform = {q.templating.process(it.additionalInfo["description"]!!.replaceAlternatives(answer))})
+        }."
         val q2 = AggregationQuestion(
             "Почему вы считаете, что $descrIncorrect?",
             node.logicalOp,
             !answer,
+            "Вы верно оценили ситуацию, однако в данной ситуации $fullExplanation",
             node.thoughtBranches.map {
                 val branchAnswer = q.answers[it.additionalInfo[ALIAS_ATR]].toBoolean()
                 AggregationQuestion.AnswerOption(
@@ -52,19 +60,29 @@ class AskNodeQuestions(val q : QuestionGenerator) : DecisionTreeBehaviour<Boolea
 
         val incorrect = q2.ask()
         if(incorrect.isEmpty())
-            return true
+            return false
 
-        val branch = Prompt(
-            "Хотите ли вы разобраться подробнее?",
-            incorrect.map {
-                val branchAnswer = q.answers[it.additionalInfo[ALIAS_ATR]].toBoolean()
-                "Почему " + q.templating.process(it.additionalInfo["description"]!!.replaceAlternatives(branchAnswer)) + "?" to it
-            }.plus("Мне все понятно." to null)
-        ).ask()
+        val branch =
+            if(incorrect.size == 1){
+                val branch = incorrect.single()
+                val branchAnswer = q.answers[branch.additionalInfo[ALIAS_ATR]].toBoolean()
+                println("\nДавайте разберем, почему ${q.templating.process(branch.additionalInfo["description"]!!.replaceAlternatives(branchAnswer))}")
+                branch
+            }
+            else{
+                Prompt(
+                    "Давайте разберем одну из ошибок.",
+                    incorrect.map {
+                        val branchAnswer = q.answers[it.additionalInfo[ALIAS_ATR]].toBoolean()
+                        "Почему " + q.templating.process(it.additionalInfo["description"]!!.replaceAlternatives(branchAnswer)) + "?" to it
+                    }//.plus("Мне все понятно." to null)
+                ).ask()
+            }
 
         if(branch != null)
             q.process(branch, !q.answers[branch.additionalInfo[ALIAS_ATR]].toBoolean())
 
+        if(incorrect.isNotEmpty()) println("\nВ данной ситуации $fullExplanation")
         return false
     }
 
@@ -76,7 +94,7 @@ class AskNodeQuestions(val q : QuestionGenerator) : DecisionTreeBehaviour<Boolea
             node.next.info.map { AnswerOption(
                 q.templating.process(it.additionalInfo["text"]!!),
                 it.key == answer,
-                "Это неверно, " + q.templating.process(it.additionalInfo["explanation"]!!.replaceAlternatives(false) + ". В этой ситуации " + node.next.additionalInfo(answer)!!["explanation"]!!.replaceAlternatives(true)),
+                "Это неверно, поскольку " + q.templating.process(it.additionalInfo["explanation"]!!.replaceAlternatives(false) + ". В этой ситуации " + node.next.additionalInfo(answer)!!["explanation"]!!.replaceAlternatives(true)),
                 it.decidingBranch
             )}
         )
@@ -87,11 +105,11 @@ class AskNodeQuestions(val q : QuestionGenerator) : DecisionTreeBehaviour<Boolea
         val incorrectBranch = chosen.second as ThoughtBranch?
         val correctBranch = node.next.getFull(answer)!!.decidingBranch
         val options = mutableListOf<Pair<String, ThoughtBranch?>>()
-        if(incorrectBranch != null)
+        if(incorrectBranch != null && !incorrectBranch.isTrivial())
             options.add("Почему " + q.templating.process(incorrectBranch.additionalInfo["description"]!!.replaceAlternatives(false)) + "?" to incorrectBranch)
-        if(correctBranch != null)
+        if(correctBranch != null && !correctBranch.isTrivial())
             options.add("Почему " + q.templating.process(correctBranch.additionalInfo["description"]!!.replaceAlternatives(true)) + "?" to correctBranch)
-        options.add("Мне все понятно." to null)
+        options.add("Подробный разбор не нужен." to null)
 
         val branch = Prompt(
             "Хотите ли вы разобраться подробнее?",

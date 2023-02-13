@@ -6,7 +6,7 @@ class Prompt<Info>(val text: String, val options : List<Pair<String, Info>>){
             return options[0].second
         println()
         println(text)
-        println("(элемент управления, не является вопросом)")
+        println("(Элемент управления программой: укажите номер варианта для выбора дальнейших действий.)")
         options.forEachIndexed {i, option -> println(" ${i+1}. ${option.first}") }
 
         var answers = getAnswers()

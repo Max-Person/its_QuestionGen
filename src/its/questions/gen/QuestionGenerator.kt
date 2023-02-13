@@ -74,7 +74,7 @@ class QuestionGenerator(dir : String) {
         var stepAnswer : Boolean
         do{
             stepAnswer = askingNode!!.use(AskNodeQuestions(this))
-            if(!stepAnswer && shouldEndBranch(branch))
+            if(askingNode is LogicAggregationNode || !stepAnswer && shouldEndBranch(branch)) //FIXME сделано для демонстрации
                 break
 
             val nextStep = askingNode.use(AskNextStepQuestions(this, branch))
@@ -85,7 +85,7 @@ class QuestionGenerator(dir : String) {
                 break
 
         }
-        while (stepAnswer && askingNode != null)
+        while (askingNode != null)
 
         println("\nИтак, мы обсудили, почему " + branch.additionalInfo["description"]!!.replaceAlternatives(!assumedResult).process())
         return
