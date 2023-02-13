@@ -44,7 +44,7 @@ class TemplatingUtils(val q : QuestionGenerator) {
 
         @JvmStatic
         fun String.replaceAlternatives(condition: Boolean) : String{
-            return this.replace(Regex("\\[(.*)\\|(.*)]")){
+            return this.replace(Regex("\\{(.*)\\|(.*)}")){
                 it.groupValues[if(condition) 1 else  2]
             }.replace(Regex("\\s+"), " ")
         }

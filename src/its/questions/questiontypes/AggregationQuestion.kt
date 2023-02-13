@@ -2,7 +2,7 @@ package its.questions.questiontypes
 
 import its.model.nodes.LogicalOp
 
-class AggregationQuestion<AssocType : Any>(val text: String, val op: LogicalOp, val result: Boolean, options : List<AnswerOption<AssocType>>) {
+class AggregationQuestion<AssocType : Any>(val text: String, val op: LogicalOp, val result: Boolean, val correctExplanation : String, options : List<AnswerOption<AssocType>>) {
     val options : MutableList<AnswerOption<AssocType>>
     init{
         this.options = options.toMutableList()
@@ -32,7 +32,7 @@ class AggregationQuestion<AssocType : Any>(val text: String, val op: LogicalOp, 
     fun ask(): Set<AssocType> {
         println()
         println(text)
-        println("(Агрегирующий вопрос - укажите номер ответа с отрицанием, чтобы показать что он влияет отрицательно)")
+        println("(Агрегирующий вопрос: укажите номера факторов, влияющих на заявленный исход. Вы также можете поставить -, чтобы показать, что на исход влияет фактор, обратный представленному.)")
         options.shuffle()
         options.forEachIndexed {i, option -> println("   ${i+1}. ${option.text}") }
 
@@ -48,7 +48,7 @@ class AggregationQuestion<AssocType : Any>(val text: String, val op: LogicalOp, 
                 !(op == LogicalOp.AND && result == false && option.actual() == true ) && !(op == LogicalOp.OR && result == true && option.actual() == false )}
 
         return if(incorrectOptions.isEmpty() && missedOptions.isEmpty()){
-            println("Верно.")
+            println(correctExplanation)
             emptySet()
         } else{
             if(!incorrectOptions.isEmpty())

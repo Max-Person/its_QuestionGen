@@ -1,7 +1,7 @@
 package its.questions.questiontypes
 
 //TODO сделать большой рефакторинг
-class SingleChoiceQuestion(val text: String, val options : List<AnswerOption>){
+class SingleChoiceQuestion(val text: String, val options : List<AnswerOption>, val showCorrectExplanation: Boolean = false){
     init{
         require(options.count { it.isTrue } == 1)
     }
@@ -14,9 +14,9 @@ class SingleChoiceQuestion(val text: String, val options : List<AnswerOption>){
             return true to options.first().assocValue
         println()
         println(text)
-        println("(Вопрос с единственным вариантом ответа)")
+        println("(Вопрос с единственным вариантом ответа: укажите номер правильного, по вашему мнению, варианта)")
         val shuffle = options.shuffled()
-        shuffle.forEachIndexed {i, option -> println(" ○ ${i+1}. ${option.text}") }
+        shuffle.forEachIndexed {i, option -> println("   ${i+1}. ${option.text}") }
 
         var answers = getAnswers()
         while(answers.size != 1 || answers.any { it-1 !in shuffle.indices}){
@@ -26,7 +26,7 @@ class SingleChoiceQuestion(val text: String, val options : List<AnswerOption>){
         val answer = answers.single()
 
         return if(shuffle[answer-1].isTrue){
-            println("Верно.")
+            println(if (showCorrectExplanation) shuffle[answer-1].explanation else "Верно.")
             true
         } else{
             if(shuffle[answer-1].explanation.isNullOrBlank())

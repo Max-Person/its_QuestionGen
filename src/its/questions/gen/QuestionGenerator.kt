@@ -57,7 +57,8 @@ class QuestionGenerator(dir : String) {
         val q = SingleChoiceQuestion(
             "Почему вы считаете, что " + branch.additionalInfo["description"]!!.replaceAlternatives(assumedResult).process() + "?",
             endingNodes
-                .map{ AnswerOption((it.additionalInfo["endingCause"]?:"").replaceAlternatives(assumedResult).process(),it == correctEndingNode, "Это неверно. Давайте разберемся.", it) }
+                .map{ AnswerOption((it.additionalInfo["endingCause"]?:"").replaceAlternatives(assumedResult).process(),it == correctEndingNode, "Давайте разберемся.", it) },
+            true,
         )
 
         val endingNodeAnswer = q.askWithInfo()
@@ -74,7 +75,7 @@ class QuestionGenerator(dir : String) {
         var stepAnswer : Boolean
         do{
             stepAnswer = askingNode!!.use(AskNodeQuestions(this))
-            if(!stepAnswer && shouldEndBranch(branch))
+            if(askingNode is LogicAggregationNode || !stepAnswer && shouldEndBranch(branch)) //FIXME сделано для демонстрации
                 break
 
             val nextStep = askingNode.use(AskNextStepQuestions(this, branch))
@@ -85,7 +86,7 @@ class QuestionGenerator(dir : String) {
                 break
 
         }
-        while (stepAnswer && askingNode != null)
+        while (askingNode != null)
 
         println("\nИтак, мы обсудили, почему " + branch.additionalInfo["description"]!!.replaceAlternatives(!assumedResult).process())
         return
@@ -166,7 +167,7 @@ class QuestionGenerator(dir : String) {
                         (it.variable == varData || it.variableErrorExplanations.containsKey(varName))
                 }
                 .map { AnswerOption(it.specificName, it.variable == varData, it.variableErrorExplanations[varData.name]?.process() + " $explanation") }
-                .plus(AnswerOption("Такой ${clazz.textName} отсутствует", entityDictionary.none{it.variable == varData}, explanation))
+                .plus(AnswerOption("Такой ${clazz.textName} отсутствует", entityDictionary.none{it.variable == varData}, "Это неверно. $explanation"))
         )
     }
     //endregion
