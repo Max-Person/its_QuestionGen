@@ -3,13 +3,13 @@ package its.questions.gen.visitors
 import its.model.nodes.*
 import its.model.nodes.visitors.DecisionTreeBehaviour
 
-class GetPossibleJumps( val knownVariables : Set<String>) : DecisionTreeBehaviour<List<DecisionTreeNode>>{
+class GetPossibleJumps( val answers: Map<String, String>) : DecisionTreeBehaviour<List<DecisionTreeNode>>{
 
     companion object _static{
 
         @JvmStatic
-        fun DecisionTreeNode.getPossibleJumps(knownVariables : Set<String>) : List<DecisionTreeNode>{
-            return this.use(GetPossibleJumps(knownVariables)).filter { it != this }
+        fun DecisionTreeNode.getPossibleJumps(answers: Map<String, String>) : List<DecisionTreeNode>{
+            return this.use(GetPossibleJumps(answers)).filter { it != this }
         }
     }
 
@@ -23,18 +23,13 @@ class GetPossibleJumps( val knownVariables : Set<String>) : DecisionTreeBehaviou
     }
 
     override fun process(node: CycleAggregationNode): List<DecisionTreeNode> {
-        val l = mutableListOf<DecisionTreeNode>()
-        if(knownVariables.containsAll(node.selectorExpr.accept(GetUsedVariables())))
-            l.add(node)
-        node.next.values.forEach{l.addAll(it.getPossibleJumps())}
+        val l = mutableListOf<DecisionTreeNode>(node)
         return l
     }
 
     override fun process(node: FindActionNode): List<DecisionTreeNode> {
-        val l = mutableListOf<DecisionTreeNode>()
-        if(knownVariables.containsAll(node.selectorExpr.accept(GetUsedVariables())))
-            l.add(node)
-        node.next.values.forEach{l.addAll(it.getPossibleJumps())}
+        val l = mutableListOf<DecisionTreeNode>(node)
+        l.addAll(node.next[answers[node.additionalInfo[ALIAS_ATR]]]!!.getPossibleJumps())
         return l
     }
 
@@ -49,9 +44,7 @@ class GetPossibleJumps( val knownVariables : Set<String>) : DecisionTreeBehaviou
     }
 
     override fun process(node: QuestionNode): List<DecisionTreeNode> {
-        val l = mutableListOf<DecisionTreeNode>()
-        if(knownVariables.containsAll(node.expr.accept(GetUsedVariables())))
-            l.add(node)
+        val l = mutableListOf<DecisionTreeNode>(node)
         node.next.values.forEach{l.addAll(it.getPossibleJumps())}
         return l
     }

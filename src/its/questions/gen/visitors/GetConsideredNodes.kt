@@ -37,7 +37,7 @@ class GetConsideredNodes(val answers: Map<String, String>) : DecisionTreeBehavio
         if(node.getAnswer() == "found")
             out.addAll(node.nextIfFound.getConsideredNodes())
         else
-            out.addAll(node.nextIfFound.getConsideredNodes())
+            out.addAll(node.nextIfNone!!.getConsideredNodes())
         return out.toList()
     }
 

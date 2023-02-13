@@ -3,7 +3,7 @@ package its.questions.gen.visitors
 import its.model.nodes.*
 import its.model.nodes.visitors.DecisionTreeBehaviour
 
-class GetEndingNodes(val consideredNodes: List<DecisionTreeNode>) : DecisionTreeBehaviour<Unit> {
+class GetEndingNodes(val consideredNodes: List<DecisionTreeNode>, val answers: Map<String, String>) : DecisionTreeBehaviour<Unit> {
     val set = mutableSetOf<DecisionTreeNode>()
     lateinit var correct : DecisionTreeNode
 
@@ -22,8 +22,7 @@ class GetEndingNodes(val consideredNodes: List<DecisionTreeNode>) : DecisionTree
     }
 
     override fun process(node: FindActionNode) {
-        node.nextIfFound.getEndingNodes()
-        node.nextIfNone?.getEndingNodes()
+        node.next[answers[node.additionalInfo[ALIAS_ATR]]]!!.getEndingNodes()
         if(node.nextIfFound is BranchResultNode || node.nextIfNone is BranchResultNode)
             set.add(node)
         if(node.nextIfFound is BranchResultNode && consideredNodes.contains(node.nextIfFound) ||

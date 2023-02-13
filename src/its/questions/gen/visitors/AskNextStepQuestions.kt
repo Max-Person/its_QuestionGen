@@ -26,7 +26,7 @@ class AskNextStepQuestions(
         val answer = q.answers[node.additionalInfo[ALIAS_ATR]].toBoolean()
         val outcomeInfo = node.next.additionalInfo(answer)!!
         val correct = node.next[answer]
-        val jumps = node.getPossibleJumps(q.knownVariables)
+        val jumps = node.getPossibleJumps(q.answers)
 
         var options = jumps.filter { it !is BranchResultNode}.map{AnswerOption(
             q.templating.process(it.additionalInfo["asNextStep"]!!),
@@ -54,7 +54,7 @@ class AskNextStepQuestions(
         val answer = q.answers[node.additionalInfo[ALIAS_ATR]]!!
         val outcomeInfo = node.next.additionalInfo(answer)!!
         val correct = node.next[answer]
-        val jumps = node.getPossibleJumps(q.knownVariables)
+        val jumps = node.getPossibleJumps(q.answers)
 
         var options = jumps.filter { it !is BranchResultNode }.map{AnswerOption(
             q.templating.process(it.additionalInfo["asNextStep"]!!),
@@ -82,7 +82,7 @@ class AskNextStepQuestions(
         val answer = q.answers[node.additionalInfo[ALIAS_ATR]].toBoolean()
         val outcomeInfo = node.next.additionalInfo(answer)!!
         val correct = node.next[answer]
-        val jumps = node.getPossibleJumps(q.knownVariables)
+        val jumps = node.getPossibleJumps(q.answers)
 
         var options = jumps.filter { it !is BranchResultNode}.map{AnswerOption(
             q.templating.process(it.additionalInfo["asNextStep"]!!),
@@ -110,7 +110,7 @@ class AskNextStepQuestions(
         val answer = q.answers[node.additionalInfo[ALIAS_ATR]]!!
         val outcomeInfo = node.next.additionalInfo(answer)!!
         val correct = node.next[answer]
-        val jumps = node.getPossibleJumps(q.knownVariables)
+        val jumps = node.getPossibleJumps(q.answers)
 
         var options = jumps.filter { it !is BranchResultNode}.map{AnswerOption(
             q.templating.process(it.additionalInfo["asNextStep"]!!),
@@ -138,7 +138,7 @@ class AskNextStepQuestions(
         val answer = Literal.fromString(q.answers[node.additionalInfo[ALIAS_ATR]]!!, node.type, node.enumOwner)
         val outcomeInfo = node.next.additionalInfo(answer)!!
         val correct = node.next[answer]
-        val jumps = node.getPossibleJumps(q.knownVariables)
+        val jumps = node.getPossibleJumps(q.answers)
 
         var options = jumps.filter { it !is BranchResultNode}.map{AnswerOption(
             q.templating.process(it.additionalInfo["asNextStep"]!!),
@@ -167,7 +167,7 @@ class AskNextStepQuestions(
     }
 
     override fun process(branch: ThoughtBranch): Pair<Boolean, DecisionTreeNode?> {
-        val jumps = branch.getPossibleJumps(q.knownVariables)
+        val jumps = branch.getPossibleJumps(q.answers)
 
         val options = jumps.filter { it !is BranchResultNode}.map{AnswerOption(
             q.templating.process(it.additionalInfo["asNextStep"]!!),

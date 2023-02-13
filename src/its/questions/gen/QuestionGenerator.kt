@@ -5,6 +5,7 @@ import its.model.nodes.*
 import its.questions.addAllNew
 import its.questions.fileToMap
 import its.questions.gen.TemplatingUtils._static.replaceAlternatives
+import its.questions.gen.TemplatingUtils._static.toCase
 import its.questions.gen.visitors.*
 import its.questions.gen.visitors.GetNodesLCA._static.getNodesLCA
 import its.questions.gen.visitors.GetNodesLCA._static.getNodesPreLCA
@@ -49,7 +50,7 @@ class QuestionGenerator(dir : String) {
             return
         }
 
-        val endingSearch = GetEndingNodes(considered)
+        val endingSearch = GetEndingNodes(considered, answers)
         branch.use(endingSearch)
         val endingNodes = endingSearch.set
         val correctEndingNode = endingSearch.correct
@@ -129,7 +130,8 @@ class QuestionGenerator(dir : String) {
         order.forEach { varName ->
             val q = variableValueQuestion(varName)
             val answer = q.ask()
-            knownVariables.add(varName)
+            if(entityDictionary.getByVariable(varName) != null)
+                knownVariables.add(varName)
             if(!answer && shouldEndBranch(currentBranch))
                 return true
         }
@@ -151,6 +153,10 @@ class QuestionGenerator(dir : String) {
     private fun variableValueQuestion(varName : String) : SingleChoiceQuestion {
         val varData = (DomainModel.decisionTreeVarsDictionary.get(varName) as QVarModel)
         val clazz = DomainModel.classesDictionary.get(varData.className) as QClassModel
+        val correctEntity = entityDictionary.getByVariable(varName)
+        val explanation = if(correctEntity != null)
+            "Правильный ответ в данном случае - ${correctEntity.specificName}."
+        else "В данном случае искомого ${clazz.textName.toCase(TemplatingUtils.Case.Gen)} нет."
         return SingleChoiceQuestion(
             varData.valueSearchTemplate!!.process(),
             entityDictionary
@@ -159,8 +165,8 @@ class QuestionGenerator(dir : String) {
                         (it.clazz.name == varData.className || it.calculatedClasses.any { clazz -> clazz.name == varData.className }) &&
                         (it.variable == varData || it.variableErrorExplanations.containsKey(varName))
                 }
-                .map { AnswerOption(it.specificName, it.variable == varData, it.variableErrorExplanations[varData.name]?.process() + " Правильный ответ в данном случае - ${entityDictionary.getByVariable(varName)!!.specificName}.") }
-                .plus(AnswerOption("Такой ${clazz.textName} отсутствует", entityDictionary.none{it.variable == varData}, "Правильный ответ в данном случае - ${entityDictionary.getByVariable(varName)!!.specificName}."))
+                .map { AnswerOption(it.specificName, it.variable == varData, it.variableErrorExplanations[varData.name]?.process() + " $explanation") }
+                .plus(AnswerOption("Такой ${clazz.textName} отсутствует", entityDictionary.none{it.variable == varData}, explanation))
         )
     }
     //endregion
