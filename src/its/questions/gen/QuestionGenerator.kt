@@ -14,7 +14,6 @@ import its.questions.gen.visitors.GetEndingNodes._static.getAllEndingNodes
 import its.questions.gen.visitors.GetEndingNodes._static.getCorrectEndingNode
 import its.questions.gen.visitors.GetNodesLCA._static.getNodesLCA
 import its.questions.gen.visitors.GetNodesLCA._static.getNodesPreLCA
-import its.questions.gen.visitors.GetUsedVariables._static.getUsedVariables
 import its.questions.inputs.EntityDictionary
 import its.questions.inputs.QClassModel
 import its.questions.inputs.QVarModel
