@@ -22,7 +22,7 @@ class GetEndingNodes(val consideredNodes: List<DecisionTreeNode>, val answers: M
     }
 
     override fun process(node: FindActionNode) {
-        node.next[answers[node.additionalInfo[ALIAS_ATR]]]!!.getEndingNodes()
+        node.next[answers[node.additionalInfo[ALIAS_ATR]]?:"none"]?.getEndingNodes()
         if(node.nextIfFound is BranchResultNode || node.nextIfNone is BranchResultNode)
             set.add(node)
         if(node.nextIfFound is BranchResultNode && consideredNodes.contains(node.nextIfFound) ||

@@ -29,7 +29,9 @@ class GetPossibleJumps( val answers: Map<String, String>) : DecisionTreeBehaviou
 
     override fun process(node: FindActionNode): List<DecisionTreeNode> {
         val l = mutableListOf<DecisionTreeNode>(node)
-        l.addAll(node.next[answers[node.additionalInfo[ALIAS_ATR]]]!!.getPossibleJumps())
+        val next = node.next[answers[node.additionalInfo[ALIAS_ATR]]?:"none"]
+        if(next != null)
+            l.addAll(next.getPossibleJumps())
         return l
     }
 
