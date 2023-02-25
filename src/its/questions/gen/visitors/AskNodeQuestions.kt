@@ -5,9 +5,25 @@ import its.model.nodes.*
 import its.model.nodes.visitors.DecisionTreeBehaviour
 import its.questions.gen.QuestionGenerator
 import its.questions.gen.TemplatingUtils._static.replaceAlternatives
-import its.questions.questiontypes.*
+import its.questions.gen.visitors.LiteralToString._static.toAnswerString
+import its.questions.questiontypes.AggregationQuestion
+import its.questions.questiontypes.AnswerOption
+import its.questions.questiontypes.Prompt
+import its.questions.questiontypes.SingleChoiceQuestion
 
-class AskNodeQuestions(val q : QuestionGenerator) : DecisionTreeBehaviour<Boolean> {
+class AskNodeQuestions private constructor(val q : QuestionGenerator) : DecisionTreeBehaviour<Boolean> {
+
+    // ---------------------- Удобства ---------------------------
+
+    companion object _static{
+        @JvmStatic
+        fun DecisionTreeNode.askNodeQuestions(q : QuestionGenerator) : Boolean{
+            return this.use(AskNodeQuestions(q))
+        }
+    }
+
+    // ---------------------- Функции поведения ---------------------------
+
     override fun process(node: BranchResultNode): Boolean {
         return true
     }
@@ -128,7 +144,7 @@ class AskNodeQuestions(val q : QuestionGenerator) : DecisionTreeBehaviour<Boolea
         val q1 = SingleChoiceQuestion(
             question,
             node.next.keys.map { AnswerOption(
-                q.templating.process(node.next.additionalInfo(it)?.get("text")?:it.use(LiteralToString(q))),
+                q.templating.process(node.next.additionalInfo(it)?.get("text")?:it.toAnswerString(q)),
                 it == answer,
                 q.templating.process(node.next.additionalInfo(answer)?.get("explanation")?:""),
                 )}

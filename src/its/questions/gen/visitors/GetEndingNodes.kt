@@ -3,13 +3,33 @@ package its.questions.gen.visitors
 import its.model.nodes.*
 import its.model.nodes.visitors.DecisionTreeBehaviour
 
-class GetEndingNodes(val consideredNodes: List<DecisionTreeNode>, val answers: Map<String, String>) : DecisionTreeBehaviour<Unit> {
+class GetEndingNodes private constructor(val consideredNodes: List<DecisionTreeNode>, val answers: Map<String, String>) : DecisionTreeBehaviour<Unit> {
     val set = mutableSetOf<DecisionTreeNode>()
     lateinit var correct : DecisionTreeNode
+
+    // ---------------------- Удобства ---------------------------
+
+    companion object _static{
+        @JvmStatic
+        fun ThoughtBranch.getAllEndingNodes(consideredNodes: List<DecisionTreeNode>, answers: Map<String, String>) : Set<DecisionTreeNode>{
+            val behaviour = GetEndingNodes(consideredNodes, answers)
+            this.use(behaviour)
+            return behaviour.set
+        }
+
+        @JvmStatic
+        fun ThoughtBranch.getCorrectEndingNode(consideredNodes: List<DecisionTreeNode>, answers: Map<String, String>) : DecisionTreeNode{
+            val behaviour = GetEndingNodes(consideredNodes, answers)
+            this.use(behaviour)
+            return behaviour.correct
+        }
+    }
 
     private fun DecisionTreeNode.getEndingNodes(){
         this.use(this@GetEndingNodes)
     }
+
+    // ---------------------- Функции поведения ---------------------------
     
     override fun process(node: BranchResultNode) {}
 

@@ -3,10 +3,11 @@ package its.questions.gen.visitors
 import its.model.nodes.*
 import its.model.nodes.visitors.DecisionTreeBehaviour
 
-class GetPossibleJumps( val answers: Map<String, String>) : DecisionTreeBehaviour<List<DecisionTreeNode>>{
+class GetPossibleJumps private constructor( val answers: Map<String, String>) : DecisionTreeBehaviour<List<DecisionTreeNode>>{
+
+    // ---------------------- Удобства ---------------------------
 
     companion object _static{
-
         @JvmStatic
         fun DecisionTreeNode.getPossibleJumps(answers: Map<String, String>) : List<DecisionTreeNode>{
             return this.use(GetPossibleJumps(answers)).filter { it != this }
@@ -17,6 +18,7 @@ class GetPossibleJumps( val answers: Map<String, String>) : DecisionTreeBehaviou
         return this.use(this@GetPossibleJumps)
     }
 
+    // ---------------------- Функции поведения ---------------------------
 
     override fun process(node: BranchResultNode): List<DecisionTreeNode> {
         return listOf(node)

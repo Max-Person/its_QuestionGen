@@ -3,12 +3,17 @@ package its.questions.gen.visitors
 import its.model.expressions.Literal
 import its.model.nodes.*
 import its.model.nodes.visitors.DecisionTreeBehaviour
-import its.questions.fileToMap
 
-class GetConsideredNodes(val answers: Map<String, String>) : DecisionTreeBehaviour<List<DecisionTreeNode>> {
-    constructor(path: String) : this(fileToMap(path, ':'))
+class GetConsideredNodes private constructor(val answers: Map<String, String>) : DecisionTreeBehaviour<List<DecisionTreeNode>> {
 
-    // ---------------------- Удобство ---------------------------
+    // ---------------------- Удобства ---------------------------
+
+    companion object _static{
+        @JvmStatic
+        fun ThoughtBranch.getConsideredNodes(answers: Map<String, String>) : List<DecisionTreeNode>{
+            return this.use(GetConsideredNodes(answers))
+        }
+    }
 
     private fun DecisionTreeNode.getAnswer(): String{
         return answers[this.additionalInfo[ALIAS_ATR]!!]!!

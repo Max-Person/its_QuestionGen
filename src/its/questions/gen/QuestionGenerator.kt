@@ -7,8 +7,14 @@ import its.questions.fileToMap
 import its.questions.gen.TemplatingUtils._static.replaceAlternatives
 import its.questions.gen.TemplatingUtils._static.toCase
 import its.questions.gen.visitors.*
+import its.questions.gen.visitors.AskNextStepQuestions._static.askNextStepQuestions
+import its.questions.gen.visitors.AskNodeQuestions._static.askNodeQuestions
+import its.questions.gen.visitors.GetConsideredNodes._static.getConsideredNodes
+import its.questions.gen.visitors.GetEndingNodes._static.getAllEndingNodes
+import its.questions.gen.visitors.GetEndingNodes._static.getCorrectEndingNode
 import its.questions.gen.visitors.GetNodesLCA._static.getNodesLCA
 import its.questions.gen.visitors.GetNodesLCA._static.getNodesPreLCA
+import its.questions.gen.visitors.GetUsedVariables._static.getUsedVariables
 import its.questions.inputs.EntityDictionary
 import its.questions.inputs.QClassModel
 import its.questions.inputs.QVarModel
@@ -43,17 +49,15 @@ class QuestionGenerator(dir : String) {
     }
 
     fun process(branch: ThoughtBranch, assumedResult : Boolean){
-        val considered = branch.use(GetConsideredNodes(answers))
+        val considered = branch.getConsideredNodes(answers)
 
         if(determineVariableValues(branch, considered) == true){
             println("\nИтак, мы обсудили, почему " + branch.additionalInfo["description"]!!.replaceAlternatives(!assumedResult).process())
             return
         }
 
-        val endingSearch = GetEndingNodes(considered, answers)
-        branch.use(endingSearch)
-        val endingNodes = endingSearch.set
-        val correctEndingNode = endingSearch.correct
+        val endingNodes = branch.getAllEndingNodes(considered, answers)
+        val correctEndingNode = branch.getCorrectEndingNode(considered, answers)
         val q = SingleChoiceQuestion(
             "Почему вы считаете, что " + branch.additionalInfo["description"]!!.replaceAlternatives(assumedResult).process() + "?",
             endingNodes
@@ -65,7 +69,7 @@ class QuestionGenerator(dir : String) {
         var askingNode : DecisionTreeNode? = if(endingNodeAnswer.first) correctEndingNode else branch.getNodesLCA(correctEndingNode, endingNodeAnswer.second as DecisionTreeNode)!!
         if(askingNode != endingNodeAnswer.second){
             val preLCA = branch.getNodesPreLCA(correctEndingNode, endingNodeAnswer.second as DecisionTreeNode)!!
-            val stepAnswer = preLCA.use(AskNextStepQuestions(this, branch)).first
+            val stepAnswer = preLCA.askNextStepQuestions(this, branch).first
 
             if(!stepAnswer && shouldEndBranch(branch)){
                 println("\nИтак, мы обсудили, почему " + branch.additionalInfo["description"]!!.replaceAlternatives(!assumedResult).process())
@@ -74,11 +78,11 @@ class QuestionGenerator(dir : String) {
         }
         var stepAnswer : Boolean
         do{
-            stepAnswer = askingNode!!.use(AskNodeQuestions(this))
+            stepAnswer = askingNode!!.askNodeQuestions(this)
             if(askingNode is LogicAggregationNode || !stepAnswer && shouldEndBranch(branch)) //FIXME сделано для демонстрации
                 break
 
-            val nextStep = askingNode.use(AskNextStepQuestions(this, branch))
+            val nextStep = askingNode.askNextStepQuestions(this, branch)
             stepAnswer = nextStep.first
             askingNode = nextStep.second
 
@@ -107,7 +111,7 @@ class QuestionGenerator(dir : String) {
         val variablePrerequisites = mutableMapOf<String, Set<String>>()
         consideredNodes.forEach {
             if(it is DecisionTreeVarDeclaration){
-                variablePrerequisites[it.declaredVariable().name] = it.declarationExpression().accept(GetUsedVariables())
+                variablePrerequisites[it.declaredVariable().name] = it.declarationExpression().getUsedVariables()
             }
         }
 
@@ -115,7 +119,7 @@ class QuestionGenerator(dir : String) {
         var decidingVariables = mutableSetOf<String>()
         consideredNodes.forEach {
             if(it is QuestionNode){
-                decidingVariables.addAll(it.expr.accept(GetUsedVariables()))
+                decidingVariables.addAll(it.expr.getUsedVariables())
             }
             else if(it is FindActionNode && it.nextIfNone != null){
                 decidingVariables.add(it.variable.name)

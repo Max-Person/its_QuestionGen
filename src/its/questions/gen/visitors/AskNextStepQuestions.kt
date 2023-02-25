@@ -7,16 +7,26 @@ import its.model.nodes.visitors.DecisionTreeBehaviour
 import its.questions.gen.QuestionGenerator
 import its.questions.gen.TemplatingUtils._static.replaceAlternatives
 import its.questions.gen.visitors.GetPossibleJumps._static.getPossibleJumps
-import its.questions.questiontypes.*
+import its.questions.questiontypes.AnswerOption
+import its.questions.questiontypes.SingleChoiceQuestion
 
-class AskNextStepQuestions(
+class AskNextStepQuestions private constructor(
     val q : QuestionGenerator,
     val currentBranch : ThoughtBranch,
 ) : DecisionTreeBehaviour<Pair<Boolean, DecisionTreeNode?>> {
 
-    companion object {
+    // ---------------------- Удобства ---------------------------
+
+    companion object _static{
         const val defaultNextStepQuestion = "Какой следующий шаг необходим для решения задачи?"
+
+        @JvmStatic
+        fun DecisionTreeNode.askNextStepQuestions(q : QuestionGenerator, currentBranch : ThoughtBranch) : Pair<Boolean, DecisionTreeNode?>{
+            return this.use(AskNextStepQuestions(q, currentBranch))
+        }
     }
+
+    // ---------------------- Функции поведения ---------------------------
 
     override fun process(node: BranchResultNode): Pair<Boolean, DecisionTreeNode?> {
         return true to null

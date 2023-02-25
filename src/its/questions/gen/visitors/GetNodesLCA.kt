@@ -3,9 +3,11 @@ package its.questions.gen.visitors
 import its.model.nodes.*
 import its.model.nodes.visitors.DecisionTreeBehaviour
 
-class GetNodesLCA(val a : DecisionTreeNode, val b : DecisionTreeNode) : DecisionTreeBehaviour<Int> {
+class GetNodesLCA private constructor(val a : DecisionTreeNode, val b : DecisionTreeNode) : DecisionTreeBehaviour<Int> {
     var lca : DecisionTreeNode? = null
     var previous : DecisionTreeNode? = null
+
+    // ---------------------- Удобства ---------------------------
 
     companion object _static{
         const val none_found = 0
@@ -31,6 +33,7 @@ class GetNodesLCA(val a : DecisionTreeNode, val b : DecisionTreeNode) : Decision
         return this.use(this@GetNodesLCA)
     }
 
+    // ---------------------- Функции поведения ---------------------------
 
     override fun process(node: BranchResultNode): Int {
         if(node == a)
