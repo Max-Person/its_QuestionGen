@@ -1,9 +1,8 @@
 package its.questions.gen.visitors
 
-import its.model.expressions.Literal
 import its.model.expressions.literals.BooleanLiteral
 import its.model.nodes.*
-import its.model.nodes.visitors.DecisionTreeBehaviour
+import its.model.nodes.visitors.SimpleDecisionTreeBehaviour
 import its.questions.gen.QuestionGenerator
 import its.questions.gen.TemplatingUtils._static.replaceAlternatives
 import its.questions.gen.visitors.GetPossibleJumps._static.getPossibleJumps
@@ -13,7 +12,7 @@ import its.questions.questiontypes.SingleChoiceQuestion
 class AskNextStepQuestions private constructor(
     val q : QuestionGenerator,
     val currentBranch : ThoughtBranch,
-) : DecisionTreeBehaviour<Pair<Boolean, DecisionTreeNode?>> {
+) : SimpleDecisionTreeBehaviour<Pair<Boolean, DecisionTreeNode?>> {
 
     // ---------------------- Удобства ---------------------------
 
@@ -26,7 +25,9 @@ class AskNextStepQuestions private constructor(
         }
     }
 
-    fun <AnswerType : Any> process(node: LinkNode<AnswerType>): Pair<Boolean, DecisionTreeNode?>{
+    // ---------------------- Функции поведения ---------------------------
+
+    override fun <AnswerType : Any> process(node: LinkNode<AnswerType>): Pair<Boolean, DecisionTreeNode?>{
         val answer = node.getAnswer(q.answers)!!
         val outcomeInfo = node.next.additionalInfo(answer)!!
         val correct = node.correctNext(q.answers)
@@ -54,30 +55,8 @@ class AskNextStepQuestions private constructor(
         return q1.ask() to node.next[answer]
     }
 
-    // ---------------------- Функции поведения ---------------------------
-
     override fun process(node: BranchResultNode): Pair<Boolean, DecisionTreeNode?> {
         return true to null
-    }
-
-    override fun process(node: CycleAggregationNode): Pair<Boolean, DecisionTreeNode?> {
-        return process(node as LinkNode<Boolean>)
-    }
-
-    override fun process(node: FindActionNode): Pair<Boolean, DecisionTreeNode?> {
-        return process(node as LinkNode<String>)
-    }
-
-    override fun process(node: LogicAggregationNode): Pair<Boolean, DecisionTreeNode?> {
-        return process(node as LinkNode<Boolean>)
-    }
-
-    override fun process(node: PredeterminingFactorsNode): Pair<Boolean, DecisionTreeNode?> {
-        return process(node as LinkNode<String>)
-    }
-
-    override fun process(node: QuestionNode): Pair<Boolean, DecisionTreeNode?> {
-        return process(node as LinkNode<Literal>)
     }
 
     override fun process(node: StartNode): Pair<Boolean, DecisionTreeNode?> {

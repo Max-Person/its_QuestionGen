@@ -1,9 +1,9 @@
 package its.questions.gen.visitors
 
 import its.model.nodes.*
-import its.model.nodes.visitors.DecisionTreeBehaviour
+import its.model.nodes.visitors.SimpleDecisionTreeBehaviour
 
-class GetNodesLCA private constructor(val a : DecisionTreeNode, val b : DecisionTreeNode) : DecisionTreeBehaviour<Int> {
+class GetNodesLCA private constructor(val a : DecisionTreeNode, val b : DecisionTreeNode) : SimpleDecisionTreeBehaviour<Int> {
     var lca : DecisionTreeNode? = null
     var previous : DecisionTreeNode? = null
 
@@ -33,7 +33,9 @@ class GetNodesLCA private constructor(val a : DecisionTreeNode, val b : Decision
         return this.use(this@GetNodesLCA)
     }
 
-    fun <AnswerType : Any> process(node: LinkNode<AnswerType>): Int {
+    // ---------------------- Функции поведения ---------------------------
+
+    override fun <AnswerType : Any> process(node: LinkNode<AnswerType>): Int {
         var res = none_found
         if(node == a)
             res = res or a_found
@@ -49,34 +51,12 @@ class GetNodesLCA private constructor(val a : DecisionTreeNode, val b : Decision
         return res
     }
 
-    // ---------------------- Функции поведения ---------------------------
-
     override fun process(node: BranchResultNode): Int {
         if(node == a)
             return a_found
         if(node == b)
             return b_found
         return none_found
-    }
-
-    override fun process(node: CycleAggregationNode): Int {
-        return process(node as LinkNode<*>)
-    }
-
-    override fun process(node: FindActionNode): Int {
-        return process(node as LinkNode<*>)
-    }
-
-    override fun process(node: LogicAggregationNode): Int {
-        return process(node as LinkNode<*>)
-    }
-
-    override fun process(node: PredeterminingFactorsNode): Int {
-        return process(node as LinkNode<*>)
-    }
-
-    override fun process(node: QuestionNode): Int {
-        return process(node as LinkNode<*>)
     }
 
     override fun process(node: StartNode): Int {

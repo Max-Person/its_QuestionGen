@@ -1,9 +1,9 @@
 package its.questions.gen.visitors
 
 import its.model.nodes.*
-import its.model.nodes.visitors.DecisionTreeBehaviour
+import its.model.nodes.visitors.SimpleDecisionTreeBehaviour
 
-class GetPossibleJumps private constructor( val answers: Map<String, String>) : DecisionTreeBehaviour<List<DecisionTreeNode>>{
+class GetPossibleJumps private constructor( val answers: Map<String, String>) : SimpleDecisionTreeBehaviour<List<DecisionTreeNode>>{
 
     // ---------------------- Удобства ---------------------------
 
@@ -18,24 +18,16 @@ class GetPossibleJumps private constructor( val answers: Map<String, String>) : 
         return this.use(this@GetPossibleJumps)
     }
 
-    fun <AnswerType : Any> process(node: LinkNode<AnswerType>): List<DecisionTreeNode> {
+    // ---------------------- Функции поведения ---------------------------
+
+    override fun <AnswerType : Any> process(node: LinkNode<AnswerType>): List<DecisionTreeNode> {
         val l = mutableListOf<DecisionTreeNode>(node)
         node.next.values.forEach { l.addAll(it.getPossibleJumps()) }
         return l
     }
 
-    // ---------------------- Функции поведения ---------------------------
-
-    override fun process(node: BranchResultNode): List<DecisionTreeNode> {
-        return listOf(node)
-    }
-
-    override fun process(node: CycleAggregationNode): List<DecisionTreeNode> {
-        return process(node as LinkNode<*>)
-    }
-
     override fun process(node: FindActionNode): List<DecisionTreeNode> {
-        //Особое поведение, так как не интересуют конечные узлы, которые используют несуществующие переменные
+        //Особое поведение, так как не интересуют узлы, которые используют несуществующие переменные
         val l = mutableListOf<DecisionTreeNode>(node)
         val next = node.next[node.getAnswer(answers)?:"none"]
         if(next != null)
@@ -43,16 +35,8 @@ class GetPossibleJumps private constructor( val answers: Map<String, String>) : 
         return l
     }
 
-    override fun process(node: LogicAggregationNode): List<DecisionTreeNode> {
-        return process(node as LinkNode<*>)
-    }
-
-    override fun process(node: PredeterminingFactorsNode): List<DecisionTreeNode> {
-        return process(node as LinkNode<*>)
-    }
-
-    override fun process(node: QuestionNode): List<DecisionTreeNode> {
-        return process(node as LinkNode<*>)
+    override fun process(node: BranchResultNode): List<DecisionTreeNode> {
+        return listOf(node)
     }
 
     override fun process(node: StartNode): List<DecisionTreeNode> {

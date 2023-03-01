@@ -1,9 +1,10 @@
 package its.questions.gen.visitors
 
 import its.model.nodes.*
-import its.model.nodes.visitors.DecisionTreeBehaviour
+import its.model.nodes.visitors.SimpleDecisionTreeBehaviour
 
-class GetEndingNodes private constructor(val consideredNodes: List<DecisionTreeNode>, val answers: Map<String, String>) : DecisionTreeBehaviour<Unit> {
+class GetEndingNodes private constructor(val consideredNodes: List<DecisionTreeNode>, val answers: Map<String, String>) :
+    SimpleDecisionTreeBehaviour<Unit> {
     val set = mutableSetOf<DecisionTreeNode>()
     lateinit var correct : DecisionTreeNode
 
@@ -29,20 +30,14 @@ class GetEndingNodes private constructor(val consideredNodes: List<DecisionTreeN
         this.use(this@GetEndingNodes)
     }
 
-    fun <AnswerType : Any> process(node: LinkNode<AnswerType>) {
+    // ---------------------- Функции поведения ---------------------------
+
+    override fun <AnswerType : Any> process(node: LinkNode<AnswerType>) {
         node.next.values.forEach { it.getEndingNodes() }
         if(node.next.values.any{it is BranchResultNode})
             set.add(node)
         if(node.next.values.any{it is BranchResultNode && consideredNodes.contains(it)})
             correct = node
-    }
-
-    // ---------------------- Функции поведения ---------------------------
-    
-    override fun process(node: BranchResultNode) {}
-
-    override fun process(node: CycleAggregationNode) {
-        process(node as LinkNode<*>)
     }
 
     override fun process(node: FindActionNode) {
@@ -54,17 +49,7 @@ class GetEndingNodes private constructor(val consideredNodes: List<DecisionTreeN
             correct = node
     }
 
-    override fun process(node: LogicAggregationNode) {
-        process(node as LinkNode<*>)
-    }
-
-    override fun process(node: PredeterminingFactorsNode) {
-        process(node as LinkNode<*>)
-    }
-
-    override fun process(node: QuestionNode) {
-        process(node as LinkNode<*>)
-    }
+    override fun process(node: BranchResultNode) {}
 
     override fun process(node: StartNode) {
         node.main.getEndingNodes()

@@ -1,9 +1,10 @@
 package its.questions.gen.visitors
 
 import its.model.nodes.*
-import its.model.nodes.visitors.DecisionTreeBehaviour
+import its.model.nodes.visitors.SimpleDecisionTreeBehaviour
 
-class GetConsideredNodes private constructor(val answers: Map<String, String>) : DecisionTreeBehaviour<List<DecisionTreeNode>> {
+class GetConsideredNodes private constructor(val answers: Map<String, String>) :
+    SimpleDecisionTreeBehaviour<List<DecisionTreeNode>> {
 
     // ---------------------- Удобства ---------------------------
 
@@ -18,36 +19,16 @@ class GetConsideredNodes private constructor(val answers: Map<String, String>) :
         return this.use(this@GetConsideredNodes)
     }
 
-    fun <AnswerType : Any> process(node: LinkNode<AnswerType>): List<DecisionTreeNode>{
+    // ---------------------- Функции поведения ---------------------------
+
+    override fun <AnswerType : Any> process(node: LinkNode<AnswerType>): List<DecisionTreeNode>{
         val out = mutableListOf<DecisionTreeNode>(node)
         out.addAll(node.correctNext(answers).getConsideredNodes())
         return out.toList()
     }
 
-    // ---------------------- Функции поведения ---------------------------
-
     override fun process(node: BranchResultNode): List<DecisionTreeNode> {
         return listOf(node)
-    }
-
-    override fun process(node: CycleAggregationNode): List<DecisionTreeNode> {
-        return process(node as LinkNode<*>)
-    }
-
-    override fun process(node: FindActionNode): List<DecisionTreeNode> {
-        return process(node as LinkNode<*>)
-    }
-
-    override fun process(node: LogicAggregationNode): List<DecisionTreeNode> {
-        return process(node as LinkNode<*>)
-    }
-
-    override fun process(node: PredeterminingFactorsNode): List<DecisionTreeNode> {
-        return process(node as LinkNode<*>)
-    }
-
-    override fun process(node: QuestionNode): List<DecisionTreeNode> {
-        return process(node as LinkNode<*>)
     }
 
     override fun process(node: StartNode): List<DecisionTreeNode> {
