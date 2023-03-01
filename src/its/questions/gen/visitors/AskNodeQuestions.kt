@@ -1,6 +1,5 @@
 package its.questions.gen.visitors
 
-import its.model.expressions.Literal
 import its.model.nodes.*
 import its.model.nodes.visitors.DecisionTreeBehaviour
 import its.questions.gen.QuestionGenerator
@@ -33,13 +32,13 @@ class AskNodeQuestions private constructor(val q : QuestionGenerator) : Decision
     }
 
     override fun process(node: FindActionNode): Boolean {
-        val answer = q.answers[node.additionalInfo[ALIAS_ATR]]!!
+        val answer = node.getAnswer(q.answers)
         println("\nМы уже говорили о том, что ${q.templating.process(node.additionalInfo["explanation"]!!.replaceAlternatives(answer == "found"))}")
         return true
     }
 
     override fun process(node: LogicAggregationNode): Boolean {
-        val answer = q.answers[node.additionalInfo[ALIAS_ATR]].toBoolean()
+        val answer = node.getAnswer(q.answers)!!
         val descr = q.templating.process(node.additionalInfo["description"]!!.replaceAlternatives(true))
         val q1 = SingleChoiceQuestion(
             "Верно ли, что $descr?",
@@ -103,7 +102,7 @@ class AskNodeQuestions private constructor(val q : QuestionGenerator) : Decision
     }
 
     override fun process(node: PredeterminingFactorsNode): Boolean {
-        val answer = q.answers[node.additionalInfo[ALIAS_ATR]]!!
+        val answer = node.getAnswer(q.answers)!!
         val question = q.templating.process(node.additionalInfo["question"]!!)
         val q1 = SingleChoiceQuestion(
             question,
@@ -139,7 +138,7 @@ class AskNodeQuestions private constructor(val q : QuestionGenerator) : Decision
     }
 
     override fun process(node: QuestionNode): Boolean {
-        val answer = Literal.fromString(q.answers[node.additionalInfo[ALIAS_ATR]]!!, node.type, node.enumOwner)
+        val answer = node.getAnswer(q.answers)!!
         val question = q.templating.process(node.additionalInfo["question"]!!)
         val q1 = SingleChoiceQuestion(
             question,

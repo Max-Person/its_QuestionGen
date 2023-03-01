@@ -1,6 +1,5 @@
 package its.questions.gen.visitors
 
-import its.model.expressions.Literal
 import its.model.nodes.*
 import its.model.nodes.visitors.DecisionTreeBehaviour
 
@@ -15,12 +14,14 @@ class GetConsideredNodes private constructor(val answers: Map<String, String>) :
         }
     }
 
-    private fun DecisionTreeNode.getAnswer(): String{
-        return answers[this.additionalInfo[ALIAS_ATR]!!]!!
-    }
-
     private fun DecisionTreeNode.getConsideredNodes(): List<DecisionTreeNode>{
         return this.use(this@GetConsideredNodes)
+    }
+
+    fun <AnswerType : Any> process(node: LinkNode<AnswerType>): List<DecisionTreeNode>{
+        val out = mutableListOf<DecisionTreeNode>(node)
+        out.addAll(node.correctNext(answers).getConsideredNodes())
+        return out.toList()
     }
 
     // ---------------------- Функции поведения ---------------------------
@@ -30,39 +31,23 @@ class GetConsideredNodes private constructor(val answers: Map<String, String>) :
     }
 
     override fun process(node: CycleAggregationNode): List<DecisionTreeNode> {
-        val out = mutableListOf<DecisionTreeNode>(node)
-        //TODO для разных значений цикла
-        // out.addAll(node.thoughtBranch.consideredChildren())
-        out.addAll(node.next[node.getAnswer().toBoolean()]!!.getConsideredNodes())
-        return out.toList()
+        return process(node as LinkNode<*>)
     }
 
     override fun process(node: FindActionNode): List<DecisionTreeNode> {
-        val out = mutableListOf<DecisionTreeNode>(node)
-        if(node.getAnswer() == "found")
-            out.addAll(node.nextIfFound.getConsideredNodes())
-        else
-            out.addAll(node.nextIfNone!!.getConsideredNodes())
-        return out.toList()
+        return process(node as LinkNode<*>)
     }
 
     override fun process(node: LogicAggregationNode): List<DecisionTreeNode> {
-        val out = mutableListOf<DecisionTreeNode>(node)
-        //node.thoughtBranches.forEach{out.addAll(it.getConsideredNodes())}
-        out.addAll(node.next[node.getAnswer().toBoolean()]!!.getConsideredNodes())
-        return out.toList()
+        return process(node as LinkNode<*>)
     }
 
     override fun process(node: PredeterminingFactorsNode): List<DecisionTreeNode> {
-        val out = mutableListOf<DecisionTreeNode>(node)
-        out.addAll(node.next[node.getAnswer()]!!.getConsideredNodes())
-        return out.toList()
+        return process(node as LinkNode<*>)
     }
 
     override fun process(node: QuestionNode): List<DecisionTreeNode> {
-        val out = mutableListOf<DecisionTreeNode>(node)
-        out.addAll(node.next[Literal.fromString(node.getAnswer(), node.type, node.enumOwner)]!!.getConsideredNodes())
-        return out.toList()
+        return process(node as LinkNode<*>)
     }
 
     override fun process(node: StartNode): List<DecisionTreeNode> {

@@ -29,49 +29,41 @@ class GetEndingNodes private constructor(val consideredNodes: List<DecisionTreeN
         this.use(this@GetEndingNodes)
     }
 
+    fun <AnswerType : Any> process(node: LinkNode<AnswerType>) {
+        node.next.values.forEach { it.getEndingNodes() }
+        if(node.next.values.any{it is BranchResultNode})
+            set.add(node)
+        if(node.next.values.any{it is BranchResultNode && consideredNodes.contains(it)})
+            correct = node
+    }
+
     // ---------------------- Функции поведения ---------------------------
     
     override fun process(node: BranchResultNode) {}
 
     override fun process(node: CycleAggregationNode) {
-        node.next.values.forEach { it.getEndingNodes() }
-        if(node.next.values.any{it is BranchResultNode})
-            set.add(node)
-        if(node.next.values.any{it is BranchResultNode && consideredNodes.contains(it)})
-            correct = node
+        process(node as LinkNode<*>)
     }
 
     override fun process(node: FindActionNode) {
-        node.next[answers[node.additionalInfo[ALIAS_ATR]]?:"none"]?.getEndingNodes()
+        //Особое поведение, так как не интересуют конечные узлы, которые используют несуществующие переменные
+        node.next[node.getAnswer(answers)?:"none"]?.getEndingNodes()
         if(node.nextIfFound is BranchResultNode || node.nextIfNone is BranchResultNode)
             set.add(node)
-        if(node.nextIfFound is BranchResultNode && consideredNodes.contains(node.nextIfFound) ||
-            node.nextIfNone is BranchResultNode && consideredNodes.contains(node.nextIfNone) )
+        if(node.next.values.any{it is BranchResultNode && consideredNodes.contains(it)})
             correct = node
     }
 
     override fun process(node: LogicAggregationNode) {
-        node.next.values.forEach { it.getEndingNodes() }
-        if(node.next.values.any{it is BranchResultNode})
-            set.add(node)
-        if(node.next.values.any{it is BranchResultNode && consideredNodes.contains(it)})
-            correct = node
+        process(node as LinkNode<*>)
     }
 
     override fun process(node: PredeterminingFactorsNode) {
-        node.next.values.forEach { it.getEndingNodes() }
-        if(node.next.values.any{it is BranchResultNode})
-            set.add(node)
-        if(node.next.values.any{it is BranchResultNode && consideredNodes.contains(it)})
-            correct = node
+        process(node as LinkNode<*>)
     }
 
     override fun process(node: QuestionNode) {
-        node.next.values.forEach { it.getEndingNodes() }
-        if(node.next.values.any{it is BranchResultNode})
-            set.add(node)
-        if(node.next.values.any{it is BranchResultNode && consideredNodes.contains(it)})
-            correct = node
+        process(node as LinkNode<*>)
     }
 
     override fun process(node: StartNode) {

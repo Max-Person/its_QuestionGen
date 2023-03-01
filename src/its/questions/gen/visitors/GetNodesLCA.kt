@@ -33,6 +33,22 @@ class GetNodesLCA private constructor(val a : DecisionTreeNode, val b : Decision
         return this.use(this@GetNodesLCA)
     }
 
+    fun <AnswerType : Any> process(node: LinkNode<AnswerType>): Int {
+        var res = none_found
+        if(node == a)
+            res = res or a_found
+        if(node == b)
+            res = res or b_found
+        node.next.values.forEach { res = res or it.getNodesLCA() }
+        if(res and a_found != 0 && res and b_found != 0 ){
+            if(lca == null)
+                lca = node
+            else if(previous == null)
+                previous = node
+        }
+        return res
+    }
+
     // ---------------------- Функции поведения ---------------------------
 
     override fun process(node: BranchResultNode): Int {
@@ -44,83 +60,23 @@ class GetNodesLCA private constructor(val a : DecisionTreeNode, val b : Decision
     }
 
     override fun process(node: CycleAggregationNode): Int {
-        var res = none_found
-        if(node == a)
-            res = res or a_found
-        if(node == b)
-            res = res or b_found
-        node.next.values.forEach { res = res or it.getNodesLCA() }
-        if(res and a_found != 0 && res and b_found != 0 ){
-            if(lca == null)
-                lca = node
-            else if(previous == null)
-                previous = node
-        }
-        return res
+        return process(node as LinkNode<*>)
     }
 
     override fun process(node: FindActionNode): Int {
-        var res = none_found
-        if(node == a)
-            res = res or a_found
-        if(node == b)
-            res = res or b_found
-        node.next.values.forEach { res = res or it.getNodesLCA() }
-        if(res and a_found != 0 && res and b_found != 0 ){
-            if(lca == null)
-                lca = node
-            else if(previous == null)
-                previous = node
-        }
-        return res
+        return process(node as LinkNode<*>)
     }
 
     override fun process(node: LogicAggregationNode): Int {
-        var res = none_found
-        if(node == a)
-            res = res or a_found
-        if(node == b)
-            res = res or b_found
-        node.next.values.forEach { res = res or it.getNodesLCA() }
-        if(res and a_found != 0 && res and b_found != 0 ){
-            if(lca == null)
-                lca = node
-            else if(previous == null)
-                previous = node
-        }
-        return res
+        return process(node as LinkNode<*>)
     }
 
     override fun process(node: PredeterminingFactorsNode): Int {
-        var res = none_found
-        if(node == a)
-            res = res or a_found
-        if(node == b)
-            res = res or b_found
-        node.next.values.forEach { res = res or it.getNodesLCA() }
-        if(res and a_found != 0 && res and b_found != 0 ){
-            if(lca == null)
-                lca = node
-            else if(previous == null)
-                previous = node
-        }
-        return res
+        return process(node as LinkNode<*>)
     }
 
     override fun process(node: QuestionNode): Int {
-        var res = none_found
-        if(node == a)
-            res = res or a_found
-        if(node == b)
-            res = res or b_found
-        node.next.values.forEach { res = res or it.getNodesLCA() }
-        if(res and a_found != 0 && res and b_found != 0 ){
-            if(lca == null)
-                lca = node
-            else if(previous == null)
-                previous = node
-        }
-        return res
+        return process(node as LinkNode<*>)
     }
 
     override fun process(node: StartNode): Int {

@@ -18,6 +18,12 @@ class GetPossibleJumps private constructor( val answers: Map<String, String>) : 
         return this.use(this@GetPossibleJumps)
     }
 
+    fun <AnswerType : Any> process(node: LinkNode<AnswerType>): List<DecisionTreeNode> {
+        val l = mutableListOf<DecisionTreeNode>(node)
+        node.next.values.forEach { l.addAll(it.getPossibleJumps()) }
+        return l
+    }
+
     // ---------------------- Функции поведения ---------------------------
 
     override fun process(node: BranchResultNode): List<DecisionTreeNode> {
@@ -25,32 +31,28 @@ class GetPossibleJumps private constructor( val answers: Map<String, String>) : 
     }
 
     override fun process(node: CycleAggregationNode): List<DecisionTreeNode> {
-        val l = mutableListOf<DecisionTreeNode>(node)
-        return l
+        return process(node as LinkNode<*>)
     }
 
     override fun process(node: FindActionNode): List<DecisionTreeNode> {
+        //Особое поведение, так как не интересуют конечные узлы, которые используют несуществующие переменные
         val l = mutableListOf<DecisionTreeNode>(node)
-        val next = node.next[answers[node.additionalInfo[ALIAS_ATR]]?:"none"]
+        val next = node.next[node.getAnswer(answers)?:"none"]
         if(next != null)
             l.addAll(next.getPossibleJumps())
         return l
     }
 
     override fun process(node: LogicAggregationNode): List<DecisionTreeNode> {
-        return listOf(node).plus(node.next[true]!!.getPossibleJumps()).plus(node.next[false]!!.getPossibleJumps())
+        return process(node as LinkNode<*>)
     }
 
     override fun process(node: PredeterminingFactorsNode): List<DecisionTreeNode> {
-        val l = mutableListOf<DecisionTreeNode>(node)
-        node.next.values.forEach{l.addAll(it.getPossibleJumps())}
-        return l
+        return process(node as LinkNode<*>)
     }
 
     override fun process(node: QuestionNode): List<DecisionTreeNode> {
-        val l = mutableListOf<DecisionTreeNode>(node)
-        node.next.values.forEach{l.addAll(it.getPossibleJumps())}
-        return l
+        return process(node as LinkNode<*>)
     }
 
     override fun process(node: StartNode): List<DecisionTreeNode> {
@@ -62,6 +64,6 @@ class GetPossibleJumps private constructor( val answers: Map<String, String>) : 
     }
 
     override fun process(node: UndeterminedResultNode): List<DecisionTreeNode> {
-        return listOf<DecisionTreeNode>()
+        return listOf()
     }
 }
