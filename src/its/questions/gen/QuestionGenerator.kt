@@ -1,12 +1,15 @@
 package its.questions.gen
 
+import com.github.max_person.templating.InterpretationData
 import its.model.DomainModel
 import its.model.nodes.*
 import its.questions.addAllNew
 import its.questions.fileToMap
-import its.questions.gen.TemplatingUtils._static.replaceAlternatives
+import its.questions.gen.TemplatingUtils._static.description
+import its.questions.gen.TemplatingUtils._static.endingCause
+import its.questions.gen.TemplatingUtils._static.interpret
 import its.questions.gen.TemplatingUtils._static.toCase
-import its.questions.gen.visitors.*
+import its.questions.gen.visitors.ALIAS_ATR
 import its.questions.gen.visitors.AskNextStepQuestions._static.askNextStepQuestions
 import its.questions.gen.visitors.AskNodeQuestions._static.askNodeQuestions
 import its.questions.gen.visitors.GetConsideredNodes._static.getConsideredNodes
@@ -14,6 +17,7 @@ import its.questions.gen.visitors.GetEndingNodes._static.getAllEndingNodes
 import its.questions.gen.visitors.GetEndingNodes._static.getCorrectEndingNode
 import its.questions.gen.visitors.GetNodesLCA._static.getNodesLCA
 import its.questions.gen.visitors.GetNodesLCA._static.getNodesPreLCA
+import its.questions.gen.visitors.getUsedVariables
 import its.questions.inputs.EntityDictionary
 import its.questions.inputs.QClassModel
 import its.questions.inputs.QVarModel
@@ -27,10 +31,8 @@ class QuestionGenerator(dir : String) {
     internal val answers: Map<String, String>
     internal val knownVariables = mutableSetOf<String>()
 
-    val templating = TemplatingUtils(this)
-    private fun String.process() : String {
-        return templating.process(this)
-    }
+    private val templatingUtils = TemplatingUtils(this)
+    val templating = InterpretationData().withGlobalObj(templatingUtils).withParser(TemplatingUtils.templatingParser)
 
     init{
         require(DomainModel.usesQDictionaries())
@@ -51,16 +53,16 @@ class QuestionGenerator(dir : String) {
         val considered = branch.getConsideredNodes(answers)
 
         if(determineVariableValues(branch, considered) == true){
-            println("\nИтак, мы обсудили, почему " + branch.additionalInfo["description"]!!.replaceAlternatives(!assumedResult).process())
+            println("\nИтак, мы обсудили, почему " + branch.description(templating, !assumedResult))
             return
         }
 
         val endingNodes = branch.getAllEndingNodes(considered, answers)
         val correctEndingNode = branch.getCorrectEndingNode(considered, answers)
         val q = SingleChoiceQuestion(
-            "Почему вы считаете, что " + branch.additionalInfo["description"]!!.replaceAlternatives(assumedResult).process() + "?",
+            "Почему вы считаете, что " + branch.description(templating, assumedResult) + "?",
             endingNodes
-                .map{ AnswerOption((it.additionalInfo["endingCause"]?:"").replaceAlternatives(assumedResult).process(),it == correctEndingNode, "Давайте разберемся.", it) },
+                .map{ AnswerOption(it.endingCause(templating),it == correctEndingNode, "Давайте разберемся.", it) },
             true,
         )
 
@@ -71,7 +73,7 @@ class QuestionGenerator(dir : String) {
             val stepAnswer = preLCA.askNextStepQuestions(this, branch).first
 
             if(!stepAnswer && shouldEndBranch(branch)){
-                println("\nИтак, мы обсудили, почему " + branch.additionalInfo["description"]!!.replaceAlternatives(!assumedResult).process())
+                println("\nИтак, мы обсудили, почему " + branch.description(templating, !assumedResult))
                 return
             }
         }
@@ -91,14 +93,14 @@ class QuestionGenerator(dir : String) {
         }
         while (askingNode != null)
 
-        println("\nИтак, мы обсудили, почему " + branch.additionalInfo["description"]!!.replaceAlternatives(!assumedResult).process())
+        println("\nИтак, мы обсудили, почему " + branch.description(templating, !assumedResult))
         return
     }
 
     private fun shouldEndBranch(currentBranch : ThoughtBranch) : Boolean{
         val branchAnswer = answers[currentBranch.additionalInfo[ALIAS_ATR]].toBoolean()
         return Prompt(
-            "Понятно ли вам, почему " + currentBranch.additionalInfo["description"]!!.replaceAlternatives(branchAnswer).process() + "?",
+            "Понятно ли вам, почему " + currentBranch.description(templating, branchAnswer) + "?",
             listOf("Да" to true, "Нет, продолжить рассматривать дальше" to false)
         ).ask()
     }
@@ -162,14 +164,14 @@ class QuestionGenerator(dir : String) {
             "Правильный ответ в данном случае - ${correctEntity.specificName}."
         else "В данном случае искомого ${clazz.textName.toCase(TemplatingUtils.Case.Gen)} нет."
         return SingleChoiceQuestion(
-            varData.valueSearchTemplate!!.process(),
+            varData.valueSearchTemplate!!.interpret(templating), //TODO переделать это не через словарь а через узел
             entityDictionary
                 //Выбрать объекты, которые еще не были присвоены (?) и класс которых подходит под класс искомой переменной
                 .filter { !isEntityAssigned(it.alias) &&
                         (it.clazz.name == varData.className || it.calculatedClasses.any { clazz -> clazz.name == varData.className }) &&
                         (it.variable == varData || it.variableErrorExplanations.containsKey(varName))
                 }
-                .map { AnswerOption(it.specificName, it.variable == varData, it.variableErrorExplanations[varData.name]?.process() + " $explanation") }
+                .map { AnswerOption(it.specificName, it.variable == varData, it.variableErrorExplanations[varData.name]?.interpret(templating) + " $explanation") }
                 .plus(AnswerOption("Такой ${clazz.textName} отсутствует", entityDictionary.none{it.variable == varData}, "Это неверно. $explanation"))
         )
     }

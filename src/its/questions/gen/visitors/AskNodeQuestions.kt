@@ -3,7 +3,10 @@ package its.questions.gen.visitors
 import its.model.nodes.*
 import its.model.nodes.visitors.DecisionTreeBehaviour
 import its.questions.gen.QuestionGenerator
-import its.questions.gen.TemplatingUtils._static.replaceAlternatives
+import its.questions.gen.TemplatingUtils._static.description
+import its.questions.gen.TemplatingUtils._static.explanation
+import its.questions.gen.TemplatingUtils._static.question
+import its.questions.gen.TemplatingUtils._static.text
 import its.questions.gen.visitors.LiteralToString._static.toAnswerString
 import its.questions.questiontypes.AggregationQuestion
 import its.questions.questiontypes.AnswerOption
@@ -33,13 +36,13 @@ class AskNodeQuestions private constructor(val q : QuestionGenerator) : Decision
 
     override fun process(node: FindActionNode): Boolean {
         val answer = node.getAnswer(q.answers)
-        println("\nМы уже говорили о том, что ${q.templating.process(node.additionalInfo["explanation"]!!.replaceAlternatives(answer == "found"))}")
+        println("\nМы уже говорили о том, что ${node.explanation(q.templating, answer == "found")}")
         return true
     }
 
     override fun process(node: LogicAggregationNode): Boolean {
         val answer = node.getAnswer(q.answers)!!
-        val descr = q.templating.process(node.additionalInfo["description"]!!.replaceAlternatives(true))
+        val descr = node.description(q.templating, true)
         val q1 = SingleChoiceQuestion(
             "Верно ли, что $descr?",
             listOf(
@@ -49,13 +52,13 @@ class AskNodeQuestions private constructor(val q : QuestionGenerator) : Decision
         /*if(q1.ask() == true)
             return true*/
 
-        val descrIncorrect = q.templating.process(node.additionalInfo["description"]!!.replaceAlternatives(!answer))
+        val descrIncorrect = node.description(q.templating, !answer)
         val fullExplanation = "${
-            q.templating.process(node.additionalInfo["description"]!!.replaceAlternatives(answer))
+            node.description(q.templating, answer)
         }, потому что ${
             node.thoughtBranches
                 .filter{q.answers[it.additionalInfo[ALIAS_ATR]].toBoolean() == answer}
-                .joinToString(separator = ", ", transform = {q.templating.process(it.additionalInfo["description"]!!.replaceAlternatives(answer))})
+                .joinToString(separator = ", ", transform = {it.description(q.templating, answer)})
         }."
         val q2 = AggregationQuestion(
             "Почему вы считаете, что $descrIncorrect?",
@@ -66,9 +69,9 @@ class AskNodeQuestions private constructor(val q : QuestionGenerator) : Decision
                 val branchAnswer = q.answers[it.additionalInfo[ALIAS_ATR]].toBoolean()
                 AggregationQuestion.AnswerOption(
                     it,
-                    q.templating.process(it.additionalInfo["description"]!!.replaceAlternatives(true)),
+                    it.description(q.templating, true),
                     branchAnswer,
-                    q.templating.process(it.additionalInfo["description"]!!.replaceAlternatives(branchAnswer)),
+                    it.description(q.templating, branchAnswer),
                     )
             }
         )
@@ -81,7 +84,7 @@ class AskNodeQuestions private constructor(val q : QuestionGenerator) : Decision
             if(incorrect.size == 1){
                 val branch = incorrect.single()
                 val branchAnswer = q.answers[branch.additionalInfo[ALIAS_ATR]].toBoolean()
-                println("\nДавайте разберем, почему ${q.templating.process(branch.additionalInfo["description"]!!.replaceAlternatives(branchAnswer))}")
+                println("\nДавайте разберем, почему ${branch.description(q.templating, branchAnswer)}")
                 branch
             }
             else{
@@ -89,7 +92,7 @@ class AskNodeQuestions private constructor(val q : QuestionGenerator) : Decision
                     "Давайте разберем одну из ошибок.",
                     incorrect.map {
                         val branchAnswer = q.answers[it.additionalInfo[ALIAS_ATR]].toBoolean()
-                        "Почему " + q.templating.process(it.additionalInfo["description"]!!.replaceAlternatives(branchAnswer)) + "?" to it
+                        "Почему ${it.description(q.templating, branchAnswer)}?" to it
                     }//.plus("Мне все понятно." to null)
                 ).ask()
             }
@@ -103,13 +106,14 @@ class AskNodeQuestions private constructor(val q : QuestionGenerator) : Decision
 
     override fun process(node: PredeterminingFactorsNode): Boolean {
         val answer = node.getAnswer(q.answers)!!
-        val question = q.templating.process(node.additionalInfo["question"]!!)
+        val question = node.question(q.templating)
+        val correctOutcome = node.next.info.first { it.key == answer } //TODO возможно стоит изменить систему Outcomes чтобы вот такие конструкции были проще
         val q1 = SingleChoiceQuestion(
             question,
             node.next.info.map { AnswerOption(
-                q.templating.process(it.additionalInfo["text"]!!),
-                it.key == answer,
-                "Это неверно, поскольку " + q.templating.process(it.additionalInfo["explanation"]!!.replaceAlternatives(false) + ". В этой ситуации " + node.next.additionalInfo(answer)!!["explanation"]!!.replaceAlternatives(true)),
+                it.text(q.templating)!!,
+                it == correctOutcome,
+                "Это неверно, поскольку ${it.explanation(q.templating, false)}. В этой ситуации ${correctOutcome.explanation(q.templating, true)}",
                 it.decidingBranch
             )}
         )
@@ -121,9 +125,9 @@ class AskNodeQuestions private constructor(val q : QuestionGenerator) : Decision
         val correctBranch = node.next.getFull(answer)!!.decidingBranch
         val options = mutableListOf<Pair<String, ThoughtBranch?>>()
         if(incorrectBranch != null && !incorrectBranch.isTrivial())
-            options.add("Почему " + q.templating.process(incorrectBranch.additionalInfo["description"]!!.replaceAlternatives(false)) + "?" to incorrectBranch)
+            options.add("Почему ${incorrectBranch.description(q.templating, false)}?" to incorrectBranch)
         if(correctBranch != null && !correctBranch.isTrivial())
-            options.add("Почему " + q.templating.process(correctBranch.additionalInfo["description"]!!.replaceAlternatives(true)) + "?" to correctBranch)
+            options.add("Почему ${correctBranch.description(q.templating, true)}?" to correctBranch)
         options.add("Подробный разбор не нужен." to null)
 
         val branch = Prompt(
@@ -139,13 +143,14 @@ class AskNodeQuestions private constructor(val q : QuestionGenerator) : Decision
 
     override fun process(node: QuestionNode): Boolean {
         val answer = node.getAnswer(q.answers)!!
-        val question = q.templating.process(node.additionalInfo["question"]!!)
+        val question = node.question(q.templating)
+        val correctOutcome = node.next.info.first { it.key == answer } //TODO возможно стоит изменить систему Outcomes чтобы вот такие конструкции были проще
         val q1 = SingleChoiceQuestion(
             question,
-            node.next.keys.map { AnswerOption(
-                q.templating.process(node.next.additionalInfo(it)?.get("text")?:it.toAnswerString(q)),
-                it == answer,
-                q.templating.process(node.next.additionalInfo(answer)?.get("explanation")?:""),
+            node.next.info.map { AnswerOption(
+                it.text(q.templating)?:it.key.toAnswerString(q),
+                it == correctOutcome,
+                correctOutcome.explanation(q.templating),
                 )}
         )
 
