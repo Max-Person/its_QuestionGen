@@ -5,12 +5,12 @@ import its.model.expressions.Literal
 import its.model.expressions.literals.*
 import its.model.expressions.types.ComparisonResult
 import its.model.expressions.visitors.LiteralBehaviour
-import its.questions.gen.QuestionGenerator
+import its.questions.gen.states.ILearningSituation
 import its.questions.inputs.QClassModel
 import its.questions.inputs.QEnumModel
 import its.questions.inputs.usesQDictionaries
 
-class LiteralToString private constructor(val q: QuestionGenerator) : LiteralBehaviour<String> {
+class LiteralToString private constructor(val q: ILearningSituation) : LiteralBehaviour<String> {
     init {
         require(DomainModel.usesQDictionaries())
     }
@@ -19,7 +19,7 @@ class LiteralToString private constructor(val q: QuestionGenerator) : LiteralBeh
 
     companion object _static{
         @JvmStatic
-        fun Literal.toAnswerString(q: QuestionGenerator) : String{
+        fun Literal.toAnswerString(q: ILearningSituation) : String{
             return this.use(LiteralToString(q))
         }
     }

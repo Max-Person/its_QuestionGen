@@ -5,9 +5,10 @@ import com.github.drapostolos.typeparser.TypeParser
 import com.github.max_person.templating.InterpretationData
 import com.github.max_person.templating.TemplatingSafeMethod
 import its.model.nodes.*
+import its.questions.gen.states.ILearningSituation
 import padeg.lib.Padeg
 
-class TemplatingUtils(val q : QuestionGenerator) {
+class TemplatingUtils(val q : ILearningSituation) {
     enum class Case{
         Nom, //именительный (кто? что?)
         Gen, //родительный (кого? чего?)

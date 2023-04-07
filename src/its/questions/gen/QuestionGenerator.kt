@@ -9,6 +9,7 @@ import its.questions.gen.TemplatingUtils._static.description
 import its.questions.gen.TemplatingUtils._static.endingCause
 import its.questions.gen.TemplatingUtils._static.interpret
 import its.questions.gen.TemplatingUtils._static.toCase
+import its.questions.gen.states.ILearningSituation
 import its.questions.gen.visitors.ALIAS_ATR
 import its.questions.gen.visitors.AskNextStepQuestions._static.askNextStepQuestions
 import its.questions.gen.visitors.AskNodeQuestions._static.askNodeQuestions
@@ -26,13 +27,14 @@ import its.questions.questiontypes.AnswerOption
 import its.questions.questiontypes.Prompt
 import its.questions.questiontypes.SingleChoiceQuestion
 
-class QuestionGenerator(dir : String) {
-    internal val entityDictionary : EntityDictionary = EntityDictionary()
-    internal val answers: Map<String, String>
+class QuestionGenerator(dir : String) : ILearningSituation {
+    override val entityDictionary : EntityDictionary = EntityDictionary()
+    override val answers: Map<String, String>
     internal val knownVariables = mutableSetOf<String>()
+    override val questioningInfo = mutableMapOf<String, String>()
 
     private val templatingUtils = TemplatingUtils(this)
-    val templating = InterpretationData().withGlobalObj(templatingUtils).withParser(TemplatingUtils.templatingParser)
+    override val templating = InterpretationData().withGlobalObj(templatingUtils).withParser(TemplatingUtils.templatingParser)
 
     init{
         require(DomainModel.usesQDictionaries())

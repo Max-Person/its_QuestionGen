@@ -28,6 +28,11 @@ internal fun <AnswerType : Any> LinkNode<AnswerType>.getAnswer(answers : Map<Str
     }
 }
 
+internal fun ThoughtBranch.getAnswer(answers : Map<String, String>): Boolean?{
+    val strAnswer = answers[this.additionalInfo[ALIAS_ATR]!!] ?: return null
+    return strAnswer.toBoolean()
+}
+
 internal fun LinkNode<*>.correctNext(answers: Map<String, String>) : DecisionTreeNode{
     return this.next[this.getAnswer(answers)]!!
 }
