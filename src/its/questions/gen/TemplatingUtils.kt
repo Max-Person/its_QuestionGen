@@ -79,11 +79,6 @@ class TemplatingUtils(val q : ILearningSituation) {
             return additionalInfo["description"]!!.interpret(interpretationData.usingVar("result", result))
         }
 
-        @JvmStatic
-        internal fun FindActionNode.explanation(interpretationData: InterpretationData, found : Boolean) : String { //TODO переделать это объяснение на Outcome
-            return additionalInfo["explanation"]!!.interpret(interpretationData.usingVar("found", found))
-        }
-
         //Выходы (стрелки)
         @JvmStatic
         internal fun Outcome<*>.text(interpretationData: InterpretationData) : String? {

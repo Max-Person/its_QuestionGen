@@ -35,8 +35,8 @@ class AskNodeQuestions private constructor(val q : QuestionGenerator) : Decision
     }
 
     override fun process(node: FindActionNode): Boolean {
-        val answer = node.getAnswer(q.answers)
-        println("\nМы уже говорили о том, что ${node.explanation(q.templating, answer == "found")}")
+        val answer = node.getAnswer(q.answers)!!
+        println("\nМы уже говорили о том, что ${node.next.getFull(answer)!!.explanation(q.templating)}")
         return true
     }
 

@@ -51,9 +51,9 @@ class SequentialAutomataCreation : DecisionTreeBehaviour<QuestionState> {
 
         val skip = object : SkipQuestionState() {
             override fun skip(situation: ILearningSituation): QuestionStateChange {
-                val correctAnswer = node.getAnswer(situation.answers)
+                val correctAnswer = node.getAnswer(situation.answers)!!
 
-                val explanation = Explanation("Мы уже говорили о том, что ${node.explanation(situation.templating, correctAnswer == "found")}")
+                val explanation = Explanation("Мы уже говорили о том, что ${node.next.getFull(correctAnswer)!!.explanation(situation.templating)}")
                 val nextState = nextSteps[correctAnswer]
                 return QuestionStateChange(explanation, nextState)
             }
