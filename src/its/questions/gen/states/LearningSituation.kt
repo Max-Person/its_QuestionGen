@@ -14,6 +14,7 @@ interface ILearningSituation{
     val answers: Map<String, String>
     val templating : InterpretationData
     val questioningInfo : MutableMap<String, String>
+    val knownVariables : MutableMap<String, String>
 
     fun addGivenAnswer(questionStateId: Int, value: Int){
         questioningInfo[questionStateId.toString()] = value.toString()
@@ -33,7 +34,7 @@ interface ILearningSituation{
 class LearningSituation private constructor(
     override val entityDictionary : EntityDictionary = EntityDictionary(),
     override val answers: Map<String, String> = mapOf(),
-    val knownVariables : MutableSet<String> = mutableSetOf(),
+    override val knownVariables : MutableMap<String, String> = mutableMapOf(),
     override val questioningInfo: MutableMap<String, String> = mutableMapOf()
 ) : ILearningSituation{
 

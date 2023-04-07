@@ -91,6 +91,11 @@ class TemplatingUtils(val q : ILearningSituation) {
         }
 
         @JvmStatic
+        internal fun FindActionNode.FindErrorCategory.explanation(interpretationData: InterpretationData, entityAlias : String) : String {
+            return additionalInfo["explanation"]!!.interpret(interpretationData.usingVar("current", entityAlias))
+        }
+
+        @JvmStatic
         internal fun PredeterminingOutcome.explanation(interpretationData: InterpretationData, result: Boolean) : String {
             return additionalInfo["explanation"]!!.interpret(interpretationData.usingVar("result", result))
         }

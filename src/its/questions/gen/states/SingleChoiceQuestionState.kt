@@ -14,6 +14,7 @@ abstract class SingleChoiceQuestionState<AnswerInfo>(
     protected abstract fun options(situation: ILearningSituation) : List<SingleChoiceOption<AnswerInfo>>
     protected open fun shouldBeSkipped(situation: ILearningSituation) : QuestionStateChange? {return null}
     protected open fun explanation(chosenOption: SingleChoiceOption<AnswerInfo>) : Explanation? {return chosenOption.explanation}
+    protected open fun additionalActions(situation: ILearningSituation, chosenAnswer: AnswerInfo) {}
 
     override fun getQuestion(situation: ILearningSituation): QuestionStateResult {
         val text = "$id. ${text(situation)}"
@@ -38,6 +39,7 @@ abstract class SingleChoiceQuestionState<AnswerInfo>(
         val chosenOption = options(situation)[answer.single()]
 
         situation.addGivenAnswer(id, answer.single())
+        additionalActions(situation, chosenOption.assocAnswer)
 
         val explanation = explanation(chosenOption)
         val nextState = links.first { link -> link.condition(situation, chosenOption.assocAnswer) }.nextState

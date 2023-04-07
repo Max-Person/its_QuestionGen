@@ -9,6 +9,7 @@ class EntityInfo(
     val specificName: String,
     variableName: String? = null,
     variableErrorExplanations: Map<String, String> = mapOf(),
+    val errorCategories: List<String>
 ) {
     val clazz: QClassModel
     val calculatedClasses : List<QClassModel>

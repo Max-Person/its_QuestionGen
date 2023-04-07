@@ -30,7 +30,7 @@ import its.questions.questiontypes.SingleChoiceQuestion
 class QuestionGenerator(dir : String) : ILearningSituation {
     override val entityDictionary : EntityDictionary = EntityDictionary()
     override val answers: Map<String, String>
-    internal val knownVariables = mutableSetOf<String>()
+    override val knownVariables = mutableMapOf<String, String>()
     override val questioningInfo = mutableMapOf<String, String>()
 
     private val templatingUtils = TemplatingUtils(this)
@@ -43,12 +43,12 @@ class QuestionGenerator(dir : String) : ILearningSituation {
     }
 
     fun start(from : StartNode, assumedResult : Boolean){
-        knownVariables.addAll(from.initVariables.keys)
+        knownVariables.putAll(from.initVariables)
         process(from.main, assumedResult)
     }
 
     fun init(from : StartNode) {
-        knownVariables.addAll(from.initVariables.keys)
+        knownVariables.putAll(from.initVariables)
     }
 
     fun process(branch: ThoughtBranch, assumedResult : Boolean){
@@ -139,7 +139,7 @@ class QuestionGenerator(dir : String) : ILearningSituation {
             val q = variableValueQuestion(varName)
             val answer = q.ask()
             if(entityDictionary.getByVariable(varName) != null)
-                knownVariables.add(varName)
+                knownVariables[varName] = entityDictionary.getByVariable(varName)!!.alias
             if(!answer && shouldEndBranch(currentBranch))
                 return true
         }
@@ -155,7 +155,7 @@ class QuestionGenerator(dir : String) : ILearningSituation {
     }
 
     private fun isEntityAssigned(entityAlias : String) : Boolean {
-        return knownVariables.any { entityDictionary.getByVariable(it)?.alias == entityAlias }
+        return knownVariables.containsValue(entityAlias)
     }
 
     private fun variableValueQuestion(varName : String) : SingleChoiceQuestion {
