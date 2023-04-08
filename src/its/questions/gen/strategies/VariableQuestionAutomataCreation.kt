@@ -1,14 +1,16 @@
-package its.questions.gen.states
+package its.questions.gen.strategies
 
 import its.model.DomainModel
 import its.model.nodes.*
-import its.questions.gen.TemplatingUtils
-import its.questions.gen.TemplatingUtils._static.explanation
-import its.questions.gen.TemplatingUtils._static.question
-import its.questions.gen.TemplatingUtils._static.toCase
+import its.questions.inputs.TemplatingUtils
+import its.questions.inputs.TemplatingUtils._static.explanation
+import its.questions.inputs.TemplatingUtils._static.question
+import its.questions.inputs.TemplatingUtils._static.toCase
+import its.questions.gen.states.*
 import its.questions.gen.visitors.ALIAS_ATR
 import its.questions.gen.visitors.getUsedVariables
 import its.questions.inputs.EntityInfo
+import its.questions.inputs.ILearningSituation
 import its.questions.inputs.QClassModel
 import its.questions.inputs.QVarModel
 
@@ -45,14 +47,14 @@ class VariableQuestionAutomataCreation {
         }
 
         @JvmStatic
-        fun create(branch: ThoughtBranch) : QuestionAutomata{
+        fun create(branch: ThoughtBranch) : QuestionAutomata {
             val infoMap = branch.start.getVariableInfo(mutableMapOf())
             val automata = create(infoMap.values.filter { it.isDeciding }.map{it.name}, infoMap)
             return automata
         }
 
         @JvmStatic
-        private fun create(variables: List<String>, infoMap: Map<String, VariableInfo>): QuestionAutomata{
+        private fun create(variables: List<String>, infoMap: Map<String, VariableInfo>): QuestionAutomata {
             var lastState : QuestionState = RedirectQuestionState()
             for(v in variables.reversed()){
                 val varInfo = infoMap[v]!!

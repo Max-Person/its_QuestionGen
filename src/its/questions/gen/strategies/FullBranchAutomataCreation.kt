@@ -1,14 +1,16 @@
-package its.questions.gen.states
+package its.questions.gen.strategies
 
 import its.model.nodes.BranchResultNode
 import its.model.nodes.DecisionTreeNode
 import its.model.nodes.LinkNode
 import its.model.nodes.ThoughtBranch
-import its.questions.gen.TemplatingUtils._static.description
-import its.questions.gen.TemplatingUtils._static.endingCause
+import its.questions.inputs.TemplatingUtils._static.description
+import its.questions.inputs.TemplatingUtils._static.endingCause
+import its.questions.gen.states.*
 import its.questions.gen.visitors.GetConsideredNodes._static.getConsideredNodes
 import its.questions.gen.visitors.GetEndingNodes._static.getAllEndingNodes
 import its.questions.gen.visitors.GetNodesLCA._static.getNodesLCA
+import its.questions.inputs.ILearningSituation
 
 class FullBranchAutomataCreation {
 

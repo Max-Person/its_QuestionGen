@@ -3,10 +3,11 @@ package its.questions.gen.states
 import its.model.nodes.LogicAggregationNode
 import its.model.nodes.LogicalOp
 import its.model.nodes.ThoughtBranch
-import its.questions.gen.TemplatingUtils._static.description
+import its.questions.inputs.TemplatingUtils._static.description
 import its.questions.gen.visitors.getAnswer
+import its.questions.inputs.ILearningSituation
 
-//TODO? Можно выделить над ним некий AssociationQuestionState, но пока что это не нужно
+//Можно выделить над ним некий AssociationQuestionState, но пока что это не нужно
 class AggregationQuestionState(
     val node: LogicAggregationNode,
     links: Set<QuestionStateLink<Boolean>>

@@ -1,4 +1,7 @@
-package its.questions.gen.states
+package its.questions.gen.strategies
+
+import its.questions.gen.states.QuestionState
+import its.questions.gen.states.RedirectQuestionState
 
 class QuestionAutomata(
     val initState: QuestionState,
@@ -16,7 +19,7 @@ class QuestionAutomata(
     override fun iterator(): Iterator<QuestionState> = states.iterator()
     override fun containsAll(elements: Collection<QuestionState>): Boolean = states.containsAll(elements)
     override fun contains(element: QuestionState): Boolean = states.contains(element)
-    operator fun get(id: Int): QuestionState{
+    operator fun get(id: Int): QuestionState {
         return states.first { it.id == id }
     }
 

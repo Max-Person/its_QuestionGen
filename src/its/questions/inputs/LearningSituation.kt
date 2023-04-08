@@ -1,13 +1,10 @@
-package its.questions.gen.states
+package its.questions.inputs
 
 import com.github.max_person.templating.InterpretationData
 import its.model.DomainModel
 import its.model.nodes.ThoughtBranch
 import its.questions.fileToMap
-import its.questions.gen.TemplatingUtils
 import its.questions.gen.visitors.ALIAS_ATR
-import its.questions.inputs.EntityDictionary
-import its.questions.inputs.usesQDictionaries
 
 interface ILearningSituation{
     val entityDictionary : EntityDictionary
@@ -36,7 +33,7 @@ class LearningSituation private constructor(
     override val answers: Map<String, String> = mapOf(),
     override val knownVariables : MutableMap<String, String> = mutableMapOf(),
     override val questioningInfo: MutableMap<String, String> = mutableMapOf()
-) : ILearningSituation{
+) : ILearningSituation {
 
     constructor(dir: String) : this(answers = fileToMap(dir + "answers.txt", ':')){
         require(DomainModel.usesQDictionaries())

@@ -1,5 +1,7 @@
 package its.questions.gen.states
 
+import its.questions.inputs.ILearningSituation
+
 abstract class SingleChoiceQuestionState<AnswerInfo>(
     links: Set<QuestionStateLink<AnswerInfo>>
 ) : GeneralQuestionState<AnswerInfo>(links) {

@@ -1,5 +1,6 @@
 package its.questions.gen.states
 
+import its.questions.inputs.ILearningSituation
 import java.util.*
 
 interface QuestionState{

@@ -1,7 +1,9 @@
 import its.model.DomainModel
-import its.questions.gen.QuestionGenerator
+import its.questions.gen.states.*
+import its.questions.gen.strategies.FullBranchAutomataCreation
 import its.questions.inputs.*
-import its.questions.questiontypes.Prompt
+import java.lang.NumberFormatException
+import java.util.*
 import javax.swing.SwingUtilities
 
 
@@ -16,6 +18,22 @@ fun run() {
         QRelationshipsDictionary(),
     ).initFrom(dir)
 
+
+    val automata = FullBranchAutomataCreation.create(DomainModel.decisionTree.main)
+    val endState = object : SkipQuestionState(){
+        override fun skip(situation: ILearningSituation): QuestionStateChange {
+            return QuestionStateChange(Explanation("Конец"), null)
+        }
+
+        override val reachableStates: Collection<QuestionState>
+            get() = emptyList()
+
+    }
+    automata.finalize(endState)
+
+    println(GeneralQuestionState.stateCount)
+    println()
+
     val input = Prompt(
         "Выберите используемые входные данные:",
         listOf("X + А / B * C + D / K   -   выбран первый + " to 1,
@@ -27,8 +45,36 @@ fun run() {
     ).ask()
     println("Далее вопросы генерируются как для студента, выбравшего данный ответ в данной ситуации.\n\n-----")
 
-    val q = QuestionGenerator(dir + "_$input\\")
-    q.start(DomainModel.decisionTree, true)
+    val situation = LearningSituation(dir + "_$input\\")
+    situation.addAssumedResult(DomainModel.decisionTree.main, true)
+    var state : QuestionState? = automata.initState
+//    state = automata[94]
+//    situation.addAssumedResult(DomainModel.decisionTree.getByAlias("right") as ThoughtBranch, true)
+    while(state != null){
+        val out = state.getQuestion(situation)
+        lateinit var change : QuestionStateChange
+        var printed = false
+        when(out){
+            is Question -> {
+                val answers = out.ask()
+                printed = true
+                change = state.proceedWithAnswer(situation, answers)
+            }
+            is QuestionStateChange ->{
+                change = out
+            }
+        }
+        state = change.nextState
+        if(change.explanation != null){
+            println(change.explanation!!.text)
+            printed = true
+        }
+        if(printed) println()
+    }
+
+    //val q = QuestionGenerator(dir + "_$input\\")
+    //q.start(DomainModel.decisionTree, true)
+
 }
 
 fun main(args: Array<String>) {
@@ -45,5 +91,38 @@ fun main(args: Array<String>) {
             val mainProgram = Thread { run() }
             mainProgram.start()
         }
+    }
+}
+
+class Prompt<Info>(val text: String, val options : List<Pair<String, Info>>){
+    private val scanner = Scanner(System.`in`)
+
+    private fun getAnswers(): List<Int>{
+        print("Ваш ответ: ")
+        while(true){
+            try{
+                val input = scanner.nextLine()
+                return if(input.isBlank()) emptyList() else input.split(',').map{ str ->str.toInt()}
+            }catch (e: NumberFormatException){
+                print("Неверный формат ввода. Введите ответ заново: ")
+            }
+        }
+    }
+
+    fun ask(): Info {
+        if(options.size == 1)
+            return options[0].second
+        println()
+        println(text)
+        println("(Элемент управления программой: укажите номер варианта для выбора дальнейших действий.)")
+        options.forEachIndexed {i, option -> println(" ${i+1}. ${option.first}") }
+
+        var answers = getAnswers()
+        while(answers.size != 1 || answers.any { it-1 !in options.indices}){
+            println("Укажите одно число для ответа")
+            answers = getAnswers()
+        }
+        val answer = answers.single()
+        return options[answer-1].second
     }
 }

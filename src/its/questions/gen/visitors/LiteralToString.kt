@@ -5,7 +5,7 @@ import its.model.expressions.Literal
 import its.model.expressions.literals.*
 import its.model.expressions.types.ComparisonResult
 import its.model.expressions.visitors.LiteralBehaviour
-import its.questions.gen.states.ILearningSituation
+import its.questions.inputs.ILearningSituation
 import its.questions.inputs.QClassModel
 import its.questions.inputs.QEnumModel
 import its.questions.inputs.usesQDictionaries

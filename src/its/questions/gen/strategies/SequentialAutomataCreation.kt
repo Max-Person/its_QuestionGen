@@ -1,21 +1,23 @@
-package its.questions.gen.states
+package its.questions.gen.strategies
 
 import its.model.expressions.Literal
 import its.model.expressions.literals.BooleanLiteral
 import its.model.nodes.*
 import its.model.nodes.visitors.DecisionTreeBehaviour
-import its.questions.gen.TemplatingUtils._static.asNextStep
-import its.questions.gen.TemplatingUtils._static.description
-import its.questions.gen.TemplatingUtils._static.explanation
-import its.questions.gen.TemplatingUtils._static.nextStepBranchResult
-import its.questions.gen.TemplatingUtils._static.nextStepExplanation
-import its.questions.gen.TemplatingUtils._static.nextStepQuestion
-import its.questions.gen.TemplatingUtils._static.question
-import its.questions.gen.TemplatingUtils._static.text
+import its.questions.inputs.TemplatingUtils._static.asNextStep
+import its.questions.inputs.TemplatingUtils._static.description
+import its.questions.inputs.TemplatingUtils._static.explanation
+import its.questions.inputs.TemplatingUtils._static.nextStepBranchResult
+import its.questions.inputs.TemplatingUtils._static.nextStepExplanation
+import its.questions.inputs.TemplatingUtils._static.nextStepQuestion
+import its.questions.inputs.TemplatingUtils._static.question
+import its.questions.inputs.TemplatingUtils._static.text
+import its.questions.gen.states.*
 import its.questions.gen.visitors.GetPossibleJumps._static.getPossibleJumps
 import its.questions.gen.visitors.LiteralToString._static.toAnswerString
 import its.questions.gen.visitors.getAnswer
 import its.questions.gen.visitors.isTrivial
+import its.questions.inputs.ILearningSituation
 import java.util.*
 
 class SequentialAutomataCreation : DecisionTreeBehaviour<QuestionState> {
@@ -256,7 +258,7 @@ class SequentialAutomataCreation : DecisionTreeBehaviour<QuestionState> {
     override fun process(node: QuestionNode): QuestionState {
         val links = node.next.keys.map { outcomeLiteral ->
             GeneralQuestionState.QuestionStateLink<Pair<Literal, Boolean>>(
-                {situation, answer -> node.getAnswer(situation.answers) == outcomeLiteral },
+                { situation, answer -> node.getAnswer(situation.answers) == outcomeLiteral },
                 nextStep(node, outcomeLiteral)
             )
         }.toSet()
@@ -371,7 +373,7 @@ class SequentialAutomataCreation : DecisionTreeBehaviour<QuestionState> {
         )
 
         @JvmStatic
-        fun create(branch: ThoughtBranch) : SequentialAutomataInfo{
+        fun create(branch: ThoughtBranch) : SequentialAutomataInfo {
             val strat = SequentialAutomataCreation()
             val initState = branch.use(strat)
             val automata = QuestionAutomata(initState)
