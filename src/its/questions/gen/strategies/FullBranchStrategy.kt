@@ -10,6 +10,7 @@ import its.questions.gen.states.*
 import its.questions.gen.visitors.GetConsideredNodes._static.getConsideredNodes
 import its.questions.gen.visitors.GetPossibleEndingNodes._static.getPossibleEndingNodes
 import its.questions.gen.visitors.GetNodesLCA._static.getNodesLCA
+import its.questions.gen.visitors.getAnswer
 import its.questions.inputs.LearningSituation
 
 object FullBranchStrategy : QuestioningStrategy {
@@ -21,8 +22,14 @@ object FullBranchStrategy : QuestioningStrategy {
 
     override fun build(branch: ThoughtBranch) : QuestionAutomata{
         val sequential = SequentialStrategy.buildWithInfo(branch)
+        val variableValueAutomata = VariableValueStrategy.build(branch)
 
         val endingNodes = branch.getEndingNodes()
+        if(endingNodes.size <= 1){
+            variableValueAutomata.finalize(sequential.automata.initState)
+            return QuestionAutomata(variableValueAutomata.initState).finalizeForBranch(branch)
+        }
+
         val endingNodeSelectlinks = mutableListOf<GeneralQuestionState.QuestionStateLink<NodeLCAinfo>>()
         for(endA in endingNodes){
             for(endB in endingNodes.subList(endingNodes.indexOf(endA), endingNodes.size)){
@@ -59,9 +66,23 @@ object FullBranchStrategy : QuestioningStrategy {
         }
 
 
-        val variableValueAutomata = VariableValueStrategy.build(branch)
         variableValueAutomata.finalize(endingNodeSelect)
-        return QuestionAutomata(variableValueAutomata.initState)
+        return QuestionAutomata(variableValueAutomata.initState).finalizeForBranch(branch)
+    }
+
+    private fun QuestionAutomata.finalizeForBranch(branch: ThoughtBranch): QuestionAutomata{
+        val redir = RedirectQuestionState()
+        val branchEnd = object : SkipQuestionState() {
+            override fun skip(situation: LearningSituation): QuestionStateChange {
+                val explanation = Explanation("Итак, мы обсудили, почему ${branch.description(situation.templating, branch.getAnswer(situation)!!)}")
+                return QuestionStateChange(explanation, redir)
+            }
+
+            override val reachableStates: Collection<QuestionState>
+                get() = listOf(redir)
+        }
+        this.finalize(branchEnd)
+        return QuestionAutomata(this.initState)
     }
 
     @JvmStatic

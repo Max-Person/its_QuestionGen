@@ -25,6 +25,14 @@ interface QuestionState{
 
 class RedirectQuestionState : QuestionState{
     var redir: QuestionState? = null
+        set(value){
+            var r = value
+            while(r is RedirectQuestionState){
+                r = r.redirectsTo()
+            }
+            field = r
+        }
+
     override val id
         get() = redir?.id ?: -1
 
@@ -38,6 +46,16 @@ class RedirectQuestionState : QuestionState{
 
     override val reachableStates: Collection<QuestionState>
         get() = redir?.reachableStates ?: emptyList()
+
+    fun isFinalized() : Boolean{
+        return this.redirectsTo() != null
+    }
+
+    fun redirectsTo() : QuestionState?{
+        return if(redir == null) null
+        else if(redir is RedirectQuestionState) (redir!! as RedirectQuestionState).redirectsTo()
+        else redir
+    }
 }
 
 abstract class SkipQuestionState : QuestionState{

@@ -78,7 +78,7 @@ class AggregationQuestionState(
                     if(!missedBranches.isEmpty())
                         "${if(incorrectBranches.isEmpty()) "Это неверно, поскольку вы" else " Вы также "} не упомянули, что ${
                             missedBranches.joinToString(separator = ", ", transform = {it.description(situation.templating, it.getAnswer(situation)!!)})
-                        } - это влияет на ситуацию в данном случае.\""
+                        } - это влияет на ситуацию в данном случае."
                     else
                         ""
                 )

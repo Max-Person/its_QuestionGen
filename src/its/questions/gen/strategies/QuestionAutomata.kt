@@ -24,10 +24,10 @@ class QuestionAutomata(
     }
 
     private fun nonFinalizedEnds() : List<RedirectQuestionState>{
-        return states.filter { it is RedirectQuestionState && it.redir == null } as List<RedirectQuestionState>
+        return states.filter { it is RedirectQuestionState && !it.isFinalized() } as List<RedirectQuestionState>
     }
     fun isFinalized() : Boolean {
-        return states.none { it is RedirectQuestionState && it.redir == null }
+        return states.none { it is RedirectQuestionState && !it.isFinalized() }
     }
     fun finalize(nextState: QuestionState){
         require(!isFinalized())

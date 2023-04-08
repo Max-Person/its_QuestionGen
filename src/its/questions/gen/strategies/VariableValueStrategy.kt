@@ -98,11 +98,13 @@ object VariableValueStrategy : QuestioningStrategy {
                     situation.knownVariables.put(varInfo.name, chosenAnswer.first?.alias ?: "")
                 }
 
-                override fun shouldBeSkipped(situation: LearningSituation): QuestionStateChange? {
-                    if(situation.knownVariables.containsKey(varInfo.name)){ //TODO убедиться что корректно работает в ситуациях, когда переменная не нужна вовсе. Если не работает - скипать
+                override fun additionalSkip(situation: LearningSituation): QuestionStateChange? {
+                    //TODO? убедиться что корректно работает в ситуациях, когда переменная не нужна вовсе. Если не работает - скипать
+                    //Также TODO этот скип предполагался как повторный заход в это состояние - если несколько переменных зависят от текущей - но в этом случае скорее всего будут создаваться лишние состояния
+                    if(situation.knownVariables.containsKey(varInfo.name)){
                         return QuestionStateChange(null, lastState)
                     }
-                    return super.shouldBeSkipped(situation)
+                    return super.additionalSkip(situation)
                 }
 
             }
