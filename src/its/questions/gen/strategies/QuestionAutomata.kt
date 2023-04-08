@@ -9,7 +9,7 @@ class QuestionAutomata(
 
     val states : Collection<QuestionState>
     init{
-        states = mutableListOf()
+        states = mutableSetOf()
         initState.runForAllReachable { states.add(this) }
     }
 
@@ -24,7 +24,7 @@ class QuestionAutomata(
     }
 
     private fun nonFinalizedEnds() : List<RedirectQuestionState>{
-        return states.filter { it is RedirectQuestionState && it.redir == null }.toList() as List<RedirectQuestionState>
+        return states.filter { it is RedirectQuestionState && it.redir == null } as List<RedirectQuestionState>
     }
     fun isFinalized() : Boolean {
         return states.none { it is RedirectQuestionState && it.redir == null }
