@@ -7,7 +7,7 @@ import com.github.max_person.templating.TemplatingSafeMethod
 import its.model.nodes.*
 import padeg.lib.Padeg
 
-class TemplatingUtils(val q : ILearningSituation) {
+class TemplatingUtils(val situation : LearningSituation) {
     enum class Case{
         Nom, //именительный (кто? что?)
         Gen, //родительный (кого? чего?)
@@ -140,16 +140,16 @@ class TemplatingUtils(val q : ILearningSituation) {
 
     @TemplatingSafeMethod("val")
     fun getVariableValue(varName: String, case: Case) : String{
-        return q.entityDictionary.getByVariable(varName)!!.specificName.toCase(case)
+        return situation.entityDictionary.getByVariable(varName)!!.specificName.toCase(case)
     }
 
     @TemplatingSafeMethod("obj")
     fun getEntity(alias: String, case: Case) : String{
-        return q.entityDictionary.get(alias)!!.specificName.toCase(case)
+        return situation.entityDictionary.get(alias)!!.specificName.toCase(case)
     }
 
     @TemplatingSafeMethod("class")
     fun getVariableClassname(varName: String, case: Case) : String{
-        return q.entityDictionary.getByVariable(varName)!!.clazz.textName.toCase(case)
+        return situation.entityDictionary.getByVariable(varName)!!.clazz.textName.toCase(case)
     }
 }

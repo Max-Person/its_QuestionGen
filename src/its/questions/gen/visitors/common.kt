@@ -2,6 +2,7 @@ package its.questions.gen.visitors
 
 import its.model.expressions.Literal
 import its.model.nodes.*
+import its.questions.inputs.LearningSituation
 import kotlin.reflect.full.isSubclassOf
 
 internal const val ALIAS_ATR = "alias"
@@ -10,8 +11,8 @@ internal fun ThoughtBranch.isTrivial() : Boolean{
     return start !is LinkNode<*> || (start as LinkNode<*>).children.all { it is BranchResultNode }
 }
 
-internal fun <AnswerType : Any> LinkNode<AnswerType>.getAnswer(answers : Map<String, String>): AnswerType?{
-    val strAnswer = answers[this.additionalInfo[ALIAS_ATR]!!] ?: return null
+internal fun <AnswerType : Any> LinkNode<AnswerType>.getAnswer(situation: LearningSituation): AnswerType?{
+    val strAnswer = situation.answers[this.additionalInfo[ALIAS_ATR]!!] ?: return null
     val answerType = answerType
     if(answerType.isSubclassOf(Literal::class)){
         require(this is QuestionNode){
@@ -28,11 +29,11 @@ internal fun <AnswerType : Any> LinkNode<AnswerType>.getAnswer(answers : Map<Str
     }
 }
 
-internal fun ThoughtBranch.getAnswer(answers : Map<String, String>): Boolean?{
-    val strAnswer = answers[this.additionalInfo[ALIAS_ATR]!!] ?: return null
+internal fun ThoughtBranch.getAnswer(situation: LearningSituation): Boolean?{
+    val strAnswer = situation.answers[this.additionalInfo[ALIAS_ATR]!!] ?: return null
     return strAnswer.toBoolean()
 }
 
-internal fun LinkNode<*>.correctNext(answers: Map<String, String>) : DecisionTreeNode{
-    return this.next[this.getAnswer(answers)]!!
+internal fun LinkNode<*>.correctNext(situation: LearningSituation) : DecisionTreeNode{
+    return this.next[this.getAnswer(situation)]!!
 }

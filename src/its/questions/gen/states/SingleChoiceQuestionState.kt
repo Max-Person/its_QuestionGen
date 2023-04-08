@@ -1,6 +1,6 @@
 package its.questions.gen.states
 
-import its.questions.inputs.ILearningSituation
+import its.questions.inputs.LearningSituation
 
 abstract class SingleChoiceQuestionState<AnswerInfo>(
     links: Set<QuestionStateLink<AnswerInfo>>
@@ -12,13 +12,13 @@ abstract class SingleChoiceQuestionState<AnswerInfo>(
         val assocAnswer: AnswerInfo,
     )
 
-    protected abstract fun text(situation: ILearningSituation) : String
-    protected abstract fun options(situation: ILearningSituation) : List<SingleChoiceOption<AnswerInfo>>
-    protected open fun shouldBeSkipped(situation: ILearningSituation) : QuestionStateChange? {return null}
+    protected abstract fun text(situation: LearningSituation) : String
+    protected abstract fun options(situation: LearningSituation) : List<SingleChoiceOption<AnswerInfo>>
+    protected open fun shouldBeSkipped(situation: LearningSituation) : QuestionStateChange? {return null}
     protected open fun explanation(chosenOption: SingleChoiceOption<AnswerInfo>) : Explanation? {return chosenOption.explanation}
-    protected open fun additionalActions(situation: ILearningSituation, chosenAnswer: AnswerInfo) {}
+    protected open fun additionalActions(situation: LearningSituation, chosenAnswer: AnswerInfo) {}
 
-    override fun getQuestion(situation: ILearningSituation): QuestionStateResult {
+    override fun getQuestion(situation: LearningSituation): QuestionStateResult {
         val text = "$id. ${text(situation)}"
         val options = options(situation)
         if(options.size == 1){
@@ -33,7 +33,7 @@ abstract class SingleChoiceQuestionState<AnswerInfo>(
         return Question(text, options.map{option -> option.text})
     }
 
-    override fun proceedWithAnswer(situation: ILearningSituation, answer: List<Int>): QuestionStateChange {
+    override fun proceedWithAnswer(situation: LearningSituation, answer: List<Int>): QuestionStateChange {
         require(answer.size == 1){
             "Invalid answer to a SingleChoiceQuestionState: $answer"
         }
@@ -48,7 +48,7 @@ abstract class SingleChoiceQuestionState<AnswerInfo>(
         return QuestionStateChange(explanation, nextState)
     }
 
-    fun previouslyChosenAnswer(situation: ILearningSituation) : AnswerInfo?{
+    fun previouslyChosenAnswer(situation: LearningSituation) : AnswerInfo?{
         val ans = situation.givenAnswer(id)
         return if(ans != null) options(situation)[ans].assocAnswer else null
     }

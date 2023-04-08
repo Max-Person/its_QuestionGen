@@ -5,7 +5,7 @@ import its.model.nodes.LogicalOp
 import its.model.nodes.ThoughtBranch
 import its.questions.inputs.TemplatingUtils._static.description
 import its.questions.gen.visitors.getAnswer
-import its.questions.inputs.ILearningSituation
+import its.questions.inputs.LearningSituation
 
 //Можно выделить над ним некий AssociationQuestionState, но пока что это не нужно
 class AggregationQuestionState(
@@ -18,13 +18,13 @@ class AggregationQuestionState(
         Positive,
     }
 
-    protected fun text(situation: ILearningSituation) : String {
-        val answer = node.getAnswer(situation.answers)!!
+    protected fun text(situation: LearningSituation) : String {
+        val answer = node.getAnswer(situation)!!
         val descrIncorrect = node.description(situation.templating, !answer)
         return "Почему вы считаете, что $descrIncorrect?"
     }
 
-    override fun getQuestion(situation: ILearningSituation): QuestionStateResult {
+    override fun getQuestion(situation: LearningSituation): QuestionStateResult {
         val text = "$id. ${text(situation)}"
         val options = node.thoughtBranches.map { branch ->
             branch.description(situation.templating, true)
@@ -32,7 +32,7 @@ class AggregationQuestionState(
         return Question(text, options, isAggregation = true)
     }
 
-    override fun proceedWithAnswer(situation: ILearningSituation, answer: List<Int>): QuestionStateChange {
+    override fun proceedWithAnswer(situation: LearningSituation, answer: List<Int>): QuestionStateChange {
         val givenAnswer : Map<ThoughtBranch, AggregationImpact> = node.thoughtBranches.mapIndexed{ind, branch ->
             val op = answer[ind]
             branch to
@@ -41,14 +41,14 @@ class AggregationQuestionState(
                     else AggregationImpact.None
         }.toMap()
 
-        val results : Map<ThoughtBranch, Boolean> = node.thoughtBranches.map{ branch -> branch to branch.getAnswer(situation.answers)!!}.toMap()
+        val results : Map<ThoughtBranch, Boolean> = node.thoughtBranches.map{ branch -> branch to branch.getAnswer(situation)!!}.toMap()
         val actualImpact : Map<ThoughtBranch, AggregationImpact> = results.map{ (branch, res) ->
             branch to
                     if (res) AggregationImpact.Positive
                     else AggregationImpact.Negative
         }.toMap()
 
-        val nodeRes = node.getAnswer(situation.answers)!!
+        val nodeRes = node.getAnswer(situation)!!
         val incorrectBranches = givenAnswer.filter{(branch, impact) -> impact != AggregationImpact.None && impact != actualImpact[branch]}.keys
         val missedBranches = givenAnswer.filter{(branch, impact) ->
             impact == AggregationImpact.None &&
@@ -67,17 +67,17 @@ class AggregationQuestionState(
             if(incorrectBranches.isEmpty() && missedBranches.isEmpty()){
                 "Вы верно оценили ситуацию, однако в данной ситуации ${node.description(situation.templating, nodeRes)}, потому что ${
                     node.thoughtBranches
-                        .filter{it.getAnswer(situation.answers) == nodeRes}
+                        .filter{it.getAnswer(situation) == nodeRes}
                         .joinToString(separator = ", ", transform = {it.description(situation.templating, nodeRes)})
                 }."
             } else {
                 (if(!incorrectBranches.isEmpty())
-                    "Это неверно, поскольку ${incorrectBranches.joinToString(separator = ", ", transform = {it.description(situation.templating, it.getAnswer(situation.answers)!!)})}."
+                    "Это неверно, поскольку ${incorrectBranches.joinToString(separator = ", ", transform = {it.description(situation.templating, it.getAnswer(situation)!!)})}."
                 else
                     "").plus(
                     if(!missedBranches.isEmpty())
                         "${if(incorrectBranches.isEmpty()) "Это неверно, поскольку вы" else " Вы также "} не упомянули, что ${
-                            missedBranches.joinToString(separator = ", ", transform = {it.description(situation.templating, it.getAnswer(situation.answers)!!)})
+                            missedBranches.joinToString(separator = ", ", transform = {it.description(situation.templating, it.getAnswer(situation)!!)})
                         } - это влияет на ситуацию в данном случае.\""
                     else
                         ""

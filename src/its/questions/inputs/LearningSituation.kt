@@ -6,12 +6,20 @@ import its.model.nodes.ThoughtBranch
 import its.questions.fileToMap
 import its.questions.gen.visitors.ALIAS_ATR
 
-interface ILearningSituation{
-    val entityDictionary : EntityDictionary
-    val answers: Map<String, String>
-    val templating : InterpretationData
-    val questioningInfo : MutableMap<String, String>
-    val knownVariables : MutableMap<String, String>
+class LearningSituation private constructor(
+    val entityDictionary : EntityDictionary = EntityDictionary(),
+    val answers: Map<String, String> = mapOf(),
+    val knownVariables : MutableMap<String, String> = mutableMapOf(),
+    val questioningInfo: MutableMap<String, String> = mutableMapOf()
+) {
+
+    constructor(dir: String) : this(answers = fileToMap(dir + "answers.txt", ':')){
+        require(DomainModel.usesQDictionaries())
+        entityDictionary.fromCSV(dir + "entities.csv")
+    }
+
+    private val templatingUtils = TemplatingUtils(this)
+    val templating = InterpretationData().withGlobalObj(templatingUtils).withParser(TemplatingUtils.templatingParser)
 
     fun addGivenAnswer(questionStateId: Int, value: Int){
         questioningInfo[questionStateId.toString()] = value.toString()
@@ -26,20 +34,4 @@ interface ILearningSituation{
     fun assumedResult(branch: ThoughtBranch) : Boolean?{
         return questioningInfo[branch.additionalInfo[ALIAS_ATR]!!]?.toBoolean()
     }
-}
-
-class LearningSituation private constructor(
-    override val entityDictionary : EntityDictionary = EntityDictionary(),
-    override val answers: Map<String, String> = mapOf(),
-    override val knownVariables : MutableMap<String, String> = mutableMapOf(),
-    override val questioningInfo: MutableMap<String, String> = mutableMapOf()
-) : ILearningSituation {
-
-    constructor(dir: String) : this(answers = fileToMap(dir + "answers.txt", ':')){
-        require(DomainModel.usesQDictionaries())
-        entityDictionary.fromCSV(dir + "entities.csv")
-    }
-
-    private val templatingUtils = TemplatingUtils(this)
-    override val templating = InterpretationData().withGlobalObj(templatingUtils).withParser(TemplatingUtils.templatingParser)
 }

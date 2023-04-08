@@ -10,7 +10,7 @@ import its.questions.gen.states.*
 import its.questions.gen.visitors.ALIAS_ATR
 import its.questions.gen.visitors.getUsedVariables
 import its.questions.inputs.EntityInfo
-import its.questions.inputs.ILearningSituation
+import its.questions.inputs.LearningSituation
 import its.questions.inputs.QClassModel
 import its.questions.inputs.QVarModel
 
@@ -59,11 +59,11 @@ object VariableValueStrategy : QuestioningStrategy {
                 QuestionStateLink({_, _ -> true }, lastState),
             ))
             {
-                override fun text(situation: ILearningSituation): String {
+                override fun text(situation: LearningSituation): String {
                     return varInfo.declarationNode.question(situation.templating)
                 }
 
-                override fun options(situation: ILearningSituation): List<SingleChoiceOption<Pair<EntityInfo?, Boolean>>> {
+                override fun options(situation: LearningSituation): List<SingleChoiceOption<Pair<EntityInfo?, Boolean>>> {
                     val varData = (DomainModel.decisionTreeVarsDictionary.get(varInfo.name) as QVarModel)
                     val clazz = DomainModel.classesDictionary.get(varData.className) as QClassModel
                     val correctEntity = situation.entityDictionary.getByVariable(varData.name)
@@ -93,12 +93,12 @@ object VariableValueStrategy : QuestioningStrategy {
                     return options
                 }
 
-                override fun additionalActions(situation: ILearningSituation, chosenAnswer: Pair<EntityInfo?, Boolean>) {
+                override fun additionalActions(situation: LearningSituation, chosenAnswer: Pair<EntityInfo?, Boolean>) {
                     super.additionalActions(situation, chosenAnswer)
                     situation.knownVariables.put(varInfo.name, chosenAnswer.first?.alias ?: "")
                 }
 
-                override fun shouldBeSkipped(situation: ILearningSituation): QuestionStateChange? {
+                override fun shouldBeSkipped(situation: LearningSituation): QuestionStateChange? {
                     if(situation.knownVariables.containsKey(varInfo.name)){ //TODO убедиться что корректно работает в ситуациях, когда переменная не нужна вовсе. Если не работает - скипать
                         return QuestionStateChange(null, lastState)
                     }

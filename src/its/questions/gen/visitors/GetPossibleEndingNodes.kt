@@ -2,9 +2,12 @@ package its.questions.gen.visitors
 
 import its.model.nodes.*
 import its.model.nodes.visitors.SimpleDecisionTreeBehaviour
+import its.questions.gen.visitors.GetConsideredNodes._static.getConsideredNodes
+import its.questions.inputs.LearningSituation
 
-class GetEndingNodes private constructor(val consideredNodes: List<DecisionTreeNode>, val answers: Map<String, String>) :
+class GetPossibleEndingNodes private constructor(val branch: ThoughtBranch, val situation: LearningSituation) :
     SimpleDecisionTreeBehaviour<Unit> {
+    val consideredNodes: List<DecisionTreeNode> = branch.getConsideredNodes(situation)
     val set = mutableSetOf<DecisionTreeNode>()
     lateinit var correct : DecisionTreeNode
 
@@ -12,22 +15,15 @@ class GetEndingNodes private constructor(val consideredNodes: List<DecisionTreeN
 
     companion object _static{
         @JvmStatic
-        fun ThoughtBranch.getAllEndingNodes(consideredNodes: List<DecisionTreeNode>, answers: Map<String, String>) : Set<DecisionTreeNode>{
-            val behaviour = GetEndingNodes(consideredNodes, answers)
+        fun ThoughtBranch.getPossibleEndingNodes(situation: LearningSituation) : Set<DecisionTreeNode>{
+            val behaviour = GetPossibleEndingNodes(this, situation)
             this.use(behaviour)
             return behaviour.set
-        }
-
-        @JvmStatic
-        fun ThoughtBranch.getCorrectEndingNode(consideredNodes: List<DecisionTreeNode>, answers: Map<String, String>) : DecisionTreeNode{
-            val behaviour = GetEndingNodes(consideredNodes, answers)
-            this.use(behaviour)
-            return behaviour.correct
         }
     }
 
     private fun DecisionTreeNode.getEndingNodes(){
-        this.use(this@GetEndingNodes)
+        this.use(this@GetPossibleEndingNodes)
     }
 
     // ---------------------- Функции поведения ---------------------------
@@ -42,7 +38,7 @@ class GetEndingNodes private constructor(val consideredNodes: List<DecisionTreeN
 
     override fun process(node: FindActionNode) {
         //Особое поведение, так как не интересуют конечные узлы, которые используют несуществующие переменные
-        node.next[node.getAnswer(answers)?:"none"]?.getEndingNodes()
+        node.next[node.getAnswer(situation)?:"none"]?.getEndingNodes()
         if(node.nextIfFound is BranchResultNode || node.nextIfNone is BranchResultNode)
             set.add(node)
         if(node.next.values.any{it is BranchResultNode && consideredNodes.contains(it)})

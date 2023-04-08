@@ -20,7 +20,7 @@ fun run() {
 
 
     val endState = object : SkipQuestionState(){
-        override fun skip(situation: ILearningSituation): QuestionStateChange {
+        override fun skip(situation: LearningSituation): QuestionStateChange {
             return QuestionStateChange(Explanation("Конец"), null)
         }
 

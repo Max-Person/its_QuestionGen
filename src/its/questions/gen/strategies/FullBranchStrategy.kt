@@ -8,9 +8,9 @@ import its.questions.inputs.TemplatingUtils._static.description
 import its.questions.inputs.TemplatingUtils._static.endingCause
 import its.questions.gen.states.*
 import its.questions.gen.visitors.GetConsideredNodes._static.getConsideredNodes
-import its.questions.gen.visitors.GetEndingNodes._static.getAllEndingNodes
+import its.questions.gen.visitors.GetPossibleEndingNodes._static.getPossibleEndingNodes
 import its.questions.gen.visitors.GetNodesLCA._static.getNodesLCA
-import its.questions.inputs.ILearningSituation
+import its.questions.inputs.LearningSituation
 
 object FullBranchStrategy : QuestioningStrategy {
 
@@ -37,13 +37,13 @@ object FullBranchStrategy : QuestioningStrategy {
         }
 
         val endingNodeSelect = object : SingleChoiceQuestionState<NodeLCAinfo>(endingNodeSelectlinks.toSet()){
-            override fun text(situation: ILearningSituation): String {
+            override fun text(situation: LearningSituation): String {
                 return "Почему вы считаете, что ${branch.description(situation.templating, situation.assumedResult(branch)!!)}?"
             }
 
-            override fun options(situation: ILearningSituation): List<SingleChoiceOption<NodeLCAinfo>> {
-                val considered = branch.getConsideredNodes(situation.answers)
-                val possibleEndingNodes = branch.getAllEndingNodes(considered, situation.answers)
+            override fun options(situation: LearningSituation): List<SingleChoiceOption<NodeLCAinfo>> {
+                val considered = branch.getConsideredNodes(situation)
+                val possibleEndingNodes = branch.getPossibleEndingNodes(situation)
                 val correctEndingNode = endingNodes.first { considered.contains(it) }
 
                 val options = possibleEndingNodes.map{end ->

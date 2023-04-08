@@ -17,7 +17,7 @@ import its.questions.gen.visitors.GetPossibleJumps._static.getPossibleJumps
 import its.questions.gen.visitors.LiteralToString._static.toAnswerString
 import its.questions.gen.visitors.getAnswer
 import its.questions.gen.visitors.isTrivial
-import its.questions.inputs.ILearningSituation
+import its.questions.inputs.LearningSituation
 import java.util.*
 
 object SequentialStrategy : QuestioningStrategyWithInfo<SequentialStrategy.SequentialAutomataInfo>{
@@ -51,7 +51,7 @@ object SequentialStrategy : QuestioningStrategyWithInfo<SequentialStrategy.Seque
 
             val redir = RedirectQuestionState()
             val skip = object : SkipQuestionState() {
-                override fun skip(situation: ILearningSituation): QuestionStateChange {
+                override fun skip(situation: LearningSituation): QuestionStateChange {
                     val explanation = Explanation("Итак, мы обсудили, почему ${currentBranch.description(situation.templating, nodeVal)}")
                     return QuestionStateChange(explanation, redir)
                 }
@@ -72,8 +72,8 @@ object SequentialStrategy : QuestioningStrategyWithInfo<SequentialStrategy.Seque
             val nextSteps = node.next.keys.map { answer -> answer to nextStep(node, answer)}.toMap()
 
             val skip = object : SkipQuestionState() {
-                override fun skip(situation: ILearningSituation): QuestionStateChange {
-                    val correctAnswer = node.getAnswer(situation.answers)!!
+                override fun skip(situation: LearningSituation): QuestionStateChange {
+                    val correctAnswer = node.getAnswer(situation)!!
 
                     val explanation = Explanation("Мы уже говорили о том, что ${node.next.getFull(correctAnswer)!!.explanation(situation.templating)}")
                     val nextState = nextSteps[correctAnswer]
@@ -103,13 +103,13 @@ object SequentialStrategy : QuestioningStrategyWithInfo<SequentialStrategy.Seque
             )).toSet()
 
             val resultQuestion = object : CorrectnessCheckQuestionState<Boolean>(mainLinks) {
-                override fun text(situation: ILearningSituation): String {
+                override fun text(situation: LearningSituation): String {
                     val descr = node.description(situation.templating, true)
                     return "Верно ли, что $descr?"
                 }
 
-                override fun options(situation: ILearningSituation): List<SingleChoiceOption<Pair<Boolean, Boolean>>> {
-                    val correctAnswer = node.getAnswer(situation.answers)!!
+                override fun options(situation: LearningSituation): List<SingleChoiceOption<Pair<Boolean, Boolean>>> {
+                    val correctAnswer = node.getAnswer(situation)!!
                     return node.next.info.map { SingleChoiceOption(
                         if(it.key) "Верно" else "Неверно",
                         Explanation("Это не так. Давайте разберемся"),
@@ -123,11 +123,11 @@ object SequentialStrategy : QuestioningStrategyWithInfo<SequentialStrategy.Seque
 
             val aggregationQuestion = AggregationQuestionState(node, setOf(
                 GeneralQuestionState.QuestionStateLink(
-                    { situation, answer -> answer && node.getAnswer(situation.answers) == true },
+                    { situation, answer -> answer && node.getAnswer(situation) == true },
                     nextSteps[true]!!
                 ),
                 GeneralQuestionState.QuestionStateLink(
-                    { situation, answer -> answer && node.getAnswer(situation.answers) == false },
+                    { situation, answer -> answer && node.getAnswer(situation) == false },
                     nextSteps[false]!!
                 ),
                 GeneralQuestionState.QuestionStateLink(
@@ -145,16 +145,16 @@ object SequentialStrategy : QuestioningStrategyWithInfo<SequentialStrategy.Seque
             )}.toSet()
 
             val branchSelectQuestion = object : SingleChoiceQuestionState<ThoughtBranch>(branchLinks) {
-                override fun text(situation: ILearningSituation): String {
+                override fun text(situation: LearningSituation): String {
                     return "В чем бы вы хотели разобраться подробнее?"
                 }
 
-                override fun options(situation: ILearningSituation): List<SingleChoiceOption<ThoughtBranch>> {
+                override fun options(situation: LearningSituation): List<SingleChoiceOption<ThoughtBranch>> {
                     val options = node.thoughtBranches.filter{branch ->
-                        branch.getAnswer(situation.answers) != situation.assumedResult(branch)
+                        branch.getAnswer(situation) != situation.assumedResult(branch)
                     }.map { branch ->
                         SingleChoiceOption<ThoughtBranch>(
-                            "Почему ${branch.description(situation.templating, branch.getAnswer(situation.answers)!!)}?",
+                            "Почему ${branch.description(situation.templating, branch.getAnswer(situation)!!)}?",
                             null,
                             branch
                         )
@@ -167,8 +167,8 @@ object SequentialStrategy : QuestioningStrategyWithInfo<SequentialStrategy.Seque
 
             //После выхода из веток пропускающее состояние определяет, к какому из верных ответов надо совершить переход
             val shadowSkip = object : SkipQuestionState(){
-                override fun skip(situation: ILearningSituation): QuestionStateChange {
-                    return QuestionStateChange(null, nextSteps[node.getAnswer(situation.answers)!!])
+                override fun skip(situation: LearningSituation): QuestionStateChange {
+                    return QuestionStateChange(null, nextSteps[node.getAnswer(situation)!!])
                 }
 
                 override val reachableStates: Collection<QuestionState>
@@ -194,12 +194,12 @@ object SequentialStrategy : QuestioningStrategyWithInfo<SequentialStrategy.Seque
             )).toSet()
 
             val mainQuestion = object : CorrectnessCheckQuestionState<String>(mainLinks) {
-                override fun text(situation: ILearningSituation): String {
+                override fun text(situation: LearningSituation): String {
                     return node.question(situation.templating)
                 }
 
-                override fun options(situation: ILearningSituation): List<SingleChoiceOption<Pair<String, Boolean>>> {
-                    val answer = node.getAnswer(situation.answers)!!
+                override fun options(situation: LearningSituation): List<SingleChoiceOption<Pair<String, Boolean>>> {
+                    val answer = node.getAnswer(situation)!!
                     val correctOutcome = node.next.info.first { it.key == answer } //TODO возможно стоит изменить систему Outcomes чтобы вот такие конструкции были проще
                     return node.next.info.map { SingleChoiceOption(
                         it.text(situation.templating)!!,
@@ -221,12 +221,12 @@ object SequentialStrategy : QuestioningStrategyWithInfo<SequentialStrategy.Seque
             )).toSet()
 
             val branchSelectQuestion = object : SingleChoiceQuestionState<ThoughtBranch?>(branchLinks) {
-                override fun text(situation: ILearningSituation): String {
+                override fun text(situation: LearningSituation): String {
                     return "В чем бы вы хотели разобраться подробнее?"
                 }
 
-                override fun options(situation: ILearningSituation): List<SingleChoiceOption<ThoughtBranch?>> {
-                    val correctAnswer = node.getAnswer(situation.answers)!!
+                override fun options(situation: LearningSituation): List<SingleChoiceOption<ThoughtBranch?>> {
+                    val correctAnswer = node.getAnswer(situation)!!
                     val correctBranch = node.next.predeterminingBranch(correctAnswer)
 
                     val chosenAnswer = mainQuestion.previouslyChosenAnswer(situation)!!.first
@@ -259,8 +259,8 @@ object SequentialStrategy : QuestioningStrategyWithInfo<SequentialStrategy.Seque
 
             //После выхода из веток пропускающее состояние определяет, к какому из верных ответов надо совершить переход
             val shadowSkip = object : SkipQuestionState(){
-                override fun skip(situation: ILearningSituation): QuestionStateChange {
-                    return QuestionStateChange(null, nextSteps[node.getAnswer(situation.answers)!!])
+                override fun skip(situation: LearningSituation): QuestionStateChange {
+                    return QuestionStateChange(null, nextSteps[node.getAnswer(situation)!!])
                 }
 
                 override val reachableStates: Collection<QuestionState>
@@ -276,18 +276,18 @@ object SequentialStrategy : QuestioningStrategyWithInfo<SequentialStrategy.Seque
         override fun process(node: QuestionNode): QuestionState {
             val links = node.next.keys.map { outcomeLiteral ->
                 GeneralQuestionState.QuestionStateLink<Pair<Literal, Boolean>>(
-                    { situation, answer -> node.getAnswer(situation.answers) == outcomeLiteral },
+                    { situation, answer -> node.getAnswer(situation) == outcomeLiteral },
                     nextStep(node, outcomeLiteral)
                 )
             }.toSet()
 
             val question = object : CorrectnessCheckQuestionState<Literal>(links) {
-                override fun text(situation: ILearningSituation): String {
+                override fun text(situation: LearningSituation): String {
                     return node.question(situation.templating)
                 }
 
-                override fun options(situation: ILearningSituation): List<SingleChoiceOption<Pair<Literal, Boolean>>> {
-                    val answer = node.getAnswer(situation.answers)!!
+                override fun options(situation: LearningSituation): List<SingleChoiceOption<Pair<Literal, Boolean>>> {
+                    val answer = node.getAnswer(situation)!!
                     val correctOutcome = node.next.info.first { it.key == answer } //TODO возможно стоит изменить систему Outcomes чтобы вот такие конструкции были проще
                     val explText = correctOutcome.explanation(situation.templating)
                     return node.next.info.map { SingleChoiceOption(
@@ -313,12 +313,12 @@ object SequentialStrategy : QuestioningStrategyWithInfo<SequentialStrategy.Seque
             val question = object : CorrectnessCheckQuestionState<DecisionTreeNode>(setOf(
                 QuestionStateLink({situation, answer ->  true}, nextState)
             )) {
-                override fun text(situation: ILearningSituation): String {
+                override fun text(situation: LearningSituation): String {
                     return branch.nextStepQuestion(situation.templating) ?: "С чего надо начать, чтобы проверить, что ${branch.description(situation.templating, true)}?"
                 }
 
-                override fun options(situation: ILearningSituation): List<SingleChoiceOption<Pair<DecisionTreeNode, Boolean>>> {
-                    val jumps = branch.getPossibleJumps(situation.answers)
+                override fun options(situation: LearningSituation): List<SingleChoiceOption<Pair<DecisionTreeNode, Boolean>>> {
+                    val jumps = branch.getPossibleJumps(situation)
 
                     return jumps.filter { it !is BranchResultNode}.map{
                         SingleChoiceOption(
@@ -350,13 +350,13 @@ object SequentialStrategy : QuestioningStrategyWithInfo<SequentialStrategy.Seque
             val question = object : CorrectnessCheckQuestionState<DecisionTreeNode>(setOf(
                 QuestionStateLink({situation, answer ->  true}, nextState)
             )) {
-                override fun text(situation: ILearningSituation): String {
+                override fun text(situation: LearningSituation): String {
                     return outcome.nextStepQuestion(situation.templating) ?: defaultNextStepQuestion
                 }
 
-                override fun options(situation: ILearningSituation): List<SingleChoiceOption<Pair<DecisionTreeNode, Boolean>>> {
+                override fun options(situation: LearningSituation): List<SingleChoiceOption<Pair<DecisionTreeNode, Boolean>>> {
                     val explanation = outcome.nextStepExplanation(situation.templating)?:""
-                    val jumps = node.getPossibleJumps(situation.answers) //TODO? правильная работа со структурой дерева, включая известность переменных
+                    val jumps = node.getPossibleJumps(situation) //TODO? правильная работа со структурой дерева, включая известность переменных
 
                     val options = jumps.filter { it !is BranchResultNode}.map{SingleChoiceOption(
                         it.asNextStep(situation.templating),

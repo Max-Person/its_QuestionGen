@@ -1,12 +1,12 @@
 package its.questions.gen.states
 
-import its.questions.inputs.ILearningSituation
+import its.questions.inputs.LearningSituation
 import java.util.*
 
 interface QuestionState{
     val id: Int
-    fun getQuestion(situation: ILearningSituation) : QuestionStateResult
-    fun proceedWithAnswer(situation: ILearningSituation, answer: List<Int>): QuestionStateChange
+    fun getQuestion(situation: LearningSituation) : QuestionStateResult
+    fun proceedWithAnswer(situation: LearningSituation, answer: List<Int>): QuestionStateChange
     val reachableStates: Collection<QuestionState>
 
     fun runForAllReachable(block: QuestionState.() -> Unit){
@@ -28,11 +28,11 @@ class RedirectQuestionState : QuestionState{
     override val id
         get() = redir?.id ?: -1
 
-    override fun getQuestion(situation: ILearningSituation): QuestionStateResult {
+    override fun getQuestion(situation: LearningSituation): QuestionStateResult {
         return redir!!.getQuestion(situation)
     }
 
-    override fun proceedWithAnswer(situation: ILearningSituation, answer: List<Int>): QuestionStateChange {
+    override fun proceedWithAnswer(situation: LearningSituation, answer: List<Int>): QuestionStateChange {
         return redir!!.proceedWithAnswer(situation, answer)
     }
 
@@ -43,13 +43,13 @@ class RedirectQuestionState : QuestionState{
 abstract class SkipQuestionState : QuestionState{
     override val id = -2
 
-    abstract fun skip(situation: ILearningSituation) : QuestionStateChange
+    abstract fun skip(situation: LearningSituation) : QuestionStateChange
 
-    override fun getQuestion(situation: ILearningSituation): QuestionStateResult {
+    override fun getQuestion(situation: LearningSituation): QuestionStateResult {
         return skip(situation)
     }
 
-    override fun proceedWithAnswer(situation: ILearningSituation, answer: List<Int>): QuestionStateChange {
+    override fun proceedWithAnswer(situation: LearningSituation, answer: List<Int>): QuestionStateChange {
         return skip(situation)
     }
 }
@@ -60,7 +60,7 @@ abstract class GeneralQuestionState<AnswerInfo>(
     override val id: Int = nextId()
 
     data class QuestionStateLink<AnswerInfo>(
-        val condition: (situation: ILearningSituation, chosenAnswer: AnswerInfo) -> Boolean,
+        val condition: (situation: LearningSituation, chosenAnswer: AnswerInfo) -> Boolean,
         val nextState: QuestionState
 
         //TODO конструктор из пары и тп?

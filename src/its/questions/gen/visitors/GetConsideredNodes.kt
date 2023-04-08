@@ -2,16 +2,17 @@ package its.questions.gen.visitors
 
 import its.model.nodes.*
 import its.model.nodes.visitors.SimpleDecisionTreeBehaviour
+import its.questions.inputs.LearningSituation
 
-class GetConsideredNodes private constructor(val answers: Map<String, String>) :
+class GetConsideredNodes private constructor(val situation: LearningSituation) :
     SimpleDecisionTreeBehaviour<List<DecisionTreeNode>> {
 
     // ---------------------- Удобства ---------------------------
 
     companion object _static{
         @JvmStatic
-        fun ThoughtBranch.getConsideredNodes(answers: Map<String, String>) : List<DecisionTreeNode>{
-            return this.use(GetConsideredNodes(answers))
+        fun ThoughtBranch.getConsideredNodes(situation: LearningSituation) : List<DecisionTreeNode>{
+            return this.use(GetConsideredNodes(situation))
         }
     }
 
@@ -23,7 +24,7 @@ class GetConsideredNodes private constructor(val answers: Map<String, String>) :
 
     override fun <AnswerType : Any> process(node: LinkNode<AnswerType>): List<DecisionTreeNode>{
         val out = mutableListOf<DecisionTreeNode>(node)
-        out.addAll(node.correctNext(answers).getConsideredNodes())
+        out.addAll(node.correctNext(situation).getConsideredNodes())
         return out.toList()
     }
 
