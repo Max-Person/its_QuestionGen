@@ -314,7 +314,10 @@ class SequentialAutomataCreation : DecisionTreeBehaviour<QuestionState> {
 
     fun <AnswerType : Any> nextStep(node: LinkNode<AnswerType>, answer: AnswerType): QuestionState {
         val outcome = node.next.info.first { it.key == answer } //TODO возможно стоит изменить систему Outcomes чтобы вот такие конструкции были проще
-        val nextState = outcome.value.use(this)
+        val nextNode = outcome.value
+        val nextNodeIsResultTrue = nextNode is BranchResultNode && nextNode.value == BooleanLiteral(true)
+        val nextNodeIsResultFalse = nextNode is BranchResultNode && nextNode.value == BooleanLiteral(false)
+        val nextState = nextNode.use(this)
         val currentBranch = currentBranch
 
         val question = object : CorrectnessCheckQuestionState<DecisionTreeNode>(setOf(
@@ -326,23 +329,20 @@ class SequentialAutomataCreation : DecisionTreeBehaviour<QuestionState> {
 
             override fun options(situation: ILearningSituation): List<SingleChoiceOption<Pair<DecisionTreeNode, Boolean>>> {
                 val explanation = outcome.nextStepExplanation(situation.templating)?:""
-                val correct = node.correctNext(situation.answers)
-                val correctIsResultTrue = correct is BranchResultNode && correct.value == BooleanLiteral(true)
-                val correctIsResultFalse = correct is BranchResultNode && correct.value == BooleanLiteral(false)
                 val jumps = node.getPossibleJumps(situation.answers) //TODO? правильная работа со структурой дерева, включая известность переменных
 
                 val options = jumps.filter { it !is BranchResultNode}.map{SingleChoiceOption(
                     it.asNextStep(situation.templating),
                     Explanation(explanation),
-                    it to (it == correct),
+                    it to (it == nextNode),
                 )}.plus(SingleChoiceOption<Pair<DecisionTreeNode, Boolean>>(
                     outcome.nextStepBranchResult(situation.templating, true) ?:"Можно заключить, что ${currentBranch.description(situation.templating, true)}",
                     Explanation(explanation),
-                    BranchResultNode(BooleanLiteral(true)) to correctIsResultTrue,
+                    BranchResultNode(BooleanLiteral(true)) to nextNodeIsResultTrue,
                 )).plus(SingleChoiceOption<Pair<DecisionTreeNode, Boolean>>(
                     outcome.nextStepBranchResult(situation.templating, false) ?:"Можно заключить, что ${currentBranch.description(situation.templating, false)}",
                     Explanation(explanation),
-                    BranchResultNode(BooleanLiteral(false)) to correctIsResultFalse,
+                    BranchResultNode(BooleanLiteral(false)) to nextNodeIsResultFalse,
                 ))
                 return options
             }
