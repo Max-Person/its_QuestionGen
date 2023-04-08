@@ -14,12 +14,13 @@ import its.questions.gen.TemplatingUtils._static.question
 import its.questions.gen.TemplatingUtils._static.text
 import its.questions.gen.visitors.GetPossibleJumps._static.getPossibleJumps
 import its.questions.gen.visitors.LiteralToString._static.toAnswerString
-import its.questions.gen.visitors.correctNext
 import its.questions.gen.visitors.getAnswer
 import its.questions.gen.visitors.isTrivial
 import java.util.*
 
 class SequentialAutomataCreation : DecisionTreeBehaviour<QuestionState> {
+    private val nodeStates = mutableMapOf<DecisionTreeNode, QuestionState>()
+    private val preNodeStates = mutableMapOf<DecisionTreeNode, QuestionState>()
     private val branchDiving : Stack<ThoughtBranch> = Stack()
     private val currentBranch
         get() = branchDiving.peek()
@@ -39,6 +40,7 @@ class SequentialAutomataCreation : DecisionTreeBehaviour<QuestionState> {
                 get() = listOf(redir)
         }
 
+        nodeStates[node] = skip
         return skip
     }
 
@@ -62,6 +64,7 @@ class SequentialAutomataCreation : DecisionTreeBehaviour<QuestionState> {
                 get() = nextSteps.values
         }
 
+        nodeStates[node] = skip
         return skip
     }
 
@@ -116,7 +119,7 @@ class SequentialAutomataCreation : DecisionTreeBehaviour<QuestionState> {
 
 
         //Если были сделаны ошибки в ветках, то спросить про углубление в одну из веток
-        val branchAutomata = node.thoughtBranches.map { it to QuestionAutomata(it.use(this))}.toMap()
+        val branchAutomata = node.thoughtBranches.map { it to FullBranchAutomataCreation.create(it)}.toMap()
         val branchLinks = node.thoughtBranches.map{branch -> GeneralQuestionState.QuestionStateLink<ThoughtBranch>(
             {situation, answer -> answer == branch }, branchAutomata[branch]!!.initState
         )}.toSet()
@@ -153,6 +156,7 @@ class SequentialAutomataCreation : DecisionTreeBehaviour<QuestionState> {
         }
         branchAutomata.values.forEach{it.finalize(shadowSkip)}
 
+        nodeStates[node] = resultQuestion
         return resultQuestion
     }
 
@@ -189,7 +193,7 @@ class SequentialAutomataCreation : DecisionTreeBehaviour<QuestionState> {
         //Если результат выполнения узла был выбран неверно, то спросить про углубление в одну из веток
         val shadowRedirect = RedirectQuestionState()
         val branches = node.next.info.map {it.decidingBranch}.filterNotNull()
-        val branchAutomata = branches.map { it to QuestionAutomata(it.use(this))}.toMap()
+        val branchAutomata = branches.map { it to FullBranchAutomataCreation.create(it)}.toMap()
         val branchLinks = branches.map{branch -> GeneralQuestionState.QuestionStateLink<ThoughtBranch?>(
             {situation, answer -> answer == branch }, branchAutomata[branch]!!.initState
         )}.plus(GeneralQuestionState.QuestionStateLink<ThoughtBranch?>(
@@ -245,6 +249,7 @@ class SequentialAutomataCreation : DecisionTreeBehaviour<QuestionState> {
         branchAutomata.values.forEach{it.finalize(shadowSkip)}
         shadowRedirect.redir = shadowSkip
 
+        nodeStates[node] = mainQuestion
         return mainQuestion
     }
 
@@ -273,6 +278,7 @@ class SequentialAutomataCreation : DecisionTreeBehaviour<QuestionState> {
             }
         }
 
+        nodeStates[node] = question
         return question
     }
 
@@ -305,6 +311,7 @@ class SequentialAutomataCreation : DecisionTreeBehaviour<QuestionState> {
         }
 
         branchDiving.pop()
+        preNodeStates[branch.start] = question
         return question
     }
 
@@ -348,6 +355,7 @@ class SequentialAutomataCreation : DecisionTreeBehaviour<QuestionState> {
             }
         }
 
+        preNodeStates[nextNode] = question
         return question
     }
 
@@ -356,21 +364,18 @@ class SequentialAutomataCreation : DecisionTreeBehaviour<QuestionState> {
     companion object _static{
         const val defaultNextStepQuestion = "Какой следующий шаг необходим для решения задачи?"
 
+        data class SequentialAutomataInfo(
+            val automata: QuestionAutomata,
+            val nodeStates : MutableMap<DecisionTreeNode, QuestionState>,
+            val preNodeStates : MutableMap<DecisionTreeNode, QuestionState>,
+        )
+
         @JvmStatic
-        fun create(startNode: StartNode) : QuestionAutomata{
-            val initState = startNode.use(SequentialAutomataCreation())
+        fun create(branch: ThoughtBranch) : SequentialAutomataInfo{
+            val strat = SequentialAutomataCreation()
+            val initState = branch.use(strat)
             val automata = QuestionAutomata(initState)
-            val endState = object : SkipQuestionState(){
-                override fun skip(situation: ILearningSituation): QuestionStateChange {
-                    return QuestionStateChange(Explanation("Конец"), null)
-                }
-
-                override val reachableStates: Collection<QuestionState>
-                    get() = emptyList()
-
-            }
-            automata.finalize(endState)
-            return automata
+            return SequentialAutomataInfo(automata, strat.nodeStates, strat.preNodeStates)
         }
     }
 }

@@ -24,7 +24,8 @@ interface QuestionState{
 
 class RedirectQuestionState : QuestionState{
     var redir: QuestionState? = null
-    override val id = -1
+    override val id
+        get() = redir?.id ?: -1
 
     override fun getQuestion(situation: ILearningSituation): QuestionStateResult {
         return redir!!.getQuestion(situation)

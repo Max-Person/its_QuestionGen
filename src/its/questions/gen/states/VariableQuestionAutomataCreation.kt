@@ -48,16 +48,6 @@ class VariableQuestionAutomataCreation {
         fun create(branch: ThoughtBranch) : QuestionAutomata{
             val infoMap = branch.start.getVariableInfo(mutableMapOf())
             val automata = create(infoMap.values.filter { it.isDeciding }.map{it.name}, infoMap)
-            val endState = object : SkipQuestionState(){
-                override fun skip(situation: ILearningSituation): QuestionStateChange {
-                    return QuestionStateChange(Explanation("Конец"), null)
-                }
-
-                override val reachableStates: Collection<QuestionState>
-                    get() = emptyList()
-
-            }
-            automata.finalize(endState)
             return automata
         }
 
