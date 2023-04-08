@@ -1,6 +1,6 @@
 import its.model.DomainModel
 import its.questions.gen.states.*
-import its.questions.gen.strategies.FullBranchAutomataCreation
+import its.questions.gen.strategies.QuestioningStrategy
 import its.questions.inputs.*
 import java.lang.NumberFormatException
 import java.util.*
@@ -19,7 +19,6 @@ fun run() {
     ).initFrom(dir)
 
 
-    val automata = FullBranchAutomataCreation.create(DomainModel.decisionTree.main)
     val endState = object : SkipQuestionState(){
         override fun skip(situation: ILearningSituation): QuestionStateChange {
             return QuestionStateChange(Explanation("Конец"), null)
@@ -29,7 +28,7 @@ fun run() {
             get() = emptyList()
 
     }
-    automata.finalize(endState)
+    val automata = QuestioningStrategy.defaultFullBranchStrategy.buildAndFinalize(DomainModel.decisionTree, endState)
 
     println(GeneralQuestionState.stateCount)
     println()
