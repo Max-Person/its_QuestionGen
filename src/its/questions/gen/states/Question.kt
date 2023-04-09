@@ -43,14 +43,14 @@ class Question(val text: String, options : List<String>, val isAggregation: Bool
         return if(!isAggregation)
             listOf(options[answers.single()-1].second)
         else {
-            options.sortedBy { option -> option.second }.mapIndexed { i, op ->
-                if(answers.contains(i+1))
+            options.map { it.second }.mapIndexed { i, opInd ->
+                opInd to if(answers.contains(i+1))
                     1
                 else if(answers.contains(-i-1))
                     -1
                 else
                     0
-            }
+            }.sortedBy {(opInd, _) -> opInd }.map { (_, answer) -> answer }
         }
     }
 }
