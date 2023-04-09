@@ -8,13 +8,11 @@ class EntityInfo(
     calculatedClassNames: List<String>,
     val specificName: String,
     variableName: String? = null,
-    variableErrorExplanations: Map<String, String> = mapOf(),
     val errorCategories: List<String>
 ) {
     val clazz: QClassModel
     val calculatedClasses : List<QClassModel>
     val variable : QVarModel?
-    val variableErrorExplanations: Map<String, String>
     init {
         require(DomainModel.usesQDictionaries())
         require(DomainModel.classesDictionary.exist(className)){
@@ -35,9 +33,5 @@ class EntityInfo(
         }
         else
             variable = null
-
-        this.variableErrorExplanations = variableErrorExplanations.map { (key, value) ->
-            key to value.replace("_this_", alias)
-        }.toMap()
     }
 }

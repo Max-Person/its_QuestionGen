@@ -100,8 +100,4 @@ class QRelationshipModel(
     }
 }
 
-class QVarModel(
-    name: String,
-    className: String,
-    val valueSearchTemplate : String?
-) : DecisionTreeVarModel(name, className)
+typealias QVarModel = DecisionTreeVarModel
