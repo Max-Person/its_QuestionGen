@@ -1,6 +1,6 @@
 package its.questions.gen.visitors
 
-import its.model.expressions.Literal
+import its.model.expressions.literals.Literal
 import its.model.nodes.*
 import its.questions.inputs.LearningSituation
 import kotlin.reflect.full.isSubclassOf

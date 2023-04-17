@@ -1,7 +1,6 @@
 package its.questions.gen.visitors
 
 import its.model.DomainModel
-import its.model.expressions.Literal
 import its.model.expressions.literals.*
 import its.model.expressions.types.ComparisonResult
 import its.model.expressions.visitors.LiteralBehaviour
@@ -27,16 +26,15 @@ class LiteralToString private constructor(val q: LearningSituation) : LiteralBeh
     // ---------------------- Функции поведения ---------------------------
 
     override fun process(literal: BooleanLiteral): String {
-        return if(literal.value.toBoolean()) "Да" else "Нет"
+        return if(literal.value) "Да" else "Нет"
     }
 
-    override fun process(literal: ClassLiteral): String {
-        return (DomainModel.classesDictionary.get(literal.value) as QClassModel).textName
+    override fun process(literal: ClassRef): String {
+        return (DomainModel.classesDictionary.get(literal.name) as QClassModel).textName
     }
 
     override fun process(literal: ComparisonResultLiteral): String {
-        val comparison = ComparisonResult.fromString(literal.value)
-        return when (comparison) {
+        return when (literal.value) {
             ComparisonResult.Greater -> "Больше"
             ComparisonResult.Less -> "Меньше"
             ComparisonResult.Equal -> "Равно"
@@ -45,36 +43,40 @@ class LiteralToString private constructor(val q: LearningSituation) : LiteralBeh
         }
     }
 
-    override fun process(literal: DecisionTreeVarLiteral): String {
-        return q.entityDictionary.getByVariable(literal.value)!!.specificName
+    override fun process(literal: DecisionTreeVar): String {
+        return q.entityDictionary.getByVariable(literal.name)!!.specificName
     }
 
     override fun process(literal: DoubleLiteral): String {
-        return literal.value
+        return literal.value.toString()
     }
 
     override fun process(literal: EnumLiteral): String {
-        val enum = (DomainModel.enumsDictionary.get(literal.owner) as QEnumModel)
-        return enum.textValues[enum.values.indexOf(literal.value)]
+        val enum = (DomainModel.enumsDictionary.get(literal.value.ownerEnum) as QEnumModel)
+        return enum.textValues[enum.values.indexOf(literal.value.value)]
     }
 
     override fun process(literal: IntegerLiteral): String {
-        return literal.value
+        return literal.value.toString()
     }
 
-    override fun process(literal: ObjectLiteral): String {
-        return q.entityDictionary.get(literal.value)!!.specificName
+    override fun process(literal: ObjectRef): String {
+        return q.entityDictionary.get(literal.name)!!.specificName
     }
 
-    override fun process(literal: PropertyLiteral): String {
+    override fun process(literal: PropertyRef): String {
         TODO("Не должна возникнуть необходимость преобразовывать литерал свойства в строку")
     }
 
-    override fun process(literal: RelationshipLiteral): String {
+    override fun process(literal: RelationshipRef): String {
         TODO("Не должна возникнуть необходимость преобразовывать литерал отношения в строку")
     }
 
     override fun process(literal: StringLiteral): String {
         return literal.value
+    }
+
+    override fun process(literal: Variable): String {
+        TODO("Не должна возникнуть необходимость преобразовывать переменную в строку")
     }
 }

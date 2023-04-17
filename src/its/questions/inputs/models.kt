@@ -1,7 +1,7 @@
 package its.questions.inputs
 
-import its.model.expressions.types.DataType
 import its.model.models.*
+import kotlin.reflect.KClass
 
 class QClassModel(
     name: String,
@@ -22,7 +22,7 @@ class QEnumModel(
 
 class QPropertyModel(
     name: String,
-    dataType: DataType?,
+    dataType: KClass<*>,
     enumName: String? = null,
     isStatic: Boolean,
     owners: List<String>? = null,
@@ -52,7 +52,7 @@ class QRelationshipModel(
                         name = scaleRelationshipsNames!![0],
                         argsClasses = argsClasses,
                         flags = flags,
-                        descriptionTemplate = scaleDescriptionTemplates[0]
+                        descriptionTemplate = scaleDescriptionTemplates[0],
                     ),
                     QRelationshipModel(
                         name = scaleRelationshipsNames!![1],

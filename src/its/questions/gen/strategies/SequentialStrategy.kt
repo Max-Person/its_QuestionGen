@@ -1,7 +1,7 @@
 package its.questions.gen.strategies
 
-import its.model.expressions.Literal
 import its.model.expressions.literals.BooleanLiteral
+import its.model.expressions.literals.Literal
 import its.model.nodes.*
 import its.model.nodes.visitors.DecisionTreeBehaviour
 import its.questions.inputs.TemplatingUtils._static.asNextStep
