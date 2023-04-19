@@ -1,29 +1,28 @@
 package its.questions.gen.states
 
 import its.questions.inputs.LearningSituation
-import java.util.*
 
-interface QuestionState{
-    val id: Int
-    fun getQuestion(situation: LearningSituation) : QuestionStateResult
-    fun proceedWithAnswer(situation: LearningSituation, answer: List<Int>): QuestionStateChange
-    val reachableStates: Collection<QuestionState>
+sealed class QuestionState{
+    abstract val id: Int
+    abstract fun getQuestion(situation: LearningSituation) : QuestionStateResult
+    abstract fun proceedWithAnswer(situation: LearningSituation, answer: List<Int>): QuestionStateChange
+    abstract val reachableStates: Collection<QuestionState>
 
     fun runForAllReachable(block: QuestionState.() -> Unit){
-        runForAllReachable(block, Stack())
+        runForAllReachable(block, mutableSetOf())
     }
-    private fun runForAllReachable(block: QuestionState.() -> Unit, visited: Stack<QuestionState>){
+    private fun runForAllReachable(block: QuestionState.() -> Unit, visited: MutableSet<QuestionState> = mutableSetOf()){
         if(visited.contains(this))
             return
 
         this.block()
-        visited.push(this)
-        reachableStates.forEach { it.runForAllReachable(block, visited) }
-        visited.pop()
+        visited.add(this)
+        reachableStates.map{if(it is RedirectQuestionState && it.redirectsTo() != null) it.redirectsTo()!! else it}.forEach { it.runForAllReachable(block, visited) }
     }
 }
 
-class RedirectQuestionState : QuestionState{
+//TODO продумать правильное взаимодействие редиректов со сравнениями
+class RedirectQuestionState : QuestionState(){
     var redir: QuestionState? = null
         set(value){
             var r = value
@@ -34,7 +33,7 @@ class RedirectQuestionState : QuestionState{
         }
 
     override val id
-        get() = redir?.id ?: -1
+        get() = redir?.id ?: 0
 
     override fun getQuestion(situation: LearningSituation): QuestionStateResult {
         return redir!!.getQuestion(situation)
@@ -58,8 +57,8 @@ class RedirectQuestionState : QuestionState{
     }
 }
 
-abstract class SkipQuestionState : QuestionState{
-    override val id = -2
+abstract class SkipQuestionState : QuestionState(){
+    override val id = nextId()
 
     abstract fun skip(situation: LearningSituation) : QuestionStateChange
 
@@ -70,11 +69,18 @@ abstract class SkipQuestionState : QuestionState{
     override fun proceedWithAnswer(situation: LearningSituation, answer: List<Int>): QuestionStateChange {
         return skip(situation)
     }
+
+    companion object _static {
+        @JvmStatic
+        var stateCount = -1
+        @JvmStatic
+        private fun nextId() = stateCount--
+    }
 }
 
 abstract class GeneralQuestionState<AnswerInfo>(
     protected val links: Set<QuestionStateLink<AnswerInfo>>
-) : QuestionState {
+) : QuestionState() {
     override val id: Int = nextId()
 
     data class QuestionStateLink<AnswerInfo>(
@@ -85,8 +91,10 @@ abstract class GeneralQuestionState<AnswerInfo>(
     )
 
     companion object _static {
-        var stateCount = 0
-        fun nextId() = stateCount++
+        @JvmStatic
+        var stateCount = 1
+        @JvmStatic
+        private fun nextId() = stateCount++
     }
 
     override val reachableStates: Collection<QuestionState>
