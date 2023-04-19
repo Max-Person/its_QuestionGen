@@ -30,10 +30,14 @@ object FullBranchStrategy : QuestioningStrategy {
             return QuestionAutomata(variableValueAutomata.initState).finalizeForBranch(branch)
         }
 
+        val knownLCAs = mutableSetOf<DecisionTreeNode>()
         val endingNodeSelectlinks = mutableListOf<GeneralQuestionState.QuestionStateLink<NodeLCAinfo>>()
         for(endA in endingNodes){
             for(endB in endingNodes.subList(endingNodes.indexOf(endA), endingNodes.size)){
                 val lca = branch.getNodesLCA(endA, endB)!!
+                if(knownLCAs.contains(lca))
+                    continue
+                knownLCAs.add(lca)
                 endingNodeSelectlinks.add(GeneralQuestionState.QuestionStateLink(
                     {_, chosenAnswer -> chosenAnswer.node == lca && !chosenAnswer.startAbove }, sequential.info.nodeStates[lca]!!
                 ))
