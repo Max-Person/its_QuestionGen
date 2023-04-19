@@ -6,7 +6,7 @@ import its.model.dictionaries.*
 class QClassesDictionary : ClassesDictionaryBase<QClassModel>(QClassModel::class)
 class QEnumsDictionary : EnumsDictionaryBase<QEnumModel>(QEnumModel::class)
 class QPropertiesDictionary : PropertiesDictionaryBase<QPropertyModel>(QPropertyModel::class)
-class QRelationshipsDictionary : RelationshipsDictionaryBase<QRelationshipModel>(QRelationshipModel::class)
+typealias QRelationshipsDictionary = RelationshipsDictionary
 class QVarsDictionary : DecisionTreeVarsDictionaryBase<QVarModel>(QVarModel::class)
 class EntityDictionary : DictionaryBase<EntityInfo>(EntityInfo::class) {
     override fun onAddActions(added: EntityInfo) {}
