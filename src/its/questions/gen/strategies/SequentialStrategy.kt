@@ -1,7 +1,6 @@
 package its.questions.gen.strategies
 
 import its.model.expressions.literals.BooleanLiteral
-import its.model.expressions.literals.Literal
 import its.model.nodes.*
 import its.model.nodes.visitors.DecisionTreeBehaviour
 import its.questions.inputs.TemplatingUtils._static.asNextStep
@@ -14,7 +13,7 @@ import its.questions.inputs.TemplatingUtils._static.question
 import its.questions.inputs.TemplatingUtils._static.text
 import its.questions.gen.states.*
 import its.questions.gen.visitors.GetPossibleJumps._static.getPossibleJumps
-import its.questions.gen.visitors.LiteralToString._static.toAnswerString
+import its.questions.gen.visitors.ValueToAnswerString.toAnswerString
 import its.questions.gen.visitors.getAnswer
 import its.questions.gen.visitors.isTrivial
 import its.questions.inputs.LearningSituation
@@ -295,18 +294,18 @@ object SequentialStrategy : QuestioningStrategyWithInfo<SequentialStrategy.Seque
                 return RedirectQuestionState()
 
             val links = node.next.keys.map { outcomeLiteral ->
-                GeneralQuestionState.QuestionStateLink<Pair<Literal, Boolean>>(
+                GeneralQuestionState.QuestionStateLink<Pair<Any, Boolean>>(
                     { situation, answer -> node.getAnswer(situation) == outcomeLiteral },
                     nextStep(node, outcomeLiteral)
                 )
             }.toSet()
 
-            val question = object : CorrectnessCheckQuestionState<Literal>(links) {
+            val question = object : CorrectnessCheckQuestionState<Any>(links) {
                 override fun text(situation: LearningSituation): String {
                     return node.question(situation.templating)
                 }
 
-                override fun options(situation: LearningSituation): List<SingleChoiceOption<Pair<Literal, Boolean>>> {
+                override fun options(situation: LearningSituation): List<SingleChoiceOption<Pair<Any, Boolean>>> {
                     val answer = node.getAnswer(situation)!!
                     val correctOutcome = node.next.info.first { it.key == answer } //TODO возможно стоит изменить систему Outcomes чтобы вот такие конструкции были проще
                     val explText = correctOutcome.explanation(situation.templating)
