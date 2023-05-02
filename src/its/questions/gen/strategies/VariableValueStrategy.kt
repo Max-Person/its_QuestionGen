@@ -8,6 +8,7 @@ import its.questions.inputs.TemplatingUtils._static.question
 import its.questions.inputs.TemplatingUtils._static.toCase
 import its.questions.gen.states.*
 import its.questions.gen.visitors.ALIAS_ATR
+import its.questions.gen.visitors.GetConsideredNodes._static.getConsideredNodes
 import its.questions.gen.visitors.getUsedVariables
 import its.questions.inputs.EntityInfo
 import its.questions.inputs.LearningSituation
@@ -45,18 +46,20 @@ object VariableValueStrategy : QuestioningStrategy {
 
     override fun build(branch: ThoughtBranch) : QuestionAutomata {
         val infoMap = branch.start.getVariableInfo(mutableMapOf())
-        val automata = create(infoMap.values.filter { it.isDeciding }.map{it.name}, infoMap)
+        val automata = create(infoMap.values.filter { it.isDeciding }.map{it.name}, infoMap, branch)
         return automata
     }
 
     @JvmStatic
-    private fun create(variables: List<String>, infoMap: Map<String, VariableInfo>): QuestionAutomata {
+    private fun create(variables: List<String>, infoMap: Map<String, VariableInfo>, currentBranch: ThoughtBranch): QuestionAutomata {
         var lastState : QuestionState = RedirectQuestionState()
         for(v in variables.reversed()){
             val varInfo = infoMap[v]!!
+            val declarationNode = varInfo.declarationNode
+            val nextState = lastState
 
             val question = object : CorrectnessCheckQuestionState<EntityInfo?>(setOf(
-                QuestionStateLink({_, _ -> true }, lastState),
+                QuestionStateLink({_, _ -> true }, nextState),
             ))
             {
                 override fun text(situation: LearningSituation): String {
@@ -98,20 +101,19 @@ object VariableValueStrategy : QuestioningStrategy {
                     situation.knownVariables.put(varInfo.name, chosenAnswer.first?.alias ?: "")
                 }
 
-                override fun additionalSkip(situation: LearningSituation): QuestionStateChange? {
-                    //TODO? убедиться что корректно работает в ситуациях, когда переменная не нужна вовсе. Если не работает - скипать
-                    //Также TODO этот скип предполагался как повторный заход в это состояние - если несколько переменных зависят от текущей - но в этом случае скорее всего будут создаваться лишние состояния
-                    if(situation.knownVariables.containsKey(varInfo.name)){
-                        return QuestionStateChange(null, lastState)
+                override fun preliminarySkip(situation: LearningSituation): QuestionStateChange? {
+                    //TODO этот скип предполагался как повторный заход в это состояние - если несколько переменных зависят от текущей - но в этом случае скорее всего будут создаваться лишние состояния
+                    if(situation.knownVariables.containsKey(varInfo.name) || !currentBranch.getConsideredNodes(situation).contains(declarationNode) || options(situation).isEmpty()){
+                        return QuestionStateChange(null, nextState)
                     }
-                    return super.additionalSkip(situation)
+                    return super.preliminarySkip(situation)
                 }
 
             }
 
 
             val prerequisites = varInfo.prerequisites.filter { infoMap.containsKey(it) }
-            val prerequisitesAutomata = if(!prerequisites.isEmpty()) create(prerequisites, infoMap) else null
+            val prerequisitesAutomata = if(!prerequisites.isEmpty()) create(prerequisites, infoMap, currentBranch) else null
 
             val prerequisitesInit =
                 if(prerequisitesAutomata != null) {

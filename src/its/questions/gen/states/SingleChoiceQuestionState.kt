@@ -15,21 +15,21 @@ abstract class SingleChoiceQuestionState<AnswerInfo>(
     protected abstract fun text(situation: LearningSituation) : String
     protected abstract fun options(situation: LearningSituation) : List<SingleChoiceOption<AnswerInfo>>
     protected open fun explanationIfSkipped(skipOption: SingleChoiceOption<AnswerInfo>) : Explanation? {return null}
-    protected open fun additionalSkip(situation: LearningSituation) : QuestionStateChange? {return null}
+    protected open fun preliminarySkip(situation: LearningSituation) : QuestionStateChange? {return null}
     protected open fun explanation(chosenOption: SingleChoiceOption<AnswerInfo>) : Explanation? {return chosenOption.explanation}
     protected open fun additionalActions(situation: LearningSituation, chosenAnswer: AnswerInfo) {}
 
     override fun getQuestion(situation: LearningSituation): QuestionStateResult {
+        val skipChange = preliminarySkip(situation)
+        if(skipChange != null)
+            return skipChange
+
         val text = "$id. ${text(situation)}"
         val options = options(situation)
         if(options.size == 1){
             val change = proceedWithAnswer(situation, options.single())
             return change.copy(explanation = explanationIfSkipped(options.single()))
         }
-
-        val skipChange = additionalSkip(situation)
-        if(skipChange != null)
-            return skipChange
 
         return Question(text, options.map{option -> option.text})
     }
