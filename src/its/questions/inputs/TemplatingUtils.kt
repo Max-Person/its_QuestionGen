@@ -44,6 +44,11 @@ class TemplatingUtils(val situation : LearningSituation) {
             return Padeg.getAppointmentPadeg(this, (case?: Case.Nom).ordinal+1).replace(Regex("\\s+"), " ")
         }
 
+        @JvmStatic
+        fun String.capitalize() : String{
+            return this.replaceFirstChar { it.uppercaseChar() }
+        }
+
 
         @JvmStatic
         private fun String.cleanup() : String{
@@ -59,80 +64,80 @@ class TemplatingUtils(val situation : LearningSituation) {
 
         //Узлы
         @JvmStatic
-        internal fun DecisionTreeNode.asNextStep(interpretationData: InterpretationData) : String {
-            return additionalInfo["asNextStep"]!!.interpret(interpretationData)
+        internal fun DecisionTreeNode.asNextStep(localizationCode: String, interpretationData: InterpretationData) : String {
+            return additionalInfo["${localizationCode}_asNextStep"]!!.interpret(interpretationData)
         }
 
         @JvmStatic
-        internal fun DecisionTreeNode.question(interpretationData: InterpretationData) : String {
-            return additionalInfo["question"]!!.interpret(interpretationData) //TODO Если такого нет - у агрегаций, например.
+        internal fun DecisionTreeNode.question(localizationCode: String, interpretationData: InterpretationData) : String {
+            return additionalInfo["${localizationCode}_question"]!!.interpret(interpretationData) //TODO Если такого нет - у агрегаций, например.
         }
 
         @JvmStatic
-        internal fun DecisionTreeNode.endingCause(interpretationData: InterpretationData) : String {
-            return additionalInfo["endingCause"]!!.interpret(interpretationData) //TODO Если такого нет - т.е. у не-конечных узлов
+        internal fun DecisionTreeNode.endingCause(localizationCode: String, interpretationData: InterpretationData) : String {
+            return additionalInfo["${localizationCode}_endingCause"]!!.interpret(interpretationData) //TODO Если такого нет - т.е. у не-конечных узлов
         }
 
         @JvmStatic
-        internal fun LogicAggregationNode.description(interpretationData: InterpretationData, result : Boolean) : String {
-            return additionalInfo["description"]!!.interpret(interpretationData.usingVar("result", result))
+        internal fun LogicAggregationNode.description(localizationCode: String, interpretationData: InterpretationData, result : Boolean) : String {
+            return additionalInfo["${localizationCode}_description"]!!.interpret(interpretationData.usingVar("result", result))
         }
 
         //Выходы (стрелки)
         @JvmStatic
-        internal fun Outcome<*>.text(interpretationData: InterpretationData) : String? {
-            return additionalInfo["text"]?.interpret(interpretationData)
+        internal fun Outcome<*>.text(localizationCode: String, interpretationData: InterpretationData) : String? {
+            return additionalInfo["${localizationCode}_text"]?.interpret(interpretationData)
         }
 
         @JvmStatic
-        internal fun Outcome<*>.explanation(interpretationData: InterpretationData) : String? { //TODO? если это PredeterminingOutcome то использовать другую функцию
-            return additionalInfo["explanation"]?.interpret(interpretationData)
+        internal fun Outcome<*>.explanation(localizationCode: String, interpretationData: InterpretationData) : String? { //TODO? если это PredeterminingOutcome то использовать другую функцию
+            return additionalInfo["${localizationCode}_explanation"]?.interpret(interpretationData)
         }
 
         @JvmStatic
-        internal fun FindActionNode.FindErrorCategory.explanation(interpretationData: InterpretationData, entityAlias : String) : String {
-            return additionalInfo["explanation"]!!.interpret(interpretationData.usingVar("current", entityAlias))
+        internal fun FindActionNode.FindErrorCategory.explanation(localizationCode: String, interpretationData: InterpretationData, entityAlias : String) : String {
+            return additionalInfo["${localizationCode}_explanation"]!!.interpret(interpretationData.usingVar("checked", entityAlias))
         }
 
         @JvmStatic
-        internal fun PredeterminingOutcome.explanation(interpretationData: InterpretationData, result: Boolean) : String {
-            return additionalInfo["explanation"]!!.interpret(interpretationData.usingVar("result", result))
+        internal fun PredeterminingOutcome.explanation(localizationCode: String, interpretationData: InterpretationData, result: Boolean) : String {
+            return additionalInfo["${localizationCode}_explanation"]!!.interpret(interpretationData.usingVar("result", result))
         }
 
         @JvmStatic
-        internal fun Outcome<*>.nextStepQuestion(interpretationData: InterpretationData) : String? {
-            return additionalInfo["nextStepQuestion"]?.interpret(interpretationData)
+        internal fun Outcome<*>.nextStepQuestion(localizationCode: String, interpretationData: InterpretationData) : String? {
+            return additionalInfo["${localizationCode}_nextStepQuestion"]?.interpret(interpretationData)
         }
 
         @JvmStatic
-        internal fun Outcome<*>.nextStepBranchResult(interpretationData: InterpretationData, branchResult : Boolean) : String? {
-            return additionalInfo["nextStepBranchResult"]?.interpret(interpretationData.usingVar("branchResult", branchResult))
+        internal fun Outcome<*>.nextStepBranchResult(localizationCode: String, interpretationData: InterpretationData, branchResult : Boolean) : String? {
+            return additionalInfo["${localizationCode}_nextStepBranchResult"]?.interpret(interpretationData.usingVar("branchResult", branchResult))
         }
 
         @JvmStatic
-        internal fun Outcome<*>.nextStepExplanation(interpretationData: InterpretationData) : String? {
-            return additionalInfo["nextStepExplanation"]?.interpret(interpretationData)
+        internal fun Outcome<*>.nextStepExplanation(localizationCode: String, interpretationData: InterpretationData) : String? {
+            return additionalInfo["${localizationCode}_nextStepExplanation"]?.interpret(interpretationData)
         }
 
         //Ветки
         @JvmStatic
-        internal fun ThoughtBranch.description(interpretationData: InterpretationData, result : Boolean) : String {
-            return additionalInfo["description"]!!.interpret(interpretationData.usingVar("result", result))
+        internal fun ThoughtBranch.description(localizationCode: String, interpretationData: InterpretationData, result : Boolean) : String {
+            return additionalInfo["${localizationCode}_description"]!!.interpret(interpretationData.usingVar("result", result))
         }
 
         @JvmStatic
-        internal fun ThoughtBranch.nextStepQuestion(interpretationData: InterpretationData) : String? {
-            return additionalInfo["nextStepQuestion"]?.interpret(interpretationData)
+        internal fun ThoughtBranch.nextStepQuestion(localizationCode: String, interpretationData: InterpretationData) : String? {
+            return additionalInfo["${localizationCode}_nextStepQuestion"]?.interpret(interpretationData)
         }
 
         @JvmStatic
-        internal fun ThoughtBranch.nextStepBranchResult(interpretationData: InterpretationData, branchResult : Boolean) : String? {
-            return additionalInfo["nextStepBranchResult"]?.interpret(interpretationData.usingVar("branchResult", branchResult))
+        internal fun ThoughtBranch.nextStepBranchResult(localizationCode: String, interpretationData: InterpretationData, branchResult : Boolean) : String? {
+            return additionalInfo["${localizationCode}_nextStepBranchResult"]?.interpret(interpretationData.usingVar("branchResult", branchResult))
         }
 
         @JvmStatic
-        internal fun ThoughtBranch.nextStepExplanation(interpretationData: InterpretationData) : String? {
-            return additionalInfo["nextStepExplanation"]?.interpret(interpretationData)
+        internal fun ThoughtBranch.nextStepExplanation(localizationCode: String, interpretationData: InterpretationData) : String? {
+            return additionalInfo["${localizationCode}_nextStepExplanation"]?.interpret(interpretationData)
         }
 
         //endregion
@@ -150,6 +155,8 @@ class TemplatingUtils(val situation : LearningSituation) {
 
     @TemplatingSafeMethod("class")
     fun getVariableClassname(varName: String, case: Case) : String{
-        return situation.entityDictionary.getByVariable(varName)!!.clazz.textName.toCase(case)
+        return with(situation.domainLocalization){
+            situation.entityDictionary.getByVariable(varName)!!.clazz.localizedName.toCase(case)
+        }
     }
 }

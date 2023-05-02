@@ -20,14 +20,14 @@ class AggregationQuestionState(
 
     protected fun text(situation: LearningSituation) : String {
         val answer = node.getAnswer(situation)!!
-        val descrIncorrect = node.description(situation.templating, !answer)
-        return "Почему вы считаете, что $descrIncorrect?"
+        val descrIncorrect = node.description(situation.localizationCode, situation.templating, !answer)
+        return situation.localization.WHY_DO_YOU_THINK_THAT(descrIncorrect)
     }
 
     override fun getQuestion(situation: LearningSituation): QuestionStateResult {
         val text = "$id. ${text(situation)}"
         val options = node.thoughtBranches.map { branch ->
-            branch.description(situation.templating, true)
+            branch.description(situation.localizationCode, situation.templating, true)
         }
         return Question(text, options, isAggregation = true)
     }
@@ -64,23 +64,34 @@ class AggregationQuestionState(
         }
 
         val explanation = Explanation(
-            if(incorrectBranches.isEmpty() && missedBranches.isEmpty()){
-                "Вы верно оценили ситуацию, однако в данной ситуации ${node.description(situation.templating, nodeRes)}, потому что ${
-                    node.thoughtBranches
-                        .filter{it.getAnswer(situation) == nodeRes}
-                        .joinToString(separator = ", ", transform = {it.description(situation.templating, nodeRes)})
-                }."
+            if (incorrectBranches.isEmpty() && missedBranches.isEmpty()) {
+                situation.localization.AGGREGATION_CORRECT_EXPL(answer_descr = node.description(
+                    situation.localizationCode,
+                    situation.templating,
+                    nodeRes
+                ),
+                    branches_descr = node.thoughtBranches
+                        .filter { it.getAnswer(situation) == nodeRes }
+                        .joinToString(separator = ", ", transform = { it.description(situation.localizationCode, situation.templating, nodeRes) })
+                )
             } else {
-                (if(!incorrectBranches.isEmpty())
-                    "Это неверно, поскольку ${incorrectBranches.joinToString(separator = ", ", transform = {it.description(situation.templating, it.getAnswer(situation)!!)})}."
+                (if (!incorrectBranches.isEmpty())
+                    situation.localization.AGGREGATION_INCORRECT_BRANCHES_DESCR(
+                        branches_descr = incorrectBranches.joinToString(
+                            separator = ", ",
+                            transform = { it.description(situation.localizationCode, situation.templating, it.getAnswer(situation)!!) })
+                    )
                 else
                     "").plus(
-                    if(!missedBranches.isEmpty())
-                        "${if(incorrectBranches.isEmpty()) "Это неверно, поскольку вы" else " Вы также "} не упомянули, что ${
-                            missedBranches.joinToString(separator = ", ", transform = {it.description(situation.templating, it.getAnswer(situation)!!)})
-                        } - это влияет на ситуацию в данном случае."
-                    else
-                        ""
+                    if (!missedBranches.isEmpty()) {
+                        val missed_branches_descr = missedBranches.joinToString(
+                            separator = ", ",
+                            transform = { it.description(situation.localizationCode, situation.templating, it.getAnswer(situation)!!) })
+                        if (incorrectBranches.isEmpty())
+                            situation.localization.AGGREGATION_MISSED_BRANCHES_DESCR_PRIMARY(missed_branches_descr)
+                        else
+                            situation.localization.AGGREGATION_MISSED_BRANCHES_DESCR_CONCAT(missed_branches_descr)
+                    } else ""
                 )
             }
         )

@@ -2,18 +2,15 @@ package its.questions.gen.strategies
 
 import its.model.DomainModel
 import its.model.nodes.*
-import its.questions.inputs.TemplatingUtils
 import its.questions.inputs.TemplatingUtils._static.explanation
 import its.questions.inputs.TemplatingUtils._static.question
-import its.questions.inputs.TemplatingUtils._static.toCase
 import its.questions.gen.states.*
 import its.questions.gen.visitors.ALIAS_ATR
 import its.questions.gen.visitors.GetConsideredNodes._static.getConsideredNodes
 import its.questions.gen.visitors.getUsedVariables
 import its.questions.inputs.EntityInfo
 import its.questions.inputs.LearningSituation
-import its.questions.inputs.QClassModel
-import its.questions.inputs.QVarModel
+import its.questions.inputs.TemplatingUtils._static.capitalize
 
 object VariableValueStrategy : QuestioningStrategy {
     private data class VariableInfo(
@@ -63,33 +60,39 @@ object VariableValueStrategy : QuestioningStrategy {
             ))
             {
                 override fun text(situation: LearningSituation): String {
-                    return varInfo.declarationNode.question(situation.templating)
+                    return declarationNode.question(situation.localizationCode, situation.templating)
                 }
 
                 override fun options(situation: LearningSituation): List<SingleChoiceOption<Pair<EntityInfo?, Boolean>>> {
-                    val varData = (DomainModel.decisionTreeVarsDictionary.get(varInfo.name) as QVarModel)
-                    val clazz = DomainModel.classesDictionary.get(varData.className) as QClassModel
+                    val varData = DomainModel.decisionTreeVarsDictionary.get(varInfo.name)!!
                     val correctEntity = situation.entityDictionary.getByVariable(varData.name)
-                    val explanation = if(correctEntity != null)
-                        "Правильный ответ в данном случае - ${correctEntity.specificName}."
-                    else "В данном случае искомого ${clazz.textName.toCase(TemplatingUtils.Case.Gen)} нет."
+                    val explanation = situation.localization.IN_THIS_SITUATION(fact =
+                        if(correctEntity != null)
+                            declarationNode.next.getFull("found")!!.explanation(situation.localizationCode, situation.templating)!!
+                        else
+                            declarationNode.next.getFull("none")!!.explanation(situation.localizationCode, situation.templating)!!
+                    )
 
                     val options = situation.entityDictionary
                         //Выбрать объекты, которые еще не были присвоены (?) и класс которых подходит под класс искомой переменной
                         .filter {entity -> !situation.knownVariables.containsValue(entity.alias) &&
                                 (entity.clazz.name == varData.className || entity.calculatedClasses.any { clazz -> clazz.name == varData.className }) &&
-                                (entity.variable == varData || varInfo.declarationNode.errorCategories.any{ varErr -> entity.errorCategories.contains(varErr.additionalInfo[ALIAS_ATR])})
+                                (entity.variable == varData || declarationNode.errorCategories.any{ varErr -> entity.errorCategories.contains(varErr.additionalInfo[ALIAS_ATR])})
                         }
                         .map {
-                            val error = varInfo.declarationNode.errorCategories.firstOrNull { varErr -> it.errorCategories.contains(varErr.additionalInfo[ALIAS_ATR])}
+                            val error = declarationNode.errorCategories.firstOrNull { varErr -> it.errorCategories.contains(varErr.additionalInfo[ALIAS_ATR])}
                             SingleChoiceOption<Pair<EntityInfo?, Boolean>>(
                                 it.specificName,
-                                Explanation("${error?.explanation(situation.templating, it.alias)} $explanation"),
+                                Explanation("${error?.explanation(situation.localizationCode, situation.templating, it.alias)} $explanation"),
                                 it to (it.variable == varData),
                             ) }
                         .plus(SingleChoiceOption<Pair<EntityInfo?, Boolean>>(
-                            "Такой ${clazz.textName} отсутствует",
-                            Explanation("Это неверно. $explanation"),
+                            if(declarationNode.next.containsKey("none"))
+                                declarationNode.next.getFull("none")!!.explanation(situation.localizationCode, situation.templating)!!.capitalize()
+                            else
+                                situation.localization.IMPOSSIBLE_TO_FIND
+                            ,
+                            Explanation("${situation.localization.THATS_INCORRECT} $explanation"),
                             null to (situation.entityDictionary.none{it.variable == varData})
                         ))
 

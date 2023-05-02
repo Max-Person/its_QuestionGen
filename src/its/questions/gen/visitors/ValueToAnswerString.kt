@@ -1,10 +1,7 @@
 package its.questions.gen.visitors
 
-import its.model.DomainModel
 import its.model.expressions.types.*
 import its.questions.inputs.LearningSituation
-import its.questions.inputs.QClassModel
-import its.questions.inputs.QEnumModel
 
 object ValueToAnswerString : Types.ValueBehaviour<LearningSituation, String>() {
 
@@ -17,7 +14,7 @@ object ValueToAnswerString : Types.ValueBehaviour<LearningSituation, String>() {
 
     // ---------------------- Функции поведения ---------------------------
     override fun Clazz.exec(param: LearningSituation): String {
-        return (DomainModel.classesDictionary.get(this.name) as QClassModel).textName
+        return param.domainLocalization.localizedClassName(this)
     }
 
     override fun ComparisonResult.exec(param: LearningSituation): String {
@@ -31,8 +28,7 @@ object ValueToAnswerString : Types.ValueBehaviour<LearningSituation, String>() {
     }
 
     override fun EnumValue.exec(param: LearningSituation): String {
-        val enum = (DomainModel.enumsDictionary.get(this.ownerEnum) as QEnumModel)
-        return enum.textValues[enum.values.indexOf(this.value)]
+        return param.domainLocalization.localizedEnumValue(this)
     }
 
     override fun Obj.exec(param: LearningSituation): String {

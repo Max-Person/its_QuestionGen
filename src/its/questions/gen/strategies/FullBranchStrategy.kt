@@ -49,7 +49,7 @@ object FullBranchStrategy : QuestioningStrategy {
 
         val endingNodeSelect = object : SingleChoiceQuestionState<NodeLCAinfo>(endingNodeSelectlinks.toSet()){
             override fun text(situation: LearningSituation): String {
-                return "Почему вы считаете, что ${branch.description(situation.templating, situation.assumedResult(branch)!!)}?"
+                return situation.localization.WHY_DO_YOU_THINK_THAT(assumed_result = branch.description(situation.localizationCode, situation.templating, situation.assumedResult(branch)!!))
             }
 
             override fun options(situation: LearningSituation): List<SingleChoiceOption<NodeLCAinfo>> {
@@ -60,8 +60,8 @@ object FullBranchStrategy : QuestioningStrategy {
                 val options = possibleEndingNodes.map{end ->
                     val lca = branch.getNodesLCA(end, correctEndingNode)!!
                     SingleChoiceOption<NodeLCAinfo>(
-                        end.endingCause(situation.templating),
-                        Explanation("Давайте разберемся."),
+                        end.endingCause(situation.localizationCode, situation.templating),
+                        Explanation(situation.localization.LETS_FIGURE_IT_OUT),
                         NodeLCAinfo(lca, lca != end)
                     )
                 }
@@ -78,7 +78,7 @@ object FullBranchStrategy : QuestioningStrategy {
         val redir = RedirectQuestionState()
         val branchEnd = object : SkipQuestionState() {
             override fun skip(situation: LearningSituation): QuestionStateChange {
-                val explanation = Explanation("Итак, мы обсудили, почему ${branch.description(situation.templating, branch.getAnswer(situation)!!)}")
+                val explanation = Explanation(situation.localization.SO_WEVE_DISCUSSED_WHY(result = branch.description(situation.localizationCode, situation.templating, branch.getAnswer(situation)!!)))
                 return QuestionStateChange(explanation, redir)
             }
 

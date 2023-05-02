@@ -10,13 +10,7 @@ import javax.swing.SwingUtilities
 fun run() {
     val dir = "inputs\\"
 
-    DomainModel.collect(
-        QClassesDictionary(),
-        QVarsDictionary(),
-        QEnumsDictionary(),
-        QPropertiesDictionary(),
-        QRelationshipsDictionary(),
-    ).initFrom(dir)
+    LocalizedDomainModel(dir)
 
 
     val endState = object : SkipQuestionState(){
