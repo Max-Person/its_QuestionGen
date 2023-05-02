@@ -1,7 +1,6 @@
 import its.model.DomainModel
 import its.questions.gen.states.*
 import its.questions.gen.strategies.QuestioningStrategy
-import its.questions.inputs.*
 import java.lang.NumberFormatException
 import java.util.*
 import javax.swing.SwingUtilities
@@ -14,7 +13,7 @@ fun run() {
 
 
     val endState = object : SkipQuestionState(){
-        override fun skip(situation: LearningSituation): QuestionStateChange {
+        override fun skip(situation: QuestioningSituation): QuestionStateChange {
             return QuestionStateChange(Explanation("Конец"), null)
         }
 
@@ -39,7 +38,7 @@ fun run() {
     ).ask()
     println("Далее вопросы генерируются как для студента, выбравшего данный ответ в данной ситуации.\n\n-----")
 
-    val situation = LearningSituation(dir + "_$input\\")
+    val situation = QuestioningSituation(dir + "_$input\\$input.ttl")
     situation.addAssumedResult(DomainModel.decisionTree.main, true)
     var state : QuestionState? = automata.initState
 //    state = automata[94]

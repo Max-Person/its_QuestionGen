@@ -1,6 +1,6 @@
 package its.questions.gen.states
 
-import its.questions.inputs.LearningSituation
+import its.questions.gen.QuestioningSituation
 
 abstract class SingleChoiceQuestionState<AnswerInfo>(
     links: Set<QuestionStateLink<AnswerInfo>>
@@ -12,14 +12,14 @@ abstract class SingleChoiceQuestionState<AnswerInfo>(
         val assocAnswer: AnswerInfo,
     )
 
-    protected abstract fun text(situation: LearningSituation) : String
-    protected abstract fun options(situation: LearningSituation) : List<SingleChoiceOption<AnswerInfo>>
-    protected open fun explanationIfSkipped(situation: LearningSituation, skipOption: SingleChoiceOption<AnswerInfo>) : Explanation? {return null}
-    protected open fun preliminarySkip(situation: LearningSituation) : QuestionStateChange? {return null}
-    protected open fun explanation(situation: LearningSituation, chosenOption: SingleChoiceOption<AnswerInfo>) : Explanation? {return chosenOption.explanation}
-    protected open fun additionalActions(situation: LearningSituation, chosenAnswer: AnswerInfo) {}
+    protected abstract fun text(situation: QuestioningSituation) : String
+    protected abstract fun options(situation: QuestioningSituation) : List<SingleChoiceOption<AnswerInfo>>
+    protected open fun explanationIfSkipped(situation: QuestioningSituation, skipOption: SingleChoiceOption<AnswerInfo>) : Explanation? {return null}
+    protected open fun preliminarySkip(situation: QuestioningSituation) : QuestionStateChange? {return null}
+    protected open fun explanation(situation: QuestioningSituation, chosenOption: SingleChoiceOption<AnswerInfo>) : Explanation? {return chosenOption.explanation}
+    protected open fun additionalActions(situation: QuestioningSituation, chosenAnswer: AnswerInfo) {}
 
-    override fun getQuestion(situation: LearningSituation): QuestionStateResult {
+    override fun getQuestion(situation: QuestioningSituation): QuestionStateResult {
         val skipChange = preliminarySkip(situation)
         if(skipChange != null)
             return skipChange
@@ -34,7 +34,7 @@ abstract class SingleChoiceQuestionState<AnswerInfo>(
         return Question(text, options.map{option -> option.text})
     }
 
-    override fun proceedWithAnswer(situation: LearningSituation, answer: List<Int>): QuestionStateChange {
+    override fun proceedWithAnswer(situation: QuestioningSituation, answer: List<Int>): QuestionStateChange {
         require(answer.size == 1){
             "Invalid answer to a SingleChoiceQuestionState: $answer"
         }
@@ -44,7 +44,7 @@ abstract class SingleChoiceQuestionState<AnswerInfo>(
         return proceedWithAnswer(situation, chosenOption)
     }
 
-    private fun proceedWithAnswer(situation: LearningSituation, chosenOption: SingleChoiceOption<AnswerInfo>): QuestionStateChange {
+    private fun proceedWithAnswer(situation: QuestioningSituation, chosenOption: SingleChoiceOption<AnswerInfo>): QuestionStateChange {
         situation.addGivenAnswer(id, options(situation).indexOf(chosenOption))
         additionalActions(situation, chosenOption.assocAnswer)
 
@@ -53,7 +53,7 @@ abstract class SingleChoiceQuestionState<AnswerInfo>(
         return QuestionStateChange(explanation, nextState)
     }
 
-    fun previouslyChosenAnswer(situation: LearningSituation) : AnswerInfo?{
+    fun previouslyChosenAnswer(situation: QuestioningSituation) : AnswerInfo?{
         val ans = situation.givenAnswer(id)
         return if(ans != null) options(situation)[ans].assocAnswer else null
     }

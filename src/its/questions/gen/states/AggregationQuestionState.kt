@@ -3,9 +3,9 @@ package its.questions.gen.states
 import its.model.nodes.LogicAggregationNode
 import its.model.nodes.LogicalOp
 import its.model.nodes.ThoughtBranch
-import its.questions.inputs.TemplatingUtils._static.description
-import its.questions.gen.visitors.getAnswer
-import its.questions.inputs.LearningSituation
+import its.questions.gen.QuestioningSituation
+import its.questions.gen.formulations.TemplatingUtils._static.description
+import its.reasoner.nodes.DecisionTreeReasoner._static.getAnswer
 
 //Можно выделить над ним некий AssociationQuestionState, но пока что это не нужно
 class AggregationQuestionState(
@@ -18,13 +18,13 @@ class AggregationQuestionState(
         Positive,
     }
 
-    protected fun text(situation: LearningSituation) : String {
-        val answer = node.getAnswer(situation)!!
+    protected fun text(situation: QuestioningSituation) : String {
+        val answer = node.getAnswer(situation)
         val descrIncorrect = node.description(situation.localizationCode, situation.templating, !answer)
         return situation.localization.WHY_DO_YOU_THINK_THAT(descrIncorrect)
     }
 
-    override fun getQuestion(situation: LearningSituation): QuestionStateResult {
+    override fun getQuestion(situation: QuestioningSituation): QuestionStateResult {
         val text = "$id. ${text(situation)}"
         val options = node.thoughtBranches.map { branch ->
             branch.description(situation.localizationCode, situation.templating, true)
@@ -32,7 +32,7 @@ class AggregationQuestionState(
         return Question(text, options, isAggregation = true)
     }
 
-    override fun proceedWithAnswer(situation: LearningSituation, answer: List<Int>): QuestionStateChange {
+    override fun proceedWithAnswer(situation: QuestioningSituation, answer: List<Int>): QuestionStateChange {
         val givenAnswer : Map<ThoughtBranch, AggregationImpact> = node.thoughtBranches.mapIndexed{ind, branch ->
             val op = answer[ind]
             branch to
@@ -41,14 +41,14 @@ class AggregationQuestionState(
                     else AggregationImpact.None
         }.toMap()
 
-        val results : Map<ThoughtBranch, Boolean> = node.thoughtBranches.map{ branch -> branch to branch.getAnswer(situation)!!}.toMap()
+        val results : Map<ThoughtBranch, Boolean> = node.thoughtBranches.map{ branch -> branch to branch.getAnswer(situation)}.toMap()
         val actualImpact : Map<ThoughtBranch, AggregationImpact> = results.map{ (branch, res) ->
             branch to
                     if (res) AggregationImpact.Positive
                     else AggregationImpact.Negative
         }.toMap()
 
-        val nodeRes = node.getAnswer(situation)!!
+        val nodeRes = node.getAnswer(situation)
         val incorrectBranches = givenAnswer.filter{(branch, impact) -> impact != AggregationImpact.None && impact != actualImpact[branch]}.keys
         val missedBranches = givenAnswer.filter{(branch, impact) ->
             impact == AggregationImpact.None &&
@@ -79,14 +79,14 @@ class AggregationQuestionState(
                     situation.localization.AGGREGATION_INCORRECT_BRANCHES_DESCR(
                         branches_descr = incorrectBranches.joinToString(
                             separator = ", ",
-                            transform = { it.description(situation.localizationCode, situation.templating, it.getAnswer(situation)!!) })
+                            transform = { it.description(situation.localizationCode, situation.templating, it.getAnswer(situation)) })
                     )
                 else
                     "").plus(
                     if (!missedBranches.isEmpty()) {
                         val missed_branches_descr = missedBranches.joinToString(
                             separator = ", ",
-                            transform = { it.description(situation.localizationCode, situation.templating, it.getAnswer(situation)!!) })
+                            transform = { it.description(situation.localizationCode, situation.templating, it.getAnswer(situation)) })
                         if (incorrectBranches.isEmpty())
                             situation.localization.AGGREGATION_MISSED_BRANCHES_DESCR_PRIMARY(missed_branches_descr)
                         else

@@ -4,14 +4,14 @@ import its.model.nodes.BranchResultNode
 import its.model.nodes.DecisionTreeNode
 import its.model.nodes.LinkNode
 import its.model.nodes.ThoughtBranch
-import its.questions.inputs.TemplatingUtils._static.description
-import its.questions.inputs.TemplatingUtils._static.endingCause
+import its.questions.gen.QuestioningSituation
+import its.questions.gen.formulations.TemplatingUtils._static.description
+import its.questions.gen.formulations.TemplatingUtils._static.endingCause
 import its.questions.gen.states.*
-import its.questions.gen.visitors.GetConsideredNodes._static.getConsideredNodes
-import its.questions.gen.visitors.GetPossibleEndingNodes._static.getPossibleEndingNodes
 import its.questions.gen.visitors.GetNodesLCA._static.getNodesLCA
-import its.questions.gen.visitors.getAnswer
-import its.questions.inputs.LearningSituation
+import its.questions.gen.visitors.GetPossibleEndingNodes._static.getPossibleEndingNodes
+import its.reasoner.nodes.DecisionTreeReasoner._static.getAnswer
+import its.reasoner.nodes.DecisionTreeReasoner._static.getCorrectPath
 
 object FullBranchStrategy : QuestioningStrategy {
 
@@ -48,12 +48,12 @@ object FullBranchStrategy : QuestioningStrategy {
         }
 
         val endingNodeSelect = object : SingleChoiceQuestionState<NodeLCAinfo>(endingNodeSelectlinks.toSet()){
-            override fun text(situation: LearningSituation): String {
+            override fun text(situation: QuestioningSituation): String {
                 return situation.localization.WHY_DO_YOU_THINK_THAT(assumed_result = branch.description(situation.localizationCode, situation.templating, situation.assumedResult(branch)!!))
             }
 
-            override fun options(situation: LearningSituation): List<SingleChoiceOption<NodeLCAinfo>> {
-                val considered = branch.getConsideredNodes(situation)
+            override fun options(situation: QuestioningSituation): List<SingleChoiceOption<NodeLCAinfo>> {
+                val considered = branch.getCorrectPath(situation)
                 val possibleEndingNodes = branch.getPossibleEndingNodes(situation)
                 val correctEndingNode = endingNodes.first { considered.contains(it) }
 
@@ -77,8 +77,8 @@ object FullBranchStrategy : QuestioningStrategy {
     private fun QuestionAutomata.finalizeForBranch(branch: ThoughtBranch): QuestionAutomata{
         val redir = RedirectQuestionState()
         val branchEnd = object : SkipQuestionState() {
-            override fun skip(situation: LearningSituation): QuestionStateChange {
-                val explanation = Explanation(situation.localization.SO_WEVE_DISCUSSED_WHY(result = branch.description(situation.localizationCode, situation.templating, branch.getAnswer(situation)!!)))
+            override fun skip(situation: QuestioningSituation): QuestionStateChange {
+                val explanation = Explanation(situation.localization.SO_WEVE_DISCUSSED_WHY(result = branch.description(situation.localizationCode, situation.templating, branch.getAnswer(situation))))
                 return QuestionStateChange(explanation, redir)
             }
 

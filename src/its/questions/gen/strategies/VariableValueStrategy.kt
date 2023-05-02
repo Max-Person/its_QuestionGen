@@ -1,16 +1,17 @@
 package its.questions.gen.strategies
 
-import its.model.DomainModel
+import its.model.expressions.types.Obj
 import its.model.nodes.*
-import its.questions.inputs.TemplatingUtils._static.explanation
-import its.questions.inputs.TemplatingUtils._static.question
+import its.questions.gen.QuestioningSituation
+import its.questions.gen.formulations.TemplatingUtils._static.capitalize
+import its.questions.gen.formulations.TemplatingUtils._static.explanation
+import its.questions.gen.formulations.TemplatingUtils._static.localizedName
+import its.questions.gen.formulations.TemplatingUtils._static.question
 import its.questions.gen.states.*
-import its.questions.gen.visitors.ALIAS_ATR
-import its.questions.gen.visitors.GetConsideredNodes._static.getConsideredNodes
 import its.questions.gen.visitors.getUsedVariables
-import its.questions.inputs.EntityInfo
-import its.questions.inputs.LearningSituation
-import its.questions.inputs.TemplatingUtils._static.capitalize
+import its.reasoner.nodes.DecisionTreeReasoner._static.getAnswer
+import its.reasoner.nodes.DecisionTreeReasoner._static.getCorrectPath
+import its.reasoner.nodes.findWithErrors
 
 object VariableValueStrategy : QuestioningStrategy {
     private data class VariableInfo(
@@ -55,58 +56,58 @@ object VariableValueStrategy : QuestioningStrategy {
             val declarationNode = varInfo.declarationNode
             val nextState = lastState
 
-            val question = object : CorrectnessCheckQuestionState<EntityInfo?>(setOf(
+            val question = object : CorrectnessCheckQuestionState<Obj?>(setOf(
                 QuestionStateLink({_, _ -> true }, nextState),
             ))
             {
-                override fun text(situation: LearningSituation): String {
+                override fun text(situation: QuestioningSituation): String {
                     return declarationNode.question(situation.localizationCode, situation.templating)
                 }
 
-                override fun options(situation: LearningSituation): List<SingleChoiceOption<Pair<EntityInfo?, Boolean>>> {
-                    val varData = DomainModel.decisionTreeVarsDictionary.get(varInfo.name)!!
-                    val correctEntity = situation.entityDictionary.getByVariable(varData.name)
-                    val explanation = situation.localization.IN_THIS_SITUATION(fact =
-                        if(correctEntity != null)
-                            declarationNode.next.getFull("found")!!.explanation(situation.localizationCode, situation.templating)!!
-                        else
-                            declarationNode.next.getFull("none")!!.explanation(situation.localizationCode, situation.templating)!!
-                    )
+                override fun options(situation: QuestioningSituation): List<SingleChoiceOption<Pair<Obj?, Boolean>>> {
+                    val answer = declarationNode.getAnswer(situation)
+                    val explanation = situation.localization.IN_THIS_SITUATION(fact = declarationNode.next.getFull(answer)!!.explanation(situation.localizationCode, situation.templating)!!)
 
-                    val options = situation.entityDictionary
-                        //Выбрать объекты, которые еще не были присвоены (?) и класс которых подходит под класс искомой переменной
-                        .filter {entity -> !situation.knownVariables.containsValue(entity.alias) &&
-                                (entity.clazz.name == varData.className || entity.calculatedClasses.any { clazz -> clazz.name == varData.className }) &&
-                                (entity.variable == varData || declarationNode.errorCategories.any{ varErr -> entity.errorCategories.contains(varErr.additionalInfo[ALIAS_ATR])})
+                    val possibleObjects = declarationNode.findWithErrors(situation)
+                    val options = possibleObjects.errors.map { (error, objects) ->
+                        objects.map{
+                            SingleChoiceOption<Pair<Obj?, Boolean>>(
+                                it.localizedName(situation.localizationCode),
+                                Explanation("${error.explanation(situation.localizationCode, situation.templating, it.name)} $explanation"),
+                                it to false,
+                            )
                         }
-                        .map {
-                            val error = declarationNode.errorCategories.firstOrNull { varErr -> it.errorCategories.contains(varErr.additionalInfo[ALIAS_ATR])}
-                            SingleChoiceOption<Pair<EntityInfo?, Boolean>>(
-                                it.specificName,
-                                Explanation("${error?.explanation(situation.localizationCode, situation.templating, it.alias)} $explanation"),
-                                it to (it.variable == varData),
-                            ) }
-                        .plus(SingleChoiceOption<Pair<EntityInfo?, Boolean>>(
+                    }.flatten()
+                        .plus(
+                            if(possibleObjects.correct != null)
+                                SingleChoiceOption<Pair<Obj?, Boolean>>(
+                                    possibleObjects.correct!!.localizedName(situation.localizationCode),
+                                    null,
+                                    possibleObjects.correct!! to true,
+                                )
+                            else
+                                null).filterNotNull()
+                        .plus(SingleChoiceOption<Pair<Obj?, Boolean>>(
                             if(declarationNode.next.containsKey("none"))
                                 declarationNode.next.getFull("none")!!.explanation(situation.localizationCode, situation.templating)!!.capitalize()
                             else
                                 situation.localization.IMPOSSIBLE_TO_FIND
                             ,
                             Explanation("${situation.localization.THATS_INCORRECT} $explanation"),
-                            null to (situation.entityDictionary.none{it.variable == varData})
+                            null to (possibleObjects.correct == null)
                         ))
 
                     return options
                 }
 
-                override fun additionalActions(situation: LearningSituation, chosenAnswer: Pair<EntityInfo?, Boolean>) {
+                override fun additionalActions(situation: QuestioningSituation, chosenAnswer: Pair<Obj?, Boolean>) {
                     super.additionalActions(situation, chosenAnswer)
-                    situation.knownVariables.put(varInfo.name, chosenAnswer.first?.alias ?: "")
+                    situation.discussedVariables[varInfo.name] = chosenAnswer.first?.name ?: ""
                 }
 
-                override fun preliminarySkip(situation: LearningSituation): QuestionStateChange? {
+                override fun preliminarySkip(situation: QuestioningSituation): QuestionStateChange? {
                     //TODO этот скип предполагался как повторный заход в это состояние - если несколько переменных зависят от текущей - но в этом случае скорее всего будут создаваться лишние состояния
-                    if(situation.knownVariables.containsKey(varInfo.name) || !currentBranch.getConsideredNodes(situation).contains(declarationNode) || options(situation).isEmpty()){
+                    if(situation.discussedVariables.containsKey(varInfo.name) || !currentBranch.getCorrectPath(situation).contains(declarationNode) || options(situation).isEmpty()){
                         return QuestionStateChange(null, nextState)
                     }
                     return super.preliminarySkip(situation)

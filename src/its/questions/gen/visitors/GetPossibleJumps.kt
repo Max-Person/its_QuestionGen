@@ -2,15 +2,16 @@ package its.questions.gen.visitors
 
 import its.model.nodes.*
 import its.model.nodes.visitors.SimpleDecisionTreeBehaviour
-import its.questions.inputs.LearningSituation
+import its.questions.gen.QuestioningSituation
+import its.reasoner.nodes.DecisionTreeReasoner._static.getAnswer
 
-class GetPossibleJumps private constructor( val situation: LearningSituation) : SimpleDecisionTreeBehaviour<List<DecisionTreeNode>>{
+class GetPossibleJumps private constructor( val situation: QuestioningSituation) : SimpleDecisionTreeBehaviour<List<DecisionTreeNode>>{
 
     // ---------------------- Удобства ---------------------------
 
     companion object _static{
         @JvmStatic
-        fun DecisionTreeNode.getPossibleJumps(situation: LearningSituation) : List<DecisionTreeNode>{
+        fun DecisionTreeNode.getPossibleJumps(situation: QuestioningSituation) : List<DecisionTreeNode>{
             return this.use(GetPossibleJumps(situation)).filter { it != this }
         }
     }
@@ -30,7 +31,7 @@ class GetPossibleJumps private constructor( val situation: LearningSituation) : 
     override fun process(node: FindActionNode): List<DecisionTreeNode> {
         //Особое поведение, так как не интересуют узлы, которые используют несуществующие переменные
         val l = mutableListOf<DecisionTreeNode>(node)
-        val next = node.next[node.getAnswer(situation)?:"none"]
+        val next = node.next[node.getAnswer(situation)]
         if(next != null)
             l.addAll(next.getPossibleJumps())
         return l

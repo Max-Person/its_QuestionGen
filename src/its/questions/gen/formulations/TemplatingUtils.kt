@@ -1,13 +1,15 @@
-package its.questions.inputs
+package its.questions.gen.formulations
 
 import com.github.drapostolos.typeparser.ParserHelper
 import com.github.drapostolos.typeparser.TypeParser
 import com.github.max_person.templating.InterpretationData
 import com.github.max_person.templating.TemplatingSafeMethod
+import its.model.expressions.types.Obj
 import its.model.nodes.*
+import its.questions.gen.QuestioningSituation
 import padeg.lib.Padeg
 
-class TemplatingUtils(val situation : LearningSituation) {
+class TemplatingUtils(val situation : QuestioningSituation) {
     enum class Case{
         Nom, //именительный (кто? что?)
         Gen, //родительный (кого? чего?)
@@ -61,6 +63,9 @@ class TemplatingUtils(val situation : LearningSituation) {
         }
 
         //region Получение и шаблонизация текстовой информации
+
+        private const val ALIAS_ATR = "alias"
+        internal val DecisionTreeNode.alias get() = additionalInfo[ALIAS_ATR]!!
 
         //Узлы
         @JvmStatic
@@ -140,23 +145,27 @@ class TemplatingUtils(val situation : LearningSituation) {
             return additionalInfo["${localizationCode}_nextStepExplanation"]?.interpret(interpretationData)
         }
 
+        internal fun Obj.localizedName(localizationCode: String,): String{
+            return descriptionInfo("${localizationCode}_localizedName").toString()
+        }
+
         //endregion
     }
 
     @TemplatingSafeMethod("val")
     fun getVariableValue(varName: String, case: Case) : String{
-        return situation.entityDictionary.getByVariable(varName)!!.specificName.toCase(case)
+        return situation.variableValue(varName).localizedName(situation.localizationCode).toCase(case)
     }
 
     @TemplatingSafeMethod("obj")
     fun getEntity(alias: String, case: Case) : String{
-        return situation.entityDictionary.get(alias)!!.specificName.toCase(case)
+        return situation.objByName(alias).localizedName(situation.localizationCode).toCase(case)
     }
 
     @TemplatingSafeMethod("class")
     fun getVariableClassname(varName: String, case: Case) : String{
         return with(situation.domainLocalization){
-            situation.entityDictionary.getByVariable(varName)!!.clazz.localizedName.toCase(case)
+            situation.variableValue(varName).clazz.localizedName.toCase(case)
         }
     }
 }
