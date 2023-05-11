@@ -1,6 +1,5 @@
 package its.questions.gen.strategies
 
-import its.model.expressions.literals.BooleanLiteral
 import its.model.nodes.*
 import its.model.nodes.visitors.DecisionTreeBehaviour
 import its.questions.gen.QuestioningSituation
@@ -388,13 +387,15 @@ object SequentialStrategy : QuestioningStrategyWithInfo<SequentialStrategy.Seque
                         outcome.nextStepBranchResult(situation.localizationCode, situation.templating, true)
                             ?: situation.localization.WE_CAN_CONCLUDE_THAT(result = currentBranch.description(situation.localizationCode, situation.templating, true)),
                         Explanation(explanation),
-                        BranchResultNode(BooleanLiteral(true)) to nextNodeIsResultTrue,
+                        BranchResultNode(true, null) to nextNodeIsResultTrue,
                     )).plus(SingleChoiceOption<Pair<DecisionTreeNode, Boolean>>(
                         outcome.nextStepBranchResult(situation.localizationCode, situation.templating, false)
                             ?: situation.localization.WE_CAN_CONCLUDE_THAT(result = currentBranch.description(situation.localizationCode, situation.templating, false)),
                         Explanation(explanation),
-                        BranchResultNode(BooleanLiteral(false)) to nextNodeIsResultFalse,
+                        BranchResultNode(false, null) to nextNodeIsResultFalse,
                     ))
+                    //WARN Дополнительные опции не работают с situation.addGivenAnswer() потому что BranchResultNode сравниваются по ссылке.
+                    //Пока с этим ничего не делаем, однако в дальнейшем это может повлиять на что-то
                     return options
                 }
             }
