@@ -78,6 +78,11 @@ abstract class SkipQuestionState : QuestionState(){
     }
 }
 
+class EndQuestionState: SkipQuestionState() {
+    override val reachableStates: Collection<QuestionState> = emptyList()
+    override fun skip(situation: QuestioningSituation): QuestionStateChange = QuestionStateChange(null, null)
+}
+
 abstract class GeneralQuestionState<AnswerInfo>(
     protected val links: Set<QuestionStateLink<AnswerInfo>>
 ) : QuestionState() {
