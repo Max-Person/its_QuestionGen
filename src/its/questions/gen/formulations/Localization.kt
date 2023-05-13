@@ -45,6 +45,9 @@ sealed interface Localization {
     fun AGGREGATION_MISSED_BRANCHES_DESCR_CONCAT(branches_descr: String): String
 
     companion object{
-        val localizations = mapOf<String, Localization>(LocalizationRU.codePrefix to LocalizationRU)
+        val localizations = mapOf(
+            LocalizationRU.codePrefix to LocalizationRU,
+            LocalizationEN.codePrefix to LocalizationEN
+        )
     }
 }
