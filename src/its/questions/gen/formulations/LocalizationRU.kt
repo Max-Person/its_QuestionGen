@@ -10,6 +10,13 @@ object LocalizationRU : Localization {
     override val YES = "Да"
     override val NO = "Нет"
 
+    override val GREATER = "Больше"
+    override val LESS = "Меньше"
+    override val EQUAL = "Равно"
+    override val NOT_EQUAL = "Не равно"
+
+    override val CANNOT_BE_DETERMINED = "Невозможно определить"
+
     override val THATS_CORRECT = "Верно."
     override val THATS_INCORRECT = "Это неверно."
     override fun THATS_INCORRECT_BECAUSE(reason: String): String = "Это неверно, поскольку $reason."

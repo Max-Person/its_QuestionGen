@@ -19,11 +19,11 @@ object ValueToAnswerString : Types.ValueBehaviour<QuestioningSituation, String>(
 
     override fun ComparisonResult.exec(param: QuestioningSituation): String {
         return when (this) {
-            ComparisonResult.Greater -> "Больше"
-            ComparisonResult.Less -> "Меньше"
-            ComparisonResult.Equal -> "Равно"
-            ComparisonResult.NotEqual -> "Не равно"
-            else -> "Невозможно определить"
+            ComparisonResult.Greater -> param.localization.GREATER
+            ComparisonResult.Less -> param.localization.LESS
+            ComparisonResult.Equal -> param.localization.EQUAL
+            ComparisonResult.NotEqual -> param.localization.NOT_EQUAL
+            else -> param.localization.CANNOT_BE_DETERMINED
         }
     }
 
@@ -36,7 +36,7 @@ object ValueToAnswerString : Types.ValueBehaviour<QuestioningSituation, String>(
     }
 
     override fun Boolean.exec(param: QuestioningSituation): String {
-        return if(this) "Да" else "Нет"
+        return if(this) param.localization.YES else param.localization.NO
     }
 
     override fun Double.exec(param: QuestioningSituation): String {

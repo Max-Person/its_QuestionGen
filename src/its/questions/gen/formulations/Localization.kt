@@ -10,6 +10,13 @@ sealed interface Localization {
     val YES: String
     val NO: String
 
+    val GREATER: String
+    val LESS: String
+    val EQUAL: String
+    val NOT_EQUAL: String
+
+    val CANNOT_BE_DETERMINED: String
+
     val THATS_CORRECT: String
     val THATS_INCORRECT: String
     fun THATS_INCORRECT_BECAUSE(reason: String): String
