@@ -50,6 +50,10 @@ object SequentialStrategy : QuestioningStrategyWithInfo<SequentialStrategy.Seque
             TODO("Not yet implemented")
         }
 
+        override fun process(node: WhileAggregationNode): QuestionState {
+            TODO("Not yet implemented")
+        }
+
         override fun process(node: FindActionNode): QuestionState {
             if(currentBranch.isTrivial())
                 return RedirectQuestionState()
