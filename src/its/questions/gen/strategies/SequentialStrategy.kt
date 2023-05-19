@@ -111,7 +111,7 @@ object SequentialStrategy : QuestioningStrategyWithInfo<SequentialStrategy.Seque
                             return node.next.info.map {
                                 SingleChoiceOption(
                                     if (it.key) situation.localization.TRUE else situation.localization.FALSE,
-                                    Explanation(situation.localization.THATS_INCORRECT + " " + situation.localization.LETS_FIGURE_IT_OUT),
+                                    Explanation(situation.localization.THATS_INCORRECT + " " + situation.localization.LETS_FIGURE_IT_OUT, type = ExplanationType.Error, shouldPause = false),
                                     it.key to (it.key == correctAnswer),
                                 )
                             }
@@ -159,7 +159,7 @@ object SequentialStrategy : QuestioningStrategyWithInfo<SequentialStrategy.Seque
                             situation.localization.WHY_IS_IT_THAT(statement = branch.description(situation.localizationCode, situation.templating,
                                 branch.getAnswer(situation)
                             )),
-                            null,
+                            Explanation(situation.localization.LETS_FIGURE_IT_OUT, shouldPause = false),
                             branch
                         )
                     }
@@ -212,7 +212,8 @@ object SequentialStrategy : QuestioningStrategyWithInfo<SequentialStrategy.Seque
                     return node.next.info.map { SingleChoiceOption(
                         it.text(situation.localizationCode, situation.templating)!!,
                         Explanation(situation.localization.THATS_INCORRECT_BECAUSE(reason = it.explanation(situation.localizationCode, situation.templating, false)) + " " +
-                                situation.localization.IN_THIS_SITUATION(fact = correctOutcome.explanation(situation.localizationCode, situation.templating, true))),
+                                situation.localization.IN_THIS_SITUATION(fact = correctOutcome.explanation(situation.localizationCode, situation.templating, true)),
+                                type = ExplanationType.Error),
                         it.key to (it == correctOutcome),
                     )}
                 }
@@ -245,13 +246,13 @@ object SequentialStrategy : QuestioningStrategyWithInfo<SequentialStrategy.Seque
                     if(incorrectBranch != null && worthAsking[incorrectBranch]!!)
                         options.add(SingleChoiceOption(
                             situation.localization.WHY_IS_IT_THAT(incorrectBranch.description(situation.localizationCode, situation.templating, false)),
-                            null,
+                            Explanation(situation.localization.LETS_FIGURE_IT_OUT, shouldPause = false),
                             incorrectBranch,
                         ))
                     if(correctBranch != null && worthAsking[correctBranch]!!)
                         options.add(SingleChoiceOption(
                             situation.localization.WHY_IS_IT_THAT(correctBranch.description(situation.localizationCode, situation.templating, true)),
-                            null,
+                            Explanation(situation.localization.LETS_FIGURE_IT_OUT, shouldPause = false),
                             correctBranch,
                         ))
                     if(options.isEmpty())
@@ -315,7 +316,7 @@ object SequentialStrategy : QuestioningStrategyWithInfo<SequentialStrategy.Seque
                     val explText = correctOutcome.explanation(situation.localizationCode, situation.templating)
                     return node.next.info.map { SingleChoiceOption(
                         it.text(situation.localizationCode, situation.templating)?:it.key.toAnswerString(situation),
-                        if(explText != null) Explanation(explText) else null,
+                        if(explText != null) Explanation(explText, type = ExplanationType.Error) else null,
                         it.key to (it == correctOutcome),
                     )}
                 }
@@ -348,7 +349,7 @@ object SequentialStrategy : QuestioningStrategyWithInfo<SequentialStrategy.Seque
                     return jumps.filter { it !is BranchResultNode}.map{
                         SingleChoiceOption(
                             it.asNextStep(situation.localizationCode, situation.templating),
-                            Explanation(branch.nextStepExplanation(situation.localizationCode, situation.templating)?:""),
+                            Explanation(branch.nextStepExplanation(situation.localizationCode, situation.templating)!!, type = ExplanationType.Error),
                             it to (it == branch.start)
                         )
                     }
@@ -380,22 +381,23 @@ object SequentialStrategy : QuestioningStrategyWithInfo<SequentialStrategy.Seque
                 }
 
                 override fun options(situation: QuestioningSituation): List<SingleChoiceOption<Pair<DecisionTreeNode, Boolean>>> {
-                    val explanation = outcome.nextStepExplanation(situation.localizationCode, situation.templating)?:""
+                    val explText = outcome.nextStepExplanation(situation.localizationCode, situation.templating)
+                    val explanation = if(explText == null) null else Explanation(explText, type = ExplanationType.Error)
                     val jumps = node.getPossibleJumps(situation) //TODO? правильная работа со структурой дерева, включая известность переменных
 
                     val options = jumps.filter { it !is BranchResultNode}.map{SingleChoiceOption(
                         it.asNextStep(situation.localizationCode, situation.templating),
-                        Explanation(explanation),
+                        explanation,
                         it to (it == nextNode),
                     )}.plus(SingleChoiceOption<Pair<DecisionTreeNode, Boolean>>(
                         outcome.nextStepBranchResult(situation.localizationCode, situation.templating, true)
                             ?: situation.localization.WE_CAN_CONCLUDE_THAT(result = currentBranch.description(situation.localizationCode, situation.templating, true)),
-                        Explanation(explanation),
+                        explanation,
                         BranchResultNode(true, null) to nextNodeIsResultTrue,
                     )).plus(SingleChoiceOption<Pair<DecisionTreeNode, Boolean>>(
                         outcome.nextStepBranchResult(situation.localizationCode, situation.templating, false)
                             ?: situation.localization.WE_CAN_CONCLUDE_THAT(result = currentBranch.description(situation.localizationCode, situation.templating, false)),
-                        Explanation(explanation),
+                        explanation,
                         BranchResultNode(false, null) to nextNodeIsResultFalse,
                     ))
                     //WARN Дополнительные опции не работают с situation.addGivenAnswer() потому что BranchResultNode сравниваются по ссылке.

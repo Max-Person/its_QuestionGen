@@ -99,7 +99,8 @@ class AggregationQuestionState(
                             situation.localization.AGGREGATION_MISSED_BRANCHES_DESCR_CONCAT(missed_branches_descr)
                     } else ""
                 )
-            }
+            },
+            type = ExplanationType.Error
         )
 
         val nextState = links.first { link -> link.condition(situation, incorrectBranches.isEmpty() && missedBranches.isEmpty()) }.nextState

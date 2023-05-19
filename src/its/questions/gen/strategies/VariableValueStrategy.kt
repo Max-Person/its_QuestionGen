@@ -73,7 +73,7 @@ object VariableValueStrategy : QuestioningStrategy {
                         objects.map{
                             SingleChoiceOption<Pair<Obj?, Boolean>>(
                                 it.localizedName(situation.localizationCode),
-                                Explanation("${error.explanation(situation.localizationCode, situation.templating, it.name)} $explanation"),
+                                Explanation("${error.explanation(situation.localizationCode, situation.templating, it.name)} $explanation", type = ExplanationType.Error),
                                 it to false,
                             )
                         }
@@ -93,7 +93,7 @@ object VariableValueStrategy : QuestioningStrategy {
                             else
                                 situation.localization.IMPOSSIBLE_TO_FIND
                             ,
-                            Explanation("${situation.localization.THATS_INCORRECT} $explanation"),
+                            Explanation("${situation.localization.THATS_INCORRECT} $explanation", type = ExplanationType.Error),
                             null to (possibleObjects.correct == null)
                         ))
 

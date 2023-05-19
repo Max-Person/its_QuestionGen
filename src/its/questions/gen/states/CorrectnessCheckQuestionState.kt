@@ -7,8 +7,8 @@ abstract class CorrectnessCheckQuestionState<AnswerInfo> (
 ) : SingleChoiceQuestionState<Pair<AnswerInfo, Boolean>>(links) {
     override fun explanation(situation: QuestioningSituation, chosenOption: SingleChoiceOption<Pair<AnswerInfo, Boolean>>): Explanation? {
         if(chosenOption.assocAnswer.second)
-            return Explanation(situation.localization.THATS_CORRECT, shouldPause = false)
+            return Explanation(situation.localization.THATS_CORRECT, type = ExplanationType.Success, shouldPause = false)
         else
-            return chosenOption.explanation ?: Explanation(situation.localization.THATS_INCORRECT, shouldPause = false)
+            return chosenOption.explanation ?: Explanation(situation.localization.THATS_INCORRECT, type = ExplanationType.Error, shouldPause = false)
     }
 }

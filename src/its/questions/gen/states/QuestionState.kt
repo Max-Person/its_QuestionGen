@@ -106,8 +106,13 @@ abstract class GeneralQuestionState<AnswerInfo>(
         get() = links.map { it.nextState }
 }
 
+enum class ExplanationType{
+    Error, Success, Continue,
+}
+
 data class Explanation(
     val text : String,
+    val type: ExplanationType = ExplanationType.Continue,
     val shouldPause: Boolean = true
 )
 
