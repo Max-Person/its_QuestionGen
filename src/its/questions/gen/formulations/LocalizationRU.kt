@@ -7,6 +7,8 @@ object LocalizationRU : Localization {
     override val TRUE = "Верно"
     override val FALSE = "Неверно"
 
+    override val NOT_IMPORTANT = "Не имеет значения"
+
     override val YES = "Да"
     override val NO = "Нет"
 

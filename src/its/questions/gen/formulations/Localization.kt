@@ -7,6 +7,8 @@ sealed interface Localization {
     val TRUE: String
     val FALSE: String
 
+    val NOT_IMPORTANT: String
+
     val YES: String
     val NO: String
 

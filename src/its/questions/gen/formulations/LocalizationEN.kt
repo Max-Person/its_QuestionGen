@@ -7,6 +7,8 @@ object LocalizationEN : Localization {
     override val TRUE = "True"
     override val FALSE = "False"
 
+    override val NOT_IMPORTANT = "Doesn't matter"
+
     override val YES = "Yes"
     override val NO = "No"
 

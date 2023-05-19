@@ -4,6 +4,7 @@ import its.model.nodes.LogicAggregationNode
 import its.model.nodes.LogicalOp
 import its.model.nodes.ThoughtBranch
 import its.questions.gen.QuestioningSituation
+import its.questions.gen.formulations.Localization
 import its.questions.gen.formulations.TemplatingUtils._static.description
 import its.reasoner.nodes.DecisionTreeReasoner._static.getAnswer
 
@@ -30,6 +31,11 @@ class AggregationQuestionState(
             branch.description(situation.localizationCode, situation.templating, true)
         }
         return Question(text, options, isAggregation = true)
+    }
+
+    companion object _static {
+        @JvmStatic
+        fun aggregationMatching(l: Localization) = mapOf(l.TRUE to 1, l.NOT_IMPORTANT to 0, l.FALSE to -1)
     }
 
     override fun proceedWithAnswer(situation: QuestioningSituation, answer: List<Int>): QuestionStateChange {
