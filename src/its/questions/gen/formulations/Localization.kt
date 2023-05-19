@@ -46,7 +46,8 @@ sealed interface Localization {
     fun AGGREGATION_MISSED_BRANCHES_DESCR_PRIMARY(branches_descr: String): String
     fun AGGREGATION_MISSED_BRANCHES_DESCR_CONCAT(branches_descr: String): String
 
-    companion object{
+    companion object _static{
+        @JvmStatic
         val localizations = mapOf(
             LocalizationRU.codePrefix to LocalizationRU,
             LocalizationEN.codePrefix to LocalizationEN

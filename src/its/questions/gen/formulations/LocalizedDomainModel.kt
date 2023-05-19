@@ -30,11 +30,13 @@ class LocalizedDomainModel(directory: String) : DomainModel<ClassModel, Decision
         }.filterNotNull().map{it.general.codePrefix to it}.toMap()
     }
 
-    companion object {
+    companion object _static{
+        @JvmStatic
         fun localization(localizationCode : String) : Localization {
             return domainLocalization(localizationCode).general
         }
 
+        @JvmStatic
         fun domainLocalization(localizationCode : String) : DomainLocalization {
             return (instance!! as LocalizedDomainModel).localizations[localizationCode]!!
         }
