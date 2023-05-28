@@ -6,6 +6,7 @@ import com.github.max_person.templating.InterpretationData
 import com.github.max_person.templating.TemplatingSafeMethod
 import its.model.expressions.types.Obj
 import its.model.nodes.*
+import its.model.nullCheck
 import its.questions.gen.QuestioningSituation
 import padeg.lib.Padeg
 
@@ -70,22 +71,30 @@ class TemplatingUtils(val situation : QuestioningSituation) {
         //Узлы
         @JvmStatic
         internal fun DecisionTreeNode.asNextStep(localizationCode: String, interpretationData: InterpretationData) : String {
-            return additionalInfo["${localizationCode}_asNextStep"]!!.interpret(interpretationData)
+            return additionalInfo["${localizationCode}_asNextStep"]
+                    .nullCheck("Node '$this' doesn't have a $localizationCode associated 'as next step' description")
+                    .interpret(interpretationData)
         }
 
         @JvmStatic
         internal fun DecisionTreeNode.question(localizationCode: String, interpretationData: InterpretationData) : String {
-            return additionalInfo["${localizationCode}_question"]!!.interpret(interpretationData) //TODO Если такого нет - у агрегаций, например.
+            return additionalInfo["${localizationCode}_question"]
+                    .nullCheck("Node '$this' doesn't have a $localizationCode associated question")
+                    .interpret(interpretationData) //TODO Если такого нет - у агрегаций, например.
         }
 
         @JvmStatic
         internal fun DecisionTreeNode.endingCause(localizationCode: String, interpretationData: InterpretationData) : String {
-            return additionalInfo["${localizationCode}_endingCause"]!!.interpret(interpretationData) //TODO Если такого нет - т.е. у не-конечных узлов
+            return additionalInfo["${localizationCode}_endingCause"]
+                    .nullCheck("Node '$this' doesn't have a $localizationCode ending cause")
+                    .interpret(interpretationData) //TODO Если такого нет - т.е. у не-конечных узлов
         }
 
         @JvmStatic
         internal fun LogicAggregationNode.description(localizationCode: String, interpretationData: InterpretationData, result : Boolean) : String {
-            return additionalInfo["${localizationCode}_description"]!!.interpret(interpretationData.usingVar("result", result))
+            return additionalInfo["${localizationCode}_description"]
+                    .nullCheck("Aggregation node '$this' doesn't have a $localizationCode description")
+                    .interpret(interpretationData.usingVar("result", result))
         }
 
         //Выходы (стрелки)
@@ -101,12 +110,16 @@ class TemplatingUtils(val situation : QuestioningSituation) {
 
         @JvmStatic
         internal fun FindActionNode.FindErrorCategory.explanation(localizationCode: String, interpretationData: InterpretationData, entityAlias : String) : String {
-            return additionalInfo["${localizationCode}_explanation"]!!.interpret(interpretationData.usingVar("checked", entityAlias))
+            return additionalInfo["${localizationCode}_explanation"]!!
+                    .nullCheck("FindErrorCategory '$this' doesn't have a $localizationCode explanation")
+                    .interpret(interpretationData.usingVar("checked", entityAlias))
         }
 
         @JvmStatic
         internal fun PredeterminingOutcome.explanation(localizationCode: String, interpretationData: InterpretationData, result: Boolean) : String {
-            return additionalInfo["${localizationCode}_explanation"]!!.interpret(interpretationData.usingVar("result", result))
+            return additionalInfo["${localizationCode}_explanation"]
+                    .nullCheck("Predetermining outcome leading to node '$value' doesn't have a $localizationCode explanation")
+                    .interpret(interpretationData.usingVar("result", result))
         }
 
         @JvmStatic
@@ -127,7 +140,9 @@ class TemplatingUtils(val situation : QuestioningSituation) {
         //Ветки
         @JvmStatic
         internal fun ThoughtBranch.description(localizationCode: String, interpretationData: InterpretationData, result : Boolean) : String {
-            return additionalInfo["${localizationCode}_description"]!!.interpret(interpretationData.usingVar("result", result))
+            return additionalInfo["${localizationCode}_description"]
+                    .nullCheck("Branch '$this' doesn't have a $localizationCode description")
+                    .interpret(interpretationData.usingVar("result", result))
         }
 
         @JvmStatic
@@ -141,8 +156,10 @@ class TemplatingUtils(val situation : QuestioningSituation) {
         }
 
         @JvmStatic
-        internal fun ThoughtBranch.nextStepExplanation(localizationCode: String, interpretationData: InterpretationData) : String? {
-            return additionalInfo["${localizationCode}_nextStepExplanation"]?.interpret(interpretationData)
+        internal fun ThoughtBranch.nextStepExplanation(localizationCode: String, interpretationData: InterpretationData) : String {
+            return additionalInfo["${localizationCode}_nextStepExplanation"]
+                    .nullCheck("Branch '$this' doesn't have a $localizationCode next step explanation")
+                    .interpret(interpretationData)
         }
 
         internal fun Obj.localizedName(localizationCode: String,): String{

@@ -2,6 +2,7 @@ package its.questions.gen.strategies
 
 import its.model.expressions.types.Obj
 import its.model.nodes.*
+import its.model.nullCheck
 import its.questions.gen.QuestioningSituation
 import its.questions.gen.formulations.TemplatingUtils._static.capitalize
 import its.questions.gen.formulations.TemplatingUtils._static.explanation
@@ -89,7 +90,9 @@ object VariableValueStrategy : QuestioningStrategy {
                                 null).filterNotNull()
                         .plus(SingleChoiceOption<Pair<Obj?, Boolean>>(
                             if(declarationNode.next.containsKey("none"))
-                                declarationNode.next.getFull("none")!!.explanation(situation.localizationCode, situation.templating)!!.capitalize()
+                                declarationNode.next.getFull("none")!!.explanation(situation.localizationCode, situation.templating)
+                                        .nullCheck("'none' outcome for Find Action Node $declarationNode has no ${situation.localizationCode} explanation.")
+                                        .capitalize()
                             else
                                 situation.localization.IMPOSSIBLE_TO_FIND
                             ,

@@ -2,6 +2,7 @@ package its.questions.gen.strategies
 
 import its.model.nodes.*
 import its.model.nodes.visitors.DecisionTreeBehaviour
+import its.model.nullCheck
 import its.questions.gen.QuestioningSituation
 import its.questions.gen.formulations.TemplatingUtils._static.asNextStep
 import its.questions.gen.formulations.TemplatingUtils._static.description
@@ -210,7 +211,7 @@ object SequentialStrategy : QuestioningStrategyWithInfo<SequentialStrategy.Seque
                     val answer = node.getAnswer(situation)
                     val correctOutcome = node.next.info.first { it.key == answer } //TODO возможно стоит изменить систему Outcomes чтобы вот такие конструкции были проще
                     return node.next.info.map { SingleChoiceOption(
-                        it.text(situation.localizationCode, situation.templating)!!,
+                        it.text(situation.localizationCode, situation.templating).nullCheck("PredeterminingFactorsNode's outcome has no ${situation.localizationCode} text"),
                         Explanation(situation.localization.THATS_INCORRECT_BECAUSE(reason = it.explanation(situation.localizationCode, situation.templating, false)) + " " +
                                 situation.localization.IN_THIS_SITUATION(fact = correctOutcome.explanation(situation.localizationCode, situation.templating, true)),
                                 type = ExplanationType.Error),
@@ -349,7 +350,7 @@ object SequentialStrategy : QuestioningStrategyWithInfo<SequentialStrategy.Seque
                     return jumps.filter { it !is BranchResultNode}.map{
                         SingleChoiceOption(
                             it.asNextStep(situation.localizationCode, situation.templating),
-                            Explanation(branch.nextStepExplanation(situation.localizationCode, situation.templating)!!, type = ExplanationType.Error),
+                            Explanation(branch.nextStepExplanation(situation.localizationCode, situation.templating), type = ExplanationType.Error),
                             it to (it == branch.start)
                         )
                     }
