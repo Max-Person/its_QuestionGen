@@ -12,10 +12,12 @@ import its.questions.gen.formulations.TemplatingUtils._static.nextStepExplanatio
 import its.questions.gen.formulations.TemplatingUtils._static.nextStepQuestion
 import its.questions.gen.formulations.TemplatingUtils._static.question
 import its.questions.gen.formulations.TemplatingUtils._static.text
+import its.questions.gen.formulations.TemplatingUtils._static.trivialityExplanation
 import its.questions.gen.states.*
 import its.questions.gen.visitors.GetPossibleJumps._static.getPossibleJumps
 import its.questions.gen.visitors.ValueToAnswerString.toAnswerString
 import its.reasoner.nodes.DecisionTreeReasoner._static.getAnswer
+import its.reasoner.operators.OperatorReasoner
 import java.util.*
 
 object SequentialStrategy : QuestioningStrategyWithInfo<SequentialStrategy.SequentialAutomataInfo>{
@@ -299,10 +301,10 @@ object SequentialStrategy : QuestioningStrategyWithInfo<SequentialStrategy.Seque
             if(currentBranch.isTrivial())
                 return RedirectQuestionState()
 
-            val links = node.next.keys.map { outcomeLiteral ->
+            val links = node.next.keys.map { outcomeValue ->
                 GeneralQuestionState.QuestionStateLink<Pair<Any, Boolean>>(
-                    { situation, answer -> node.getAnswer(situation) == outcomeLiteral },
-                    nextStep(node, outcomeLiteral)
+                    { situation, answer -> node.getAnswer(situation) == outcomeValue },
+                    nextStep(node, outcomeValue)
                 )
             }.toSet()
 
@@ -320,6 +322,15 @@ object SequentialStrategy : QuestioningStrategyWithInfo<SequentialStrategy.Seque
                         if(explText != null) Explanation(explText, type = ExplanationType.Error) else null,
                         it.key to (it == correctOutcome),
                     )}
+                }
+
+                override fun preliminarySkip(situation: QuestioningSituation): QuestionStateChange? {
+                    val nextState = links.first { it.condition(situation, true to true) }.nextState
+                    if(node.isSwitch)
+                        return QuestionStateChange(null, nextState)
+                    if(node.trivialityExpr?.use(OperatorReasoner.defaultReasoner(situation)) == true)
+                        return QuestionStateChange(node.trivialityExplanation(situation.localizationCode, situation.templating)?.let { Explanation(it, shouldPause = false) }, nextState)
+                    return super.preliminarySkip(situation)
                 }
             }
 

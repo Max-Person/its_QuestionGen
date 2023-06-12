@@ -97,6 +97,11 @@ class TemplatingUtils(val situation : QuestioningSituation) {
                     .interpret(interpretationData.usingVar("result", result))
         }
 
+        @JvmStatic
+        internal fun QuestionNode.trivialityExplanation(localizationCode: String, interpretationData: InterpretationData) : String? {
+            return additionalInfo["${localizationCode}_triviality"]?.interpret(interpretationData)
+        }
+
         //Выходы (стрелки)
         @JvmStatic
         internal fun Outcome<*>.text(localizationCode: String, interpretationData: InterpretationData) : String? {
