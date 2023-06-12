@@ -6,6 +6,7 @@ import its.questions.gen.QuestioningSituation
 import its.reasoner.nodes.DecisionTreeReasoner._static.getAnswer
 
 class GetPossibleJumps private constructor( val situation: QuestioningSituation) : SimpleDecisionTreeBehaviour<List<DecisionTreeNode>>{
+    private var isTransitional = false
 
     // ---------------------- Удобства ---------------------------
 
@@ -24,14 +25,16 @@ class GetPossibleJumps private constructor( val situation: QuestioningSituation)
 
     override fun <AnswerType : Any> process(node: LinkNode<AnswerType>): List<DecisionTreeNode> {
         val l = mutableListOf<DecisionTreeNode>(node)
+        isTransitional = true
         node.next.values.forEach { l.addAll(it.getPossibleJumps()) }
         return l
     }
 
     override fun process(node: FindActionNode): List<DecisionTreeNode> {
-        //Особое поведение, так как не интересуют узлы, которые используют несуществующие переменные
+        //Особое поведение, так как не интересуют узлы, которые используют переменные
         val l = mutableListOf<DecisionTreeNode>(node)
-        val next = node.next[node.getAnswer(situation)]
+        val next = if(isTransitional) node.nextIfNone else node.next[node.getAnswer(situation)]
+        isTransitional = true
         if(next != null)
             l.addAll(next.getPossibleJumps())
         return l
