@@ -1,4 +1,6 @@
 import its.model.DomainModel
+import its.questions.gen.QuestioningSituation
+import its.questions.gen.formulations.LocalizedDomainModel
 import its.questions.gen.states.*
 import its.questions.gen.strategies.QuestioningStrategy
 import java.lang.NumberFormatException
@@ -7,7 +9,7 @@ import javax.swing.SwingUtilities
 
 
 fun run() {
-    val dir = "inputs\\"
+    val dir = "..\\inputs\\input_examples\\"
 
     LocalizedDomainModel(dir)
 
