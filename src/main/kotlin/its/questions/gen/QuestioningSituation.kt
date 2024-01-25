@@ -1,12 +1,14 @@
 package its.questions.gen
 
 import com.github.max_person.templating.InterpretationData
+import its.model.definition.Domain
+import its.model.definition.types.Obj
 import its.model.nodes.ThoughtBranch
-import its.questions.gen.formulations.LocalizedDomainModel
+import its.questions.gen.formulations.Localization
+import its.questions.gen.formulations.SituationTextGenerator
 import its.questions.gen.formulations.TemplatingUtils
-import its.questions.gen.formulations.TemplatingUtils._static.alias
+import its.questions.gen.formulations.TemplatingUtils.alias
 import its.reasoner.LearningSituation
-import org.apache.jena.rdf.model.Model
 
 class QuestioningSituation : LearningSituation{
 
@@ -16,8 +18,8 @@ class QuestioningSituation : LearningSituation{
     val localizationCode: String
 
     constructor(
-        model: Model,
-        variables: MutableMap<String, String> = mutableMapOf(),
+        model: Domain,
+        variables: MutableMap<String, Obj> = mutableMapOf(),
         discussedVariables : MutableMap<String, String> = mutableMapOf(),
         givenAnswers: MutableMap<Int, Int> = mutableMapOf(),
         assumedResults: MutableMap<String, Boolean> = mutableMapOf(),
@@ -30,22 +32,15 @@ class QuestioningSituation : LearningSituation{
         this.localizationCode = localizationCode
     }
 
-    constructor(model: Model, localizationCode: String = "RU") : super(model){
+    constructor(model: Domain, localizationCode: String = "RU") : super(model){
         this.discussedVariables = mutableMapOf()
         this.givenAnswers = mutableMapOf()
         this.assumedResults = mutableMapOf()
         this.localizationCode = localizationCode
     }
 
-    constructor(filename: String, localizationCode: String = "RU") : super(filename){
-        this.discussedVariables = mutableMapOf()
-        this.givenAnswers = mutableMapOf()
-        this.assumedResults = mutableMapOf()
-        this.localizationCode = localizationCode
-    }
-
-    private val templatingUtils = TemplatingUtils(this)
-    val templating = InterpretationData().withGlobalObj(templatingUtils).withParser(TemplatingUtils.templatingParser)
+    internal val formulations = SituationTextGenerator(this)
+    val templating = InterpretationData().withGlobalObj(formulations).withParser(TemplatingUtils.templatingParser)
 
     fun addGivenAnswer(questionStateId: Int, value: Int){
         givenAnswers[questionStateId] = value
@@ -62,8 +57,5 @@ class QuestioningSituation : LearningSituation{
     }
 
     val localization
-        get() = LocalizedDomainModel.localization(this.localizationCode)
-
-    val domainLocalization
-        get() = LocalizedDomainModel.domainLocalization(this.localizationCode)
+        get() = Localization.localizations[this.localizationCode]!!
 }

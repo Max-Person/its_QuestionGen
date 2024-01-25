@@ -1,53 +1,59 @@
 package its.questions.gen.visitors
 
-import its.model.expressions.types.*
+import its.model.definition.ThisShouldNotHappen
+import its.model.definition.types.Clazz
+import its.model.definition.types.Comparison
+import its.model.definition.types.EnumValue
 import its.questions.gen.QuestioningSituation
 
-object ValueToAnswerString : Types.ValueBehaviour<QuestioningSituation, String>() {
+object ValueToAnswerString {
 
     // ---------------------- Удобства ---------------------------
 
     @JvmStatic
     fun Any.toAnswerString(situation: QuestioningSituation) : String{
-        return this.exec(situation)
-    }
-
-    // ---------------------- Функции поведения ---------------------------
-    override fun Clazz.exec(param: QuestioningSituation): String {
-        return param.domainLocalization.localizedClassName(this)
-    }
-
-    override fun ComparisonResult.exec(param: QuestioningSituation): String {
-        return when (this) {
-            ComparisonResult.Greater -> param.localization.GREATER
-            ComparisonResult.Less -> param.localization.LESS
-            ComparisonResult.Equal -> param.localization.EQUAL
-            ComparisonResult.NotEqual -> param.localization.NOT_EQUAL
-            else -> param.localization.CANNOT_BE_DETERMINED
+        return when(this){
+            is Clazz -> this.toAnswerString(situation)
+            is EnumValue -> this.toAnswerString(situation)
+            is Boolean -> this.toAnswerString(situation)
+            is Double -> this.toAnswerString(situation)
+            is Int -> this.toAnswerString(situation)
+            is String -> this.toAnswerString(situation)
+            else -> throw ThisShouldNotHappen()
         }
     }
 
-    override fun EnumValue.exec(param: QuestioningSituation): String {
-        return param.domainLocalization.localizedEnumValue(this)
+    // ---------------------- Функции поведения ---------------------------
+    private fun Clazz.toAnswerString(situation: QuestioningSituation): String {
+        with(situation.formulations){
+            return this@toAnswerString.localizedName
+        }
     }
 
-    override fun Obj.exec(param: QuestioningSituation): String {
-        TODO("Not yet implemented")
+    private fun EnumValue.toAnswerString(situation: QuestioningSituation): String {
+        return when (this) {
+            Comparison.Values.Greater -> situation.localization.GREATER
+            Comparison.Values.Less -> situation.localization.LESS
+            Comparison.Values.Equal -> situation.localization.EQUAL
+            else -> with(situation.formulations){
+                this@toAnswerString.localizedName
+            }
+        }
     }
 
-    override fun Boolean.exec(param: QuestioningSituation): String {
-        return if(this) param.localization.YES else param.localization.NO
+    private fun Boolean.toAnswerString(situation: QuestioningSituation): String {
+        return if(this) situation.localization.YES else situation.localization.NO
     }
 
-    override fun Double.exec(param: QuestioningSituation): String {
+    private fun Double.toAnswerString(situation: QuestioningSituation): String {
         return this.toString()
     }
 
-    override fun Int.exec(param: QuestioningSituation): String {
+    private fun Int.toAnswerString(situation: QuestioningSituation): String {
         return this.toString()
     }
 
-    override fun String.exec(param: QuestioningSituation): String {
+    private fun String.toAnswerString(situation: QuestioningSituation): String {
         return this
     }
 }

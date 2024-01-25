@@ -5,8 +5,8 @@ import its.model.nodes.DecisionTreeNode
 import its.model.nodes.LinkNode
 import its.model.nodes.ThoughtBranch
 import its.questions.gen.QuestioningSituation
-import its.questions.gen.formulations.TemplatingUtils._static.description
-import its.questions.gen.formulations.TemplatingUtils._static.endingCause
+import its.questions.gen.formulations.TemplatingUtils.description
+import its.questions.gen.formulations.TemplatingUtils.endingCause
 import its.questions.gen.states.*
 import its.questions.gen.visitors.GetNodesLCA._static.getNodesLCA
 import its.questions.gen.visitors.GetPossibleEndingNodes._static.getPossibleEndingNodes
@@ -24,7 +24,7 @@ object FullBranchStrategy : QuestioningStrategy {
         val sequential = SequentialStrategy.buildWithInfo(branch)
         val variableValueAutomata = VariableValueStrategy.build(branch)
 
-        val endingNodes = branch.getEndingNodes()
+        val endingNodes = branch.start.getEndingNodes()
         if(endingNodes.size <= 1){
             variableValueAutomata.finalize(sequential.automata.initState)
             return QuestionAutomata(variableValueAutomata.initState).finalizeForBranch(branch)
@@ -93,12 +93,9 @@ object FullBranchStrategy : QuestioningStrategy {
     private fun DecisionTreeNode.getEndingNodes() : List<DecisionTreeNode> {
         val list = mutableListOf<DecisionTreeNode>()
         if(this is LinkNode<*>){
-            next.values.forEach { list.addAll(it.getEndingNodes()) }
-            if(next.values.any{it is BranchResultNode })
+            outcomes.forEach { list.addAll(it.node.getEndingNodes()) }
+            if(outcomes.any{it.node is BranchResultNode })
                 list.add(this)
-        }
-        else if(this is ThoughtBranch){
-            list.addAll(this.start.getEndingNodes())
         }
         return list
     }

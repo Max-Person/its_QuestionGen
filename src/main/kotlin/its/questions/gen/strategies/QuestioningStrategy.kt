@@ -1,6 +1,5 @@
 package its.questions.gen.strategies
 
-import its.model.nodes.StartNode
 import its.model.nodes.ThoughtBranch
 import its.questions.gen.states.QuestionState
 
@@ -16,10 +15,6 @@ interface QuestioningStrategy {
         val automata = build(branch)
         automata.finalize(endState)
         return automata
-    }
-
-    fun buildAndFinalize(start: StartNode, endState: QuestionState): QuestionAutomata{
-        return buildAndFinalize(start.main, endState)
     }
 }
 

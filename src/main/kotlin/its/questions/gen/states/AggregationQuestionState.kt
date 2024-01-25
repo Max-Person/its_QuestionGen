@@ -5,7 +5,7 @@ import its.model.nodes.LogicalOp
 import its.model.nodes.ThoughtBranch
 import its.questions.gen.QuestioningSituation
 import its.questions.gen.formulations.Localization
-import its.questions.gen.formulations.TemplatingUtils._static.description
+import its.questions.gen.formulations.TemplatingUtils.description
 import its.reasoner.nodes.DecisionTreeReasoner._static.getAnswer
 
 //Можно выделить над ним некий AssociationQuestionState, но пока что это не нужно

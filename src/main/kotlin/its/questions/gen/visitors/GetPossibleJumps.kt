@@ -10,7 +10,7 @@ class GetPossibleJumps private constructor( val situation: QuestioningSituation)
 
     // ---------------------- Удобства ---------------------------
 
-    companion object _static{
+    companion object {
         @JvmStatic
         fun DecisionTreeNode.getPossibleJumps(situation: QuestioningSituation) : List<DecisionTreeNode>{
             return this.use(GetPossibleJumps(situation)).filter { it != this }
@@ -23,20 +23,20 @@ class GetPossibleJumps private constructor( val situation: QuestioningSituation)
 
     // ---------------------- Функции поведения ---------------------------
 
-    override fun <AnswerType : Any> process(node: LinkNode<AnswerType>): List<DecisionTreeNode> {
+    override fun <AnswerType> process(node: LinkNode<AnswerType>): List<DecisionTreeNode> {
         val l = mutableListOf<DecisionTreeNode>(node)
         isTransitional = true
-        node.next.values.forEach { l.addAll(it.getPossibleJumps()) }
+        node.outcomes.forEach { l.addAll(it.node.getPossibleJumps()) }
         return l
     }
 
     override fun process(node: FindActionNode): List<DecisionTreeNode> {
         //Особое поведение, так как не интересуют узлы, которые используют переменные
         val l = mutableListOf<DecisionTreeNode>(node)
-        val next = if(isTransitional) node.nextIfNone else node.next[node.getAnswer(situation)]
+        val next = if(isTransitional) node.nextIfNone else node.outcomes[node.getAnswer(situation)]
         isTransitional = true
         if(next != null)
-            l.addAll(next.getPossibleJumps())
+            l.addAll(next.node.getPossibleJumps())
         return l
     }
 
@@ -44,15 +44,7 @@ class GetPossibleJumps private constructor( val situation: QuestioningSituation)
         return listOf(node)
     }
 
-    override fun process(node: StartNode): List<DecisionTreeNode> {
-        return listOf(node).plus(node.main.getPossibleJumps())
-    }
-
     override fun process(branch: ThoughtBranch): List<DecisionTreeNode> {
         return listOf<DecisionTreeNode>().plus(branch.start.getPossibleJumps())
-    }
-
-    override fun process(node: UndeterminedResultNode): List<DecisionTreeNode> {
-        return listOf()
     }
 }

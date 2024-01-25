@@ -1,6 +1,6 @@
-import its.model.DomainModel
+import its.model.DomainSolvingModel
+import its.model.definition.rdf.DomainRDFFiller
 import its.questions.gen.QuestioningSituation
-import its.questions.gen.formulations.LocalizedDomainModel
 import its.questions.gen.states.*
 import its.questions.gen.strategies.QuestioningStrategy
 import java.lang.NumberFormatException
@@ -11,8 +11,7 @@ import javax.swing.SwingUtilities
 fun run() {
     val dir = "..\\inputs\\input_examples\\"
 
-    LocalizedDomainModel(dir)
-
+    val model = DomainSolvingModel(dir, DomainSolvingModel.BuildMethod.LOQI).validate()
 
     val endState = object : SkipQuestionState(){
         override fun skip(situation: QuestioningSituation): QuestionStateChange {
@@ -23,26 +22,33 @@ fun run() {
             get() = emptyList()
 
     }
-    val automata = QuestioningStrategy.defaultFullBranchStrategy.buildAndFinalize(DomainModel.decisionTree, endState)
+    val automata =
+        QuestioningStrategy.defaultFullBranchStrategy.buildAndFinalize(model.decisionTree.mainBranch, endState)
 
     println(GeneralQuestionState.stateCount)
     println()
 
-    val input = Prompt(
+    val i = Prompt(
         "Выберите используемые входные данные:",
-        listOf("X + А / B * C + D / K   -   выбран первый + " to 1,
+        listOf(
+            "X + А / B * C + D / K   -   выбран первый + " to 1,
             "X + А / B * C + D / K   -   выбран * " to 2,
             "X * А ^ B + C + D / K   (где A ^ B уже вычислено)  -   выбран *" to 3,
             "А / B * C + D    -   выбран * " to 4,
             "Arr[B + C]   -   выбран [] " to 5,
             "A * (B * C)  -   выбран первый *" to 6,
-            "(X + А) [ B + C * D ]  -   выбран второй +" to 7,)
+            "(X + А) [ B + C * D ]  -   выбран второй +" to 7,
+        )
     ).ask()
     println("Далее вопросы генерируются как для студента, выбравшего данный ответ в данной ситуации.\n\n-----")
 
-    val situation = QuestioningSituation(dir + "_$input\\$input.ttl")
-    situation.addAssumedResult(DomainModel.decisionTree.main, true)
-    var state : QuestionState? = automata.initState
+    val situationDomain = model.domain.copy()
+    DomainRDFFiller.fillDomain(situationDomain, "${dir}\\$i.ttl")
+    situationDomain.validateAndThrow()
+
+    val situation = QuestioningSituation(situationDomain)
+    situation.addAssumedResult(model.decisionTree.mainBranch, true)
+    var state: QuestionState? = automata.initState
 //    state = automata[94]
 //    situation.addAssumedResult(DomainModel.decisionTree.getByAlias("right") as ThoughtBranch, true)
     while(state != null){
@@ -73,8 +79,8 @@ fun run() {
 }
 
 fun main(args: Array<String>) {
-    val useConsole = false || (args.size > 0 && args[0].equals("-c"))
-    if(useConsole){
+    val useConsole = args.size > 0 && args[0].equals("-c")
+    if(!useConsole){
         run()
     }
     else{

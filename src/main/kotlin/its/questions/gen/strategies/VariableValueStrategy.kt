@@ -1,18 +1,16 @@
 package its.questions.gen.strategies
 
-import its.model.expressions.types.Obj
+import its.model.Utils.nullCheck
+import its.model.definition.types.Obj
 import its.model.nodes.*
-import its.model.nullCheck
 import its.questions.gen.QuestioningSituation
-import its.questions.gen.formulations.TemplatingUtils._static.capitalize
-import its.questions.gen.formulations.TemplatingUtils._static.explanation
-import its.questions.gen.formulations.TemplatingUtils._static.localizedName
-import its.questions.gen.formulations.TemplatingUtils._static.question
+import its.questions.gen.formulations.TemplatingUtils.explanation
+import its.questions.gen.formulations.TemplatingUtils.question
 import its.questions.gen.states.*
 import its.questions.gen.visitors.getUsedVariables
+import its.reasoner.nodes.DecisionTreeReasoner
 import its.reasoner.nodes.DecisionTreeReasoner._static.getAnswer
 import its.reasoner.nodes.DecisionTreeReasoner._static.getCorrectPath
-import its.reasoner.nodes.findWithErrors
 
 object VariableValueStrategy : QuestioningStrategy {
     private data class VariableInfo(
@@ -23,10 +21,12 @@ object VariableValueStrategy : QuestioningStrategy {
     )
 
     private fun DecisionTreeNode.getVariableInfo(map: MutableMap<String, VariableInfo>) : Map<String, VariableInfo>{
-        if(this is DecisionTreeVarDeclaration){
-            require(this is FindActionNode){"Don't know how to collect variable info from ${javaClass.simpleName}"}
-
-            val info = VariableInfo(declaredVariable().name, this, declarationExpression().getUsedVariables().toList())
+        if(this is FindActionNode){
+            val info = VariableInfo(
+                varAssignment.variable.varName,
+                this,
+                varAssignment.valueExpr.getUsedVariables().toList()
+            )
             map[info.name] = info
         }
 
@@ -34,7 +34,7 @@ object VariableValueStrategy : QuestioningStrategy {
             expr.getUsedVariables().forEach { variable -> map[variable]?.isDeciding = true }
         }
         else if(this is FindActionNode && nextIfNone != null){
-            map[variable.name]?.isDeciding = true
+            map[varAssignment.variable.varName]?.isDeciding = true
         }
 
         if(this is LinkNode<*>){
@@ -67,14 +67,19 @@ object VariableValueStrategy : QuestioningStrategy {
 
                 override fun options(situation: QuestioningSituation): List<SingleChoiceOption<Pair<Obj?, Boolean>>> {
                     val answer = declarationNode.getAnswer(situation)
-                    val explanation = situation.localization.IN_THIS_SITUATION(fact = declarationNode.next.getFull(answer)!!.explanation(situation.localizationCode, situation.templating)!!)
+                    val explanation = situation.localization.IN_THIS_SITUATION(
+                        fact = declarationNode.outcomes[answer]!!.explanation(situation.localizationCode, situation.templating)!!
+                    )
 
-                    val possibleObjects = declarationNode.findWithErrors(situation)
+                    val possibleObjects = DecisionTreeReasoner(situation).processWithErrors(declarationNode)
                     val options = possibleObjects.errors.map { (error, objects) ->
                         objects.map{
                             SingleChoiceOption<Pair<Obj?, Boolean>>(
-                                it.localizedName(situation.localizationCode),
-                                Explanation("${error.explanation(situation.localizationCode, situation.templating, it.name)} $explanation", type = ExplanationType.Error),
+                                with(situation.formulations){it.localizedName},
+                                Explanation(
+                                    "${error.explanation(situation.localizationCode, situation.templating, it.objectName)} $explanation",
+                                    type = ExplanationType.Error
+                                ),
                                 it to false,
                             )
                         }
@@ -82,15 +87,15 @@ object VariableValueStrategy : QuestioningStrategy {
                         .plus(
                             if(possibleObjects.correct != null)
                                 SingleChoiceOption<Pair<Obj?, Boolean>>(
-                                    possibleObjects.correct!!.localizedName(situation.localizationCode),
+                                    with(situation.formulations){possibleObjects.correct!!.localizedName},
                                     null,
                                     possibleObjects.correct!! to true,
                                 )
                             else
                                 null).filterNotNull()
                         .plus(SingleChoiceOption<Pair<Obj?, Boolean>>(
-                            if(declarationNode.next.containsKey("none"))
-                                declarationNode.next.getFull("none")!!.explanation(situation.localizationCode, situation.templating)
+                            if(declarationNode.nextIfNone != null)
+                                declarationNode.nextIfNone!!.explanation(situation.localizationCode, situation.templating)
                                         .nullCheck("'none' outcome for Find Action Node $declarationNode has no ${situation.localizationCode} explanation.")
                                         .capitalize()
                             else
@@ -105,7 +110,7 @@ object VariableValueStrategy : QuestioningStrategy {
 
                 override fun additionalActions(situation: QuestioningSituation, chosenAnswer: Pair<Obj?, Boolean>) {
                     super.additionalActions(situation, chosenAnswer)
-                    situation.discussedVariables[varInfo.name] = chosenAnswer.first?.name ?: ""
+                    situation.discussedVariables[varInfo.name] = chosenAnswer.first?.objectName ?: ""
                 }
 
                 override fun preliminarySkip(situation: QuestioningSituation): QuestionStateChange? {

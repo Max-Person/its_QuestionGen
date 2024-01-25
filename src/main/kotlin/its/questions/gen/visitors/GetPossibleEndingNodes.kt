@@ -18,7 +18,7 @@ class GetPossibleEndingNodes private constructor(val branch: ThoughtBranch, val 
         @JvmStatic
         fun ThoughtBranch.getPossibleEndingNodes(situation: QuestioningSituation) : Set<DecisionTreeNode>{
             val behaviour = GetPossibleEndingNodes(this, situation)
-            this.use(behaviour)
+            this.start.use(behaviour)
             return behaviour.set
         }
     }
@@ -29,32 +29,26 @@ class GetPossibleEndingNodes private constructor(val branch: ThoughtBranch, val 
 
     // ---------------------- Функции поведения ---------------------------
 
-    override fun <AnswerType : Any> process(node: LinkNode<AnswerType>) {
-        node.next.values.forEach { it.getEndingNodes() }
-        if(node.next.values.any{it is BranchResultNode})
+    override fun <AnswerType> process(node: LinkNode<AnswerType>) {
+        node.outcomes.forEach { it.node.getEndingNodes() }
+        if(node.outcomes.any{it.node is BranchResultNode})
             set.add(node)
-        if(node.next.values.any{it is BranchResultNode && consideredNodes.contains(it)})
+        if(node.outcomes.any{it.node is BranchResultNode && consideredNodes.contains(it.node)})
             correct = node
     }
 
     override fun process(node: FindActionNode) {
         //Особое поведение, так как не интересуют конечные узлы, которые используют несуществующие переменные
-        node.next[node.getAnswer(situation)]?.getEndingNodes()
-        if(node.nextIfFound is BranchResultNode || node.nextIfNone is BranchResultNode)
+        node.outcomes[node.getAnswer(situation)]?.node?.getEndingNodes()
+        if(node.outcomes.any{it.node is BranchResultNode})
             set.add(node)
-        if(node.next.values.any{it is BranchResultNode && consideredNodes.contains(it)})
+        if(node.outcomes.any{it.node is BranchResultNode && consideredNodes.contains(it.node)})
             correct = node
     }
 
     override fun process(node: BranchResultNode) {}
 
-    override fun process(node: StartNode) {
-        node.main.getEndingNodes()
-    }
-
     override fun process(branch: ThoughtBranch) {
         branch.start.getEndingNodes()
     }
-
-    override fun process(node: UndeterminedResultNode) {}
 }

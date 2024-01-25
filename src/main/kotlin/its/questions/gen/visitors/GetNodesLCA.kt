@@ -1,8 +1,10 @@
 package its.questions.gen.visitors
 
+import its.model.definition.ThisShouldNotHappen
 import its.model.nodes.*
 import its.model.nodes.visitors.SimpleDecisionTreeBehaviour
 
+//TODO переделать с использованием parent
 class GetNodesLCA private constructor(val a : DecisionTreeNode, val b : DecisionTreeNode) : SimpleDecisionTreeBehaviour<Int> {
     var lca : DecisionTreeNode? = null
     var previous : DecisionTreeNode? = null
@@ -15,17 +17,15 @@ class GetNodesLCA private constructor(val a : DecisionTreeNode, val b : Decision
         const val b_found = 2
 
         @JvmStatic
+        fun ThoughtBranch.getNodesLCA(a : DecisionTreeNode, b : DecisionTreeNode) : DecisionTreeNode?{
+            return start.getNodesLCA(a, b)
+        }
+
+        @JvmStatic
         fun DecisionTreeNode.getNodesLCA(a : DecisionTreeNode, b : DecisionTreeNode) : DecisionTreeNode?{
             val v = GetNodesLCA(a, b)
             this.use(v)
             return v.lca
-        }
-
-        @JvmStatic
-        fun DecisionTreeNode.getNodesPreLCA(a : DecisionTreeNode, b : DecisionTreeNode) : DecisionTreeNode?{
-            val v = GetNodesLCA(a, b)
-            this.use(v)
-            return v.previous
         }
     }
 
@@ -35,13 +35,13 @@ class GetNodesLCA private constructor(val a : DecisionTreeNode, val b : Decision
 
     // ---------------------- Функции поведения ---------------------------
 
-    override fun <AnswerType : Any> process(node: LinkNode<AnswerType>): Int {
+    override fun <AnswerType> process(node: LinkNode<AnswerType>): Int {
         var res = none_found
         if(node == a)
             res = res or a_found
         if(node == b)
             res = res or b_found
-        node.next.values.forEach { res = res or it.getNodesLCA() }
+        node.outcomes.forEach { res = res or it.node.getNodesLCA() }
         if(res and a_found != 0 && res and b_found != 0 ){
             if(lca == null)
                 lca = node
@@ -59,43 +59,7 @@ class GetNodesLCA private constructor(val a : DecisionTreeNode, val b : Decision
         return none_found
     }
 
-    override fun process(node: StartNode): Int {
-        var res = none_found
-        if(node == a)
-            res = res or a_found
-        if(node == b)
-            res = res or b_found
-        res = res or node.main.getNodesLCA()
-        if(res and a_found != 0 && res and b_found != 0 ){
-            if(lca == null)
-                lca = node
-            else if(previous == null)
-                previous = node
-        }
-        return res
-    }
-
     override fun process(branch: ThoughtBranch): Int {
-        var res = none_found
-        if(branch == a)
-            res = res or a_found
-        if(branch == b)
-            res = res or b_found
-        res = res or branch.start.getNodesLCA()
-        if(res and a_found != 0 && res and b_found != 0 ){
-            if(lca == null)
-                lca = branch
-            else if(previous == null)
-                previous = branch
-        }
-        return res
-    }
-
-    override fun process(node: UndeterminedResultNode): Int {
-        if(node == a)
-            return a_found
-        if(node == b)
-            return b_found
-        return none_found
+        throw ThisShouldNotHappen()
     }
 }
