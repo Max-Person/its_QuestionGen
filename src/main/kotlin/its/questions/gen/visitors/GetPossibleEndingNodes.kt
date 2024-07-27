@@ -3,6 +3,7 @@ package its.questions.gen.visitors
 import its.model.nodes.*
 import its.model.nodes.visitors.SimpleDecisionTreeBehaviour
 import its.questions.gen.QuestioningSituation
+import its.reasoner.AmbiguousObjectException
 import its.reasoner.nodes.DecisionTreeReasoner._static.getAnswer
 import its.reasoner.nodes.DecisionTreeReasoner._static.getCorrectPath
 
@@ -24,7 +25,10 @@ class GetPossibleEndingNodes private constructor(val branch: ThoughtBranch, val 
     }
 
     private fun DecisionTreeNode.getEndingNodes(){
-        this.use(this@GetPossibleEndingNodes)
+        try {
+            this.use(this@GetPossibleEndingNodes)
+        }
+        catch (_: AmbiguousObjectException){}
     }
 
     // ---------------------- Функции поведения ---------------------------
