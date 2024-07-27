@@ -51,11 +51,27 @@ object SequentialStrategy : QuestioningStrategyWithInfo<SequentialStrategy.Seque
         }
 
         override fun process(node: CycleAggregationNode): QuestionState {
-            TODO("Not yet implemented")
+            return getNotImplementedState()
         }
 
         override fun process(node: WhileAggregationNode): QuestionState {
-            TODO("Not yet implemented")
+            return getNotImplementedState()
+        }
+
+        private fun getNotImplementedState() : QuestionState{
+            val redirect = RedirectQuestionState()
+            return object : SkipQuestionState(){
+                override fun skip(situation: QuestioningSituation): QuestionStateChange {
+                    return QuestionStateChange(
+                        Explanation("<A question state for this node is not yet implemented"),
+                        redirect
+                    )
+                }
+
+                override val reachableStates: Collection<QuestionState>
+                    get() = listOf(redirect)
+
+            }
         }
 
         override fun process(node: FindActionNode): QuestionState {
