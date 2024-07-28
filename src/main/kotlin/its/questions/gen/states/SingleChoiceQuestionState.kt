@@ -31,7 +31,7 @@ abstract class SingleChoiceQuestionState<AnswerInfo>(
             return change.copy(explanation = explanationIfSkipped(situation, options.single()))
         }
 
-        return Question(text, options.map{option -> option.text})
+        return Question(text, options.map{option -> option.text}, QuestionType.single)
     }
 
     override fun proceedWithAnswer(situation: QuestioningSituation, answer: List<Int>): QuestionStateChange {

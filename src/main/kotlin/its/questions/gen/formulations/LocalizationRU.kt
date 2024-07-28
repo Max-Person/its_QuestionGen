@@ -40,6 +40,7 @@ object LocalizationRU : Localization {
     override val NO_FURTHER_DISCUSSION_NEEDED: String = "Подробный разбор не нужен"
 
     override val IMPOSSIBLE_TO_FIND: String = "Невозможно найти."
+    override fun ALSO_FITS_THE_CRITERIA(object_descr: String) = "$object_descr also fits the criteria"
 
     override fun AGGREGATION_CORRECT_EXPL(answer_descr: String, branches_descr: String): String = "Вы верно оценили ситуацию, однако это значит, что $answer_descr - из-за того, что $branches_descr"
     override fun AGGREGATION_INCORRECT_BRANCHES_DESCR(branches_descr: String): String = THATS_INCORRECT_BECAUSE(branches_descr)

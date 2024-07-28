@@ -56,6 +56,16 @@ class QuestioningSituation : LearningSituation{
         return assumedResults[branch.alias]
     }
 
+    /**
+     * Создать учебную ситуацию-копию из текущей, чтобы вычисления не поменяли состояние текущей
+     */
+    fun forEval(): LearningSituation {
+        return LearningSituation(
+            domain.copy(),
+            decisionTreeVariables.toMutableMap()
+        )
+    }
+
     val localization
         get() = Localization.localizations[this.localizationCode]!!
 }

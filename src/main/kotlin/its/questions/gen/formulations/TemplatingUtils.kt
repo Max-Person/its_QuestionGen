@@ -70,7 +70,7 @@ internal object TemplatingUtils {
     }
 
     @JvmStatic
-    internal fun LogicAggregationNode.description(localizationCode: String, interpretationData: InterpretationData, result : Boolean) : String {
+    internal fun AggregationNode.description(localizationCode: String, interpretationData: InterpretationData, result : Boolean) : String {
         return metadata["${localizationCode}.description"]
             .stringCheck("Aggregation node '$this' doesn't have a $localizationCode description")
             .interpret(interpretationData.usingVar("result", result))
@@ -93,7 +93,7 @@ internal object TemplatingUtils {
     }
 
     @JvmStatic
-    internal fun FindActionNode.FindErrorCategory.explanation(localizationCode: String, interpretationData: InterpretationData, entityAlias : String) : String {
+    internal fun FindErrorCategory.explanation(localizationCode: String, interpretationData: InterpretationData, entityAlias : String) : String {
         return metadata["${localizationCode}.explanation"]!!
             .stringCheck("FindErrorCategory '$this' doesn't have a $localizationCode explanation")
             .interpret(interpretationData.usingVar("checked", entityAlias))

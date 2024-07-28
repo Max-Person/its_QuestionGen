@@ -85,11 +85,11 @@ object VariableValueStrategy : QuestioningStrategy {
                         }
                     }.flatten()
                         .plus(
-                            if(possibleObjects.correct != null)
+                            if(possibleObjects.correct.isNotEmpty())
                                 SingleChoiceOption<Pair<Obj?, Boolean>>(
-                                    with(situation.formulations){possibleObjects.correct!!.localizedName},
+                                    with(situation.formulations){possibleObjects.correct.single().localizedName},
                                     null,
-                                    possibleObjects.correct!! to true,
+                                    possibleObjects.correct.single() to true,
                                 )
                             else
                                 null).filterNotNull()

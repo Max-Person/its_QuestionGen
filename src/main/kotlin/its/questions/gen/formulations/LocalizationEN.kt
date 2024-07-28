@@ -41,6 +41,8 @@ object LocalizationEN : Localization {
 
     override val IMPOSSIBLE_TO_FIND: String = "None can be found."
 
+    override fun ALSO_FITS_THE_CRITERIA(object_descr: String) = "$object_descr also fits the criteria"
+
     override fun AGGREGATION_CORRECT_EXPL(answer_descr: String, branches_descr: String): String = "You've judged the situation correctly, but in this case it means that $answer_descr because $branches_descr"
     override fun AGGREGATION_INCORRECT_BRANCHES_DESCR(branches_descr: String): String = THATS_INCORRECT_BECAUSE(branches_descr)
     override fun AGGREGATION_MISSED_BRANCHES_DESCR_PRIMARY(branches_descr: String): String = "That's incorrect, because you did not consider that $branches_descr - this matters in this case."

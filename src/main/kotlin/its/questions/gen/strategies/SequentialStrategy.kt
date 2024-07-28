@@ -1,6 +1,7 @@
 package its.questions.gen.strategies
 
 import its.model.Utils.nullCheck
+import its.model.definition.types.Obj
 import its.model.nodes.*
 import its.model.nodes.visitors.DecisionTreeBehaviour
 import its.questions.gen.QuestioningSituation
@@ -17,6 +18,7 @@ import its.questions.gen.formulations.TemplatingUtils.trivialityExplanation
 import its.questions.gen.states.*
 import its.questions.gen.visitors.GetPossibleJumps.Companion.getPossibleJumps
 import its.questions.gen.visitors.ValueToAnswerString.toAnswerString
+import its.reasoner.nodes.DecisionTreeReasoner
 import its.reasoner.nodes.DecisionTreeReasoner._static.getAnswer
 import its.reasoner.operators.OperatorReasoner
 import java.util.*
@@ -51,7 +53,108 @@ object SequentialStrategy : QuestioningStrategyWithInfo<SequentialStrategy.Seque
         }
 
         override fun process(node: CycleAggregationNode): QuestionState {
-            return getNotImplementedState()
+            val toEndRedirect = RedirectQuestionState()
+
+            //1. спросить про результат узла в общем, как в агрегации
+            var nextSteps : Map<Boolean, QuestionState> = mapOf(true to toEndRedirect, false to toEndRedirect)
+
+            val firstToSecondRedirect = RedirectQuestionState()
+            val nodeAnswerQuestionFirst =
+                if(currentBranch.isTrivial()) firstToSecondRedirect
+                else {
+                    nextSteps = node.outcomes.keys.map { outcome -> outcome to nextStep(node, outcome)}.toMap()
+                    val mainLinks = node.outcomes.keys.map { outcome ->
+                        GeneralQuestionState.QuestionStateLink<Pair<Boolean, Boolean>>(
+                            {situation, answer -> answer.second && (answer.first == outcome) },
+                            nextSteps[outcome]!!
+                        )
+                    }.plus(GeneralQuestionState.QuestionStateLink(
+                        {situation, answer -> !answer.second },
+                        firstToSecondRedirect
+                    )).toSet()
+
+                    object : CorrectnessCheckQuestionState<Boolean>(mainLinks) {
+                        override fun text(situation: QuestioningSituation): String {
+                            val descr = node.description(situation.localizationCode, situation.templating, true)
+                            return situation.localization.IS_IT_TRUE_THAT(descr)
+                        }
+
+                        override fun options(situation: QuestioningSituation): List<SingleChoiceOption<Pair<Boolean, Boolean>>> {
+                            val correctAnswer = node.getAnswer(situation)
+                            return node.outcomes.map {
+                                SingleChoiceOption(
+                                    if (it.key) situation.localization.TRUE else situation.localization.FALSE,
+                                    Explanation(situation.localization.THATS_INCORRECT + " " + situation.localization.LETS_FIGURE_IT_OUT, type = ExplanationType.Error, shouldPause = false),
+                                    it.key to (it.key == correctAnswer),
+                                )
+                            }
+                        }
+                    }
+                }
+
+            //2. Если неверно, то попросить выбрать все подходящие переменные цикла
+            val secondToThirdRedirect = RedirectQuestionState()
+            val objectSelectQuestionSecond = object : MultipleChoiceQuestionState<Obj>(secondToThirdRedirect) {
+                override fun text(situation: QuestioningSituation): String {
+                    return node.question(situation.localizationCode, situation.templating)
+                }
+
+                override fun options(situation: QuestioningSituation): List<MultipleChoiceOption<Obj>> {
+                    val searchResult = DecisionTreeReasoner(situation).searchWithErrors(node)
+                    val options = searchResult.correct
+                        .map { obj ->
+                            val objectName = with(situation.formulations) { obj.localizedName }
+                            MultipleChoiceOption(
+                                objectName,
+                                obj,
+                                true,
+                                situation.localization.ALSO_FITS_THE_CRITERIA(objectName),
+                            )
+                        }
+                        .plus(searchResult.errors
+                            .flatMap { (error, objects) -> objects.map { error to it }}
+                            .map { (error, obj) ->
+                                val objectName = with(situation.formulations) { obj.localizedName }
+                                MultipleChoiceOption(
+                                    objectName,
+                                    obj,
+                                    false,
+                                    error.explanation(situation.localizationCode, situation.templating, obj.objectName)
+                                )
+                            }
+                        )
+                    return options
+                }
+            }
+            firstToSecondRedirect.redir = objectSelectQuestionSecond
+
+            //3. Спросить про конкретные переменные цикла, как они влияют на агрегацию
+            val thirdToFourthRedirect = RedirectQuestionState()
+            val variableAggregationQuestionThird = CycleAggregationState(
+                node,
+                nextSteps[true]!!,
+                nextSteps[false]!!,
+                thirdToFourthRedirect
+            )
+            secondToThirdRedirect.redir = variableAggregationQuestionThird
+
+            //Если хотя бы одна неправильная, то спросить в какую углубиться
+            val (selectBranchQuestionFourth, branchAutomata) = variableAggregationQuestionThird.createSelectBranchState()
+            thirdToFourthRedirect.redir = selectBranchQuestionFourth
+
+            //После выхода из веток пропускающее состояние определяет, к какому из верных ответов надо совершить переход
+            val shadowSkip = object : SkipQuestionState(){
+                override fun skip(situation: QuestioningSituation): QuestionStateChange {
+                    return QuestionStateChange(null, nextSteps[node.getAnswer(situation)])
+                }
+
+                override val reachableStates: Collection<QuestionState>
+                    get() = nextSteps.values
+            }
+            branchAutomata.forEach{it.finalize(shadowSkip)}
+
+            nodeStates[node] = nodeAnswerQuestionFirst
+            return nodeAnswerQuestionFirst
         }
 
         override fun process(node: WhileAggregationNode): QuestionState {
@@ -84,7 +187,10 @@ object SequentialStrategy : QuestioningStrategyWithInfo<SequentialStrategy.Seque
                 override fun skip(situation: QuestioningSituation): QuestionStateChange {
                     val correctAnswer = node.getAnswer(situation)
 
-                    val explanation = Explanation(situation.localization.WE_ALREADY_DISCUSSED_THAT(fact = node.outcomes[correctAnswer]!!.explanation(situation.localizationCode, situation.templating)!!))
+                    val explanation = Explanation(situation.localization.WE_ALREADY_DISCUSSED_THAT(
+                            node.outcomes[correctAnswer]!!
+                                .explanation(situation.localizationCode, situation.templating)!!
+                    ))
                     val nextState = nextSteps[correctAnswer]
                     return QuestionStateChange(explanation, nextState)
                 }
@@ -95,10 +201,6 @@ object SequentialStrategy : QuestioningStrategyWithInfo<SequentialStrategy.Seque
 
             nodeStates[node] = skip
             return skip
-        }
-
-        private fun QuestionAutomata.hasQuestions() : Boolean{
-            return this.any { state -> state is GeneralQuestionState<*> || (state is RedirectQuestionState && state.redirectsTo() is GeneralQuestionState<*>) }
         }
 
         override fun process(node: LogicAggregationNode): QuestionState {
@@ -142,56 +244,17 @@ object SequentialStrategy : QuestioningStrategyWithInfo<SequentialStrategy.Seque
             //Если результат выполнения узла был выбран неверно, то спросить про результаты веток
             val branchSelectRedirect = RedirectQuestionState()
 
-            val aggregationQuestion = AggregationQuestionState(node, setOf(
-                GeneralQuestionState.QuestionStateLink(
-                    { situation, answer -> answer && node.getAnswer(situation) == true },
-                    nextSteps[true]!!
-                ),
-                GeneralQuestionState.QuestionStateLink(
-                    { situation, answer -> answer && node.getAnswer(situation) == false },
-                    nextSteps[false]!!
-                ),
-                GeneralQuestionState.QuestionStateLink(
-                    { situation, answer -> !answer },
-                    branchSelectRedirect
-                ),
-            ))
+            val aggregationQuestion = LogicalAggregationState(
+                node,
+                nextSteps[true]!!,
+                nextSteps[false]!!,
+                branchSelectRedirect
+            )
             aggregationRedirect.redir = aggregationQuestion
 
-
             //Если были сделаны ошибки в ветках, то спросить про углубление в одну из веток
-            val branchAutomata = node.thoughtBranches.map { it to QuestioningStrategy.defaultFullBranchStrategy.build(it)}.toMap()
-            val worthAsking = node.thoughtBranches.map{it to (branchAutomata[it]!!.hasQuestions())}.toMap()
-            val branchLinks = node.thoughtBranches.filter{worthAsking[it]!!}.map{branch -> GeneralQuestionState.QuestionStateLink<ThoughtBranch>(
-                {situation, answer -> answer == branch }, branchAutomata[branch]!!.initState
-            )}.toSet()
-
-            val branchSelectQuestion = object : SingleChoiceQuestionState<ThoughtBranch>(branchLinks) {
-                override fun text(situation: QuestioningSituation): String {
-                    return situation.localization.WHAT_DO_YOU_WANT_TO_DISCUSS_FURTHER
-                }
-
-                override fun options(situation: QuestioningSituation): List<SingleChoiceOption<ThoughtBranch>> {
-                    val options = node.thoughtBranches.filter{branch ->
-                        branch.getAnswer(situation) != situation.assumedResult(branch)
-                    }.map { branch ->
-                        SingleChoiceOption<ThoughtBranch>(
-                            situation.localization.WHY_IS_IT_THAT(statement = branch.description(situation.localizationCode, situation.templating,
-                                branch.getAnswer(situation)
-                            )),
-                            Explanation(situation.localization.LETS_FIGURE_IT_OUT, shouldPause = false),
-                            branch
-                        )
-                    }
-                    return options
-                }
-
-                override fun explanationIfSkipped(situation: QuestioningSituation, skipOption: SingleChoiceOption<ThoughtBranch>): Explanation {
-                    return Explanation(situation.localization.LETS_FIGURE_IT_OUT, shouldPause = false)
-                }
-            }
-            branchSelectRedirect.redir = branchSelectQuestion
-
+            val (selectBranchState, branchAutomata) = aggregationQuestion.createSelectBranchState()
+            branchSelectRedirect.redir = selectBranchState
 
             //После выхода из веток пропускающее состояние определяет, к какому из верных ответов надо совершить переход
             val shadowSkip = object : SkipQuestionState(){
@@ -202,7 +265,7 @@ object SequentialStrategy : QuestioningStrategyWithInfo<SequentialStrategy.Seque
                 override val reachableStates: Collection<QuestionState>
                     get() = nextSteps.values
             }
-            branchAutomata.values.forEach{it.finalize(shadowSkip)}
+            branchAutomata.forEach{it.finalize(shadowSkip)}
 
             nodeStates[node] = initQuestion
             return initQuestion

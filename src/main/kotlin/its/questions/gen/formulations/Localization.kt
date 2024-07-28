@@ -41,6 +41,8 @@ sealed interface Localization {
 
     val IMPOSSIBLE_TO_FIND: String
 
+    fun ALSO_FITS_THE_CRITERIA(object_descr: String) : String
+
     fun AGGREGATION_CORRECT_EXPL(answer_descr: String, branches_descr: String) : String
     fun AGGREGATION_INCORRECT_BRANCHES_DESCR(branches_descr: String): String
     fun AGGREGATION_MISSED_BRANCHES_DESCR_PRIMARY(branches_descr: String): String

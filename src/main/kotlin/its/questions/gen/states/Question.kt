@@ -3,11 +3,20 @@ package its.questions.gen.states
 import java.util.*
 
 
-class Question(val text: String, options : List<String>, val isAggregation: Boolean = false, val shouldShuffle : Boolean = true) : QuestionStateResult{
+class Question(
+    val text: String,
+    options : List<String>,
+    val type: QuestionType,
+    val shouldShuffle : Boolean = true
+) : QuestionStateResult {
+
     val options : MutableList<Pair<String, Int>>
     init{
         this.options = options.mapIndexed{index: Int, s: String -> s to index }.toMutableList()
     }
+
+    val isAggregation
+        get() = type == QuestionType.matching
 
     private val scanner = Scanner(System.`in`)
     private val incorrectAnswerInput = "Неверный формат ввода. Введите ответ заново: "
@@ -22,7 +31,9 @@ class Question(val text: String, options : List<String>, val isAggregation: Bool
                         throw NumberFormatException()
                 }
                 else {
-                    if (ints.size != 1 || ints.any { it - 1 !in options.indices })
+                    if (ints.any { it - 1 !in options.indices })
+                        throw NumberFormatException()
+                    if(type == QuestionType.single && ints.size != 1)
                         throw NumberFormatException()
                 }
                 return ints
@@ -41,7 +52,7 @@ class Question(val text: String, options : List<String>, val isAggregation: Bool
 
         val answers = getAnswers()
         return if(!isAggregation)
-            listOf(options[answers.single()-1].second)
+            answers.map { options[it -1].second }
         else {
             options.map { it.second }.mapIndexed { i, opInd ->
                 opInd to if(answers.contains(i+1))
