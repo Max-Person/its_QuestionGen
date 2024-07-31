@@ -39,10 +39,12 @@ object FullBranchStrategy : QuestioningStrategy {
                     continue
                 knownLCAs.add(lca)
                 endingNodeSelectlinks.add(GeneralQuestionState.QuestionStateLink(
-                    {_, chosenAnswer -> chosenAnswer.node == lca && !chosenAnswer.startAbove }, sequential.info.nodeStates[lca]!!
+                    {_, chosenAnswer -> chosenAnswer.node == lca && !chosenAnswer.startAbove },
+                    sequential.info.nodeStates[lca]!!
                 ))
                 endingNodeSelectlinks.add(GeneralQuestionState.QuestionStateLink(
-                    {_, chosenAnswer -> chosenAnswer.node == lca && chosenAnswer.startAbove }, sequential.info.preNodeStates[lca]!!
+                    {_, chosenAnswer -> chosenAnswer.node == lca && chosenAnswer.startAbove },
+                    sequential.info.preNodeStates[lca]!!
                 ))
             }
         }

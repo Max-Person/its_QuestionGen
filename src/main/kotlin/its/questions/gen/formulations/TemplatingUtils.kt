@@ -63,6 +63,16 @@ internal object TemplatingUtils {
     }
 
     @JvmStatic
+    internal fun TupleQuestionNode.TupleQuestionPart.question(
+        localizationCode: String,
+        interpretationData: InterpretationData
+    ) : String {
+        return metadata["${localizationCode}.question"]
+            .stringCheck("'$this' doesn't have a $localizationCode associated question")
+            .interpret(interpretationData)
+    }
+
+    @JvmStatic
     internal fun DecisionTreeNode.endingCause(localizationCode: String, interpretationData: InterpretationData) : String {
         return metadata["${localizationCode}.endingCause"]
             .stringCheck("Node '$this' doesn't have a $localizationCode ending cause")
@@ -89,6 +99,22 @@ internal object TemplatingUtils {
 
     @JvmStatic
     internal fun Outcome<*>.explanation(localizationCode: String, interpretationData: InterpretationData) : String? { //TODO? если это PredeterminingOutcome то использовать другую функцию
+        return metadata["${localizationCode}.explanation"]?.let{it as String}?.interpret(interpretationData)
+    }
+
+    @JvmStatic
+    internal fun TupleQuestionNode.TupleQuestionOutcome.text(
+        localizationCode: String,
+        interpretationData: InterpretationData
+    ) : String? {
+        return metadata["${localizationCode}.text"]?.let{it as String}?.interpret(interpretationData)
+    }
+
+    @JvmStatic
+    internal fun TupleQuestionNode.TupleQuestionOutcome.explanation(
+        localizationCode: String,
+        interpretationData: InterpretationData
+    ) : String? {
         return metadata["${localizationCode}.explanation"]?.let{it as String}?.interpret(interpretationData)
     }
 

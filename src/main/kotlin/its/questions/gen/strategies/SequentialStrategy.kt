@@ -418,6 +418,49 @@ object SequentialStrategy : QuestioningStrategyWithInfo<SequentialStrategy.Seque
             return question
         }
 
+        override fun processTupleQuestionNode(node: TupleQuestionNode): QuestionState {
+            if(currentBranch.isTrivial())
+                return RedirectQuestionState()
+
+            val nextSteps = node.outcomes.keys.associateWith { nextStep(node, it) }
+            var question : QuestionState = object : SkipQuestionState() {
+                override fun skip(situation: QuestioningSituation): QuestionStateChange {
+                    val nodeAnswer = node.getAnswer(situation)
+                    return QuestionStateChange(null, nextSteps[nodeAnswer]!!)
+                }
+
+                override val reachableStates: Collection<QuestionState>
+                    get() = nextSteps.values
+
+            }
+
+            fun linkToSingle(state: QuestionState) = setOf(GeneralQuestionState.QuestionStateLink<Pair<Any, Boolean>>(
+                { situation, answer -> true },
+                state
+            ))
+            for(part in node.parts.asReversed()){
+                question = object : CorrectnessCheckQuestionState<Any>(linkToSingle(question)) {
+                    override fun text(situation: QuestioningSituation): String {
+                        return part.question(situation.localizationCode, situation.templating)
+                    }
+
+                    override fun options(situation: QuestioningSituation): List<SingleChoiceOption<Pair<Any, Boolean>>> {
+                        val answer = part.expr.use(OperatorReasoner.defaultReasoner(situation))
+                        val correctOutcome = part.possibleOutcomes.first { it.value == answer }
+                        val explText = correctOutcome.explanation(situation.localizationCode, situation.templating)
+                        return part.possibleOutcomes.map { SingleChoiceOption(
+                            it.text(situation.localizationCode, situation.templating) ?: it.value.toAnswerString(situation),
+                            explText?.let { Explanation(it, ExplanationType.Error) },
+                            it.value to (it == correctOutcome),
+                        )}
+                    }
+                }
+            }
+
+            nodeStates[node] = question
+            return question
+        }
+
         override fun process(branch: ThoughtBranch): QuestionState {
             branchDiving.push(branch)
             val nextState = branch.start.use(this)
