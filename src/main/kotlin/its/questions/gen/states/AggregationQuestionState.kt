@@ -51,7 +51,7 @@ sealed class AggregationQuestionState<Node : AggregationNode, BranchInfo>(
     }
 
     override fun getQuestion(situation: QuestioningSituation): QuestionStateResult {
-        val text = "$id. ${text(situation)}"
+        val text = text(situation).prependId()
         val options = getBranchInfo(situation).map{getBranchDescription(situation, it, true)}
         return Question(text, options, QuestionType.matching)
     }

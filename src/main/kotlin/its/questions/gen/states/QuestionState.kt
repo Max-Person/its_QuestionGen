@@ -88,6 +88,10 @@ abstract class GeneralQuestionState<AnswerInfo>(
 ) : QuestionState() {
     override val id: Int = nextId()
 
+    protected fun String.prependId(): String {
+        return if(PREPEND_ID_TO_TEXT) "$id. $this" else this
+    }
+
     data class QuestionStateLink<AnswerInfo>(
         val condition: (situation: QuestioningSituation, chosenAnswer: AnswerInfo) -> Boolean,
         val nextState: QuestionState
@@ -97,7 +101,9 @@ abstract class GeneralQuestionState<AnswerInfo>(
 
     companion object _static {
         @JvmStatic
-        var stateCount = 1
+        var PREPEND_ID_TO_TEXT: Boolean = false
+        @JvmStatic
+        internal var stateCount = 1
         @JvmStatic
         private fun nextId() = stateCount++
     }

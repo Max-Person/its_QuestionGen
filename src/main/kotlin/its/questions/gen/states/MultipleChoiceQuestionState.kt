@@ -40,7 +40,7 @@ abstract class MultipleChoiceQuestionState<AnswerInfo>(val nextState: QuestionSt
         if(skipChange != null)
             return skipChange
 
-        val text = "$id. ${text(situation)}"
+        val text = text(situation).prependId()
         val options = options(situation)
         if(shouldSkipIfASingleOption && options.size == 1){
             val change = proceedWithAnswer(situation, options, options)
