@@ -86,6 +86,29 @@
                     <mainClass>MainKt</mainClass>
                 </configuration>
             </plugin>
+
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-install-plugin</artifactId>
+                <version>3.0.0-M1</version>
+                <executions>
+                    <execution>
+                        <id>install-padeg</id>
+                        <phase>initialize</phase>
+                        <goals>
+                            <goal>install-file</goal>
+                        </goals>
+                        <configuration>
+                            <file>${basedir}/lib/padeg/padeg/3.3.0.24/padeg-3.3.0.24.jar</file>
+                            <groupId>padeg</groupId>
+                            <artifactId>padeg</artifactId>
+                            <version>3.3.0.24</version>
+                            <packaging>jar</packaging>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
 
