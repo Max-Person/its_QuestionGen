@@ -22,8 +22,9 @@
 
     <repositories>
         <repository>
-            <id>mavenCentral</id>
-            <url>https://repo1.maven.org/maven2/</url>
+            <id>lib</id>
+            <name>lib directory repository</name>
+            <url>file://${basedir}/lib</url>
         </repository>
     </repositories>
 
@@ -122,7 +123,7 @@
         <dependency>
             <groupId>padeg</groupId>
             <artifactId>padeg</artifactId>
-            <version>LATEST</version>
+            <version>3.3.0.24</version>
         </dependency>
 
     </dependencies>
