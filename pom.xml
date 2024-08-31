@@ -4,9 +4,9 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>ru.compprehension.its</groupId>
-    <artifactId>question-gen</artifactId>
-    <version>2.0-SNAPSHOT</version>
+    <groupId>com.github.Max-Person</groupId>
+    <artifactId>its_QuestionGen</artifactId>
+    <version>master-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>QuestionGen</name>
@@ -25,6 +25,10 @@
             <id>lib</id>
             <name>lib directory repository</name>
             <url>file://${basedir}/lib</url>
+        </repository>
+        <repository>
+            <id>jitpack.io</id>
+            <url>https://jitpack.io</url>
         </repository>
     </repositories>
 
@@ -106,19 +110,14 @@
 
         <!---->
         <dependency>
-            <groupId>ru.compprehension.its</groupId>
-            <artifactId>domain-model</artifactId>
-            <version>2.0-SNAPSHOT</version>
+            <groupId>com.github.Max-Person</groupId>
+            <artifactId>its_Reasoner</artifactId>
+            <version>master-SNAPSHOT</version>
         </dependency>
         <dependency>
-            <groupId>ru.compprehension.its</groupId>
-            <artifactId>reasoner</artifactId>
-            <version>2.0-SNAPSHOT</version>
-        </dependency>
-        <dependency>
-            <groupId>com.github.max_person</groupId>
-            <artifactId>string-templating</artifactId>
-            <version>1.0-SNAPSHOT</version>
+            <groupId>com.github.Max-Person</groupId>
+            <artifactId>JavaStringTemplating</artifactId>
+            <version>master-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>padeg</groupId>
