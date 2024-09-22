@@ -1,7 +1,7 @@
 package its.questions.gen
 
 import com.github.max_person.templating.InterpretationData
-import its.model.definition.Domain
+import its.model.definition.DomainModel
 import its.model.definition.types.Obj
 import its.model.nodes.ThoughtBranch
 import its.questions.gen.formulations.Localization
@@ -18,7 +18,7 @@ class QuestioningSituation : LearningSituation{
     val localizationCode: String
 
     constructor(
-        model: Domain,
+        model: DomainModel,
         variables: MutableMap<String, Obj> = mutableMapOf(),
         discussedVariables : MutableMap<String, String> = mutableMapOf(),
         givenAnswers: MutableMap<Int, Int> = mutableMapOf(),
@@ -32,7 +32,7 @@ class QuestioningSituation : LearningSituation{
         this.localizationCode = localizationCode
     }
 
-    constructor(model: Domain, localizationCode: String = "RU") : super(model){
+    constructor(model: DomainModel, localizationCode: String = "RU") : super(model){
         this.discussedVariables = mutableMapOf()
         this.givenAnswers = mutableMapOf()
         this.assumedResults = mutableMapOf()
@@ -61,7 +61,7 @@ class QuestioningSituation : LearningSituation{
      */
     fun forEval(): LearningSituation {
         return LearningSituation(
-            domain.copy(),
+            domainModel.copy(),
             decisionTreeVariables.toMutableMap()
         )
     }

@@ -26,7 +26,7 @@ class SituationTextGenerator(val situation : QuestioningSituation) {
     @TemplatingSafeMethod("class")
     fun getVariableClassname(varName: String, case: Case) : String{
         return situation.decisionTreeVariables[varName]!!
-            .findInOrUnkown(situation.domain)
+            .findInOrUnkown(situation.domainModel)
             .clazz
             .localizedName
             .toCase(case)
@@ -36,5 +36,5 @@ class SituationTextGenerator(val situation : QuestioningSituation) {
         get() = this.metadata[situation.localizationCode, "localizedName"].toString()
 
     val <T : DomainDefWithMeta<T>> DomainRef<T>.localizedName
-        get() = this.findInOrUnkown(situation.domain).localizedName
+        get() = this.findInOrUnkown(situation.domainModel).localizedName
 }

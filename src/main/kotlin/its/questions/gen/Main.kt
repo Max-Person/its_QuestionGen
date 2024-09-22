@@ -1,15 +1,17 @@
+package its.questions.gen
+
+import ConsoleView
 import its.model.DomainSolvingModel
-import its.model.definition.rdf.DomainRDFFiller
-import its.questions.gen.QuestioningSituation
+import its.model.definition.loqi.DomainLoqiBuilder
 import its.questions.gen.states.*
 import its.questions.gen.strategies.QuestioningStrategy
-import java.lang.NumberFormatException
+import java.io.File
 import java.util.*
 import javax.swing.SwingUtilities
 
 
 fun run() {
-    val dir = "..\\inputs\\input_examples\\"
+    val dir = "../inputs/input_examples_expressions_prod"
 
     val model = DomainSolvingModel(dir, DomainSolvingModel.BuildMethod.LOQI).validate()
 
@@ -28,22 +30,8 @@ fun run() {
     println(GeneralQuestionState.stateCount)
     println()
 
-    val i = Prompt(
-        "Выберите используемые входные данные:",
-        listOf(
-            "X + А / B * C + D / K   -   выбран первый + " to 1,
-            "X + А / B * C + D / K   -   выбран * " to 2,
-            "X * А ^ B + C + D / K   (где A ^ B уже вычислено)  -   выбран *" to 3,
-            "А / B * C + D    -   выбран * " to 4,
-            "Arr[B + C]   -   выбран [] " to 5,
-            "A * (B * C)  -   выбран первый *" to 6,
-            "(X + А) [ B + C * D ]  -   выбран второй +" to 7,
-        )
-    ).ask()
-    println("Далее вопросы генерируются как для студента, выбравшего данный ответ в данной ситуации.\n\n-----")
-
-    val situationDomain = model.domain.copy()
-    DomainRDFFiller.fillDomain(situationDomain, "${dir}\\$i.ttl")
+    val i = 2
+    val situationDomain = DomainLoqiBuilder.buildDomain(File("$dir/questions/s_$i.loqi").bufferedReader())
     situationDomain.validateAndThrow()
 
     val situation = QuestioningSituation(situationDomain)
@@ -79,11 +67,8 @@ fun run() {
 }
 
 fun main(args: Array<String>) {
-    val useConsole = args.size > 0 && args[0].equals("-c")
-    if(!useConsole){
-        run()
-    }
-    else{
+    val useView = (args.size > 0 && args[0].equals("-v"))
+    if (useView) {
         SwingUtilities.invokeLater {
             val c = ConsoleView()
             c.isVisible = true
@@ -92,6 +77,8 @@ fun main(args: Array<String>) {
             val mainProgram = Thread { run() }
             mainProgram.start()
         }
+    } else {
+        run()
     }
 }
 
