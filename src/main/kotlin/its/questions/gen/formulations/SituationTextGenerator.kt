@@ -33,7 +33,7 @@ class SituationTextGenerator(val situation : QuestioningSituation) {
     }
 
     val DomainDefWithMeta<*>.localizedName: String
-        get() = this.metadata[MetadataProperty("localizedName", situation.localizationCode)].toString()
+        get() = this.metadata[situation.localizationCode, "localizedName"].toString()
 
     val <T : DomainDefWithMeta<T>> DomainRef<T>.localizedName
         get() = this.findInOrUnkown(situation.domain).localizedName

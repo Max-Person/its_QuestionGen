@@ -46,18 +46,23 @@ internal object TemplatingUtils {
         if(this !is String) throw IllegalArgumentException(message)
         return this
     }
+    
+    private fun DecisionTreeElement.getMeta(localizationCode: String, metaName: String) : Any? {
+        //вынесено для возможности переопределить получение шаблона для всех - для тестирования и т.п.
+        return metadata[localizationCode, metaName]
+    }
 
     //Узлы
     @JvmStatic
     internal fun DecisionTreeNode.asNextStep(localizationCode: String, interpretationData: InterpretationData) : String {
-        return metadata["${localizationCode}.asNextStep"]
+        return getMeta(localizationCode, "asNextStep")
             .stringCheck("Node '$this' doesn't have a $localizationCode associated 'as next step' description")
             .interpret(interpretationData)
     }
 
     @JvmStatic
     internal fun DecisionTreeNode.question(localizationCode: String, interpretationData: InterpretationData) : String {
-        return metadata["${localizationCode}.question"]
+        return getMeta(localizationCode, "question")
             .stringCheck("Node '$this' doesn't have a $localizationCode associated question")
             .interpret(interpretationData) //TODO Если такого нет - у агрегаций, например.
     }
@@ -67,39 +72,39 @@ internal object TemplatingUtils {
         localizationCode: String,
         interpretationData: InterpretationData
     ) : String {
-        return metadata["${localizationCode}.question"]
+        return getMeta(localizationCode, "question")
             .stringCheck("'$this' doesn't have a $localizationCode associated question")
             .interpret(interpretationData)
     }
 
     @JvmStatic
     internal fun DecisionTreeNode.endingCause(localizationCode: String, interpretationData: InterpretationData) : String {
-        return metadata["${localizationCode}.endingCause"]
+        return getMeta(localizationCode, "endingCause")
             .stringCheck("Node '$this' doesn't have a $localizationCode ending cause")
             .interpret(interpretationData) //TODO Если такого нет - т.е. у не-конечных узлов
     }
 
     @JvmStatic
     internal fun AggregationNode.description(localizationCode: String, interpretationData: InterpretationData, result : Boolean) : String {
-        return metadata["${localizationCode}.description"]
+        return getMeta(localizationCode, "description")
             .stringCheck("Aggregation node '$this' doesn't have a $localizationCode description")
             .interpret(interpretationData.usingVar("result", result))
     }
 
     @JvmStatic
     internal fun QuestionNode.trivialityExplanation(localizationCode: String, interpretationData: InterpretationData) : String? {
-        return metadata["${localizationCode}.triviality"]?.let{it as String}?.interpret(interpretationData)
+        return getMeta(localizationCode, "triviality")?.let{it as String}?.interpret(interpretationData)
     }
 
     //Выходы (стрелки)
     @JvmStatic
     internal fun Outcome<*>.text(localizationCode: String, interpretationData: InterpretationData) : String? {
-        return metadata["${localizationCode}.text"]?.let{it as String}?.interpret(interpretationData)
+        return getMeta(localizationCode, "text")?.let{it as String}?.interpret(interpretationData)
     }
 
     @JvmStatic
     internal fun Outcome<*>.explanation(localizationCode: String, interpretationData: InterpretationData) : String? { //TODO? если это PredeterminingOutcome то использовать другую функцию
-        return metadata["${localizationCode}.explanation"]?.let{it as String}?.interpret(interpretationData)
+        return getMeta(localizationCode, "explanation")?.let{it as String}?.interpret(interpretationData)
     }
 
     @JvmStatic
@@ -107,7 +112,7 @@ internal object TemplatingUtils {
         localizationCode: String,
         interpretationData: InterpretationData
     ) : String? {
-        return metadata["${localizationCode}.text"]?.let{it as String}?.interpret(interpretationData)
+        return getMeta(localizationCode, "text")?.let{it as String}?.interpret(interpretationData)
     }
 
     @JvmStatic
@@ -115,40 +120,40 @@ internal object TemplatingUtils {
         localizationCode: String,
         interpretationData: InterpretationData
     ) : String? {
-        return metadata["${localizationCode}.explanation"]?.let{it as String}?.interpret(interpretationData)
+        return getMeta(localizationCode, "explanation")?.let{it as String}?.interpret(interpretationData)
     }
 
     @JvmStatic
     internal fun FindErrorCategory.explanation(localizationCode: String, interpretationData: InterpretationData, entityAlias : String) : String {
-        return metadata["${localizationCode}.explanation"]!!
+        return getMeta(localizationCode, "explanation")!!
             .stringCheck("FindErrorCategory '$this' doesn't have a $localizationCode explanation")
             .interpret(interpretationData.usingVar("checked", entityAlias))
     }
 
     @JvmStatic
     internal fun Outcome<ThoughtBranch?>.predeterminingExplanation(localizationCode: String, interpretationData: InterpretationData, result: Boolean) : String {
-        return metadata["${localizationCode}.explanation"]
+        return getMeta(localizationCode, "explanation")
             .stringCheck("Predetermining outcome leading to node '$node' doesn't have a $localizationCode explanation")
             .interpret(interpretationData.usingVar("result", result))
     }
 
     @JvmStatic
     internal fun Outcome<*>.nextStepQuestion(localizationCode: String, interpretationData: InterpretationData) : String? {
-        return metadata["${localizationCode}.nextStepQuestion"]
+        return getMeta(localizationCode, "nextStepQuestion")
             ?.let{it as String}
             ?.interpret(interpretationData)
     }
 
     @JvmStatic
     internal fun Outcome<*>.nextStepBranchResult(localizationCode: String, interpretationData: InterpretationData, branchResult : Boolean) : String? {
-        return metadata["${localizationCode}.nextStepBranchResult"]
+        return getMeta(localizationCode, "nextStepBranchResult")
             ?.let{it as String}
             ?.interpret(interpretationData.usingVar("branchResult", branchResult))
     }
 
     @JvmStatic
     internal fun Outcome<*>.nextStepExplanation(localizationCode: String, interpretationData: InterpretationData) : String? {
-        return metadata["${localizationCode}.nextStepExplanation"]
+        return getMeta(localizationCode, "nextStepExplanation")
             ?.let{it as String}
             ?.interpret(interpretationData)
     }
@@ -156,28 +161,28 @@ internal object TemplatingUtils {
     //Ветки
     @JvmStatic
     internal fun ThoughtBranch.description(localizationCode: String, interpretationData: InterpretationData, result : Boolean) : String {
-        return metadata["${localizationCode}.description"]
+        return getMeta(localizationCode, "description")
             .stringCheck("Branch '$this' doesn't have a $localizationCode description")
             .interpret(interpretationData.usingVar("result", result))
     }
 
     @JvmStatic
     internal fun ThoughtBranch.nextStepQuestion(localizationCode: String, interpretationData: InterpretationData) : String? {
-        return metadata["${localizationCode}.nextStepQuestion"]
+        return getMeta(localizationCode, "nextStepQuestion")
             ?.let{it as String}
             ?.interpret(interpretationData)
     }
 
     @JvmStatic
     internal fun ThoughtBranch.nextStepBranchResult(localizationCode: String, interpretationData: InterpretationData, branchResult : Boolean) : String? {
-        return metadata["${localizationCode}.nextStepBranchResult"]
+        return getMeta(localizationCode, "nextStepBranchResult")
             ?.let{it as String}
             ?.interpret(interpretationData.usingVar("branchResult", branchResult))
     }
 
     @JvmStatic
     internal fun ThoughtBranch.nextStepExplanation(localizationCode: String, interpretationData: InterpretationData) : String {
-        return metadata["${localizationCode}.nextStepExplanation"]
+        return getMeta(localizationCode, "nextStepExplanation")
             .stringCheck("Branch '$this' doesn't have a $localizationCode next step explanation")
             .interpret(interpretationData)
     }
