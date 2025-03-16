@@ -3,6 +3,7 @@ package its.questions.gen
 import com.github.max_person.templating.InterpretationData
 import its.model.definition.DomainModel
 import its.model.definition.types.Obj
+import its.model.nodes.BranchResult
 import its.model.nodes.ThoughtBranch
 import its.questions.gen.formulations.Localization
 import its.questions.gen.formulations.SituationTextGenerator
@@ -14,7 +15,7 @@ class QuestioningSituation : LearningSituation{
 
     val discussedVariables : MutableMap<String, String>
     val givenAnswers: MutableMap<Int, Int>
-    val assumedResults: MutableMap<String, Boolean>
+    val assumedResults: MutableMap<String, BranchResult>
     val localizationCode: String
 
     constructor(
@@ -22,7 +23,7 @@ class QuestioningSituation : LearningSituation{
         variables: MutableMap<String, Obj> = mutableMapOf(),
         discussedVariables : MutableMap<String, String> = mutableMapOf(),
         givenAnswers: MutableMap<Int, Int> = mutableMapOf(),
-        assumedResults: MutableMap<String, Boolean> = mutableMapOf(),
+        assumedResults: MutableMap<String, BranchResult> = mutableMapOf(),
         localizationCode: String = "RU"
     ) : super(model, variables)
     {
@@ -49,10 +50,10 @@ class QuestioningSituation : LearningSituation{
         return givenAnswers[questionStateId]
     }
 
-    fun addAssumedResult(branch: ThoughtBranch, value: Boolean){
+    fun addAssumedResult(branch: ThoughtBranch, value: BranchResult){
         assumedResults[branch.alias] = value
     }
-    fun assumedResult(branch: ThoughtBranch) : Boolean?{
+    fun assumedResult(branch: ThoughtBranch) : BranchResult?{
         return assumedResults[branch.alias]
     }
 

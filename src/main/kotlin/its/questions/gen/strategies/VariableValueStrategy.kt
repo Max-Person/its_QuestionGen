@@ -9,8 +9,8 @@ import its.questions.gen.formulations.TemplatingUtils.question
 import its.questions.gen.states.*
 import its.questions.gen.visitors.getUsedVariables
 import its.reasoner.nodes.DecisionTreeReasoner
-import its.reasoner.nodes.DecisionTreeReasoner._static.getAnswer
-import its.reasoner.nodes.DecisionTreeReasoner._static.getCorrectPath
+import its.reasoner.nodes.DecisionTreeReasoner.Companion.getAnswer
+import its.reasoner.nodes.DecisionTreeReasoner.Companion.solve
 
 object VariableValueStrategy : QuestioningStrategy {
     private data class VariableInfo(
@@ -115,7 +115,10 @@ object VariableValueStrategy : QuestioningStrategy {
 
                 override fun preliminarySkip(situation: QuestioningSituation): QuestionStateChange? {
                     //TODO этот скип предполагался как повторный заход в это состояние - если несколько переменных зависят от текущей - но в этом случае скорее всего будут создаваться лишние состояния
-                    if(situation.discussedVariables.containsKey(varInfo.name) || !currentBranch.getCorrectPath(situation).contains(declarationNode) || options(situation).isEmpty()){
+                    // TODO
+                    if(situation.discussedVariables.containsKey(varInfo.name)
+                        || !currentBranch.solve(situation).containsWithNested(declarationNode)
+                        || options(situation).isEmpty()){
                         return QuestionStateChange(null, nextState)
                     }
                     return super.preliminarySkip(situation)

@@ -85,10 +85,10 @@ internal object TemplatingUtils {
     }
 
     @JvmStatic
-    internal fun AggregationNode.description(localizationCode: String, interpretationData: InterpretationData, result : Boolean) : String {
+    internal fun AggregationNode.description(localizationCode: String, interpretationData: InterpretationData, result : BranchResult) : String {
         return getMeta(localizationCode, "description")
             .stringCheck("Aggregation node '$this' doesn't have a $localizationCode description")
-            .interpret(interpretationData.usingVar("result", result))
+            .interpret(interpretationData.usingVar("result", result == BranchResult.CORRECT)) // TODO
     }
 
     @JvmStatic
@@ -160,10 +160,10 @@ internal object TemplatingUtils {
 
     //Ветки
     @JvmStatic
-    internal fun ThoughtBranch.description(localizationCode: String, interpretationData: InterpretationData, result : Boolean) : String {
+    internal fun ThoughtBranch.description(localizationCode: String, interpretationData: InterpretationData, result : BranchResult) : String {
         return getMeta(localizationCode, "description")
             .stringCheck("Branch '$this' doesn't have a $localizationCode description")
-            .interpret(interpretationData.usingVar("result", result))
+            .interpret(interpretationData.usingVar("result", result == BranchResult.CORRECT)) // TODO
     }
 
     @JvmStatic

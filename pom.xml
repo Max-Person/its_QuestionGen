@@ -6,7 +6,7 @@
 
     <groupId>com.github.Max-Person</groupId>
     <artifactId>its_QuestionGen</artifactId>
-    <version>master-SNAPSHOT</version>
+    <version>2.4.0</version>
     <packaging>jar</packaging>
 
     <name>QuestionGen</name>
@@ -135,7 +135,7 @@
         <dependency>
             <groupId>com.github.Max-Person</groupId>
             <artifactId>its_Reasoner</artifactId>
-            <version>master-SNAPSHOT</version>
+            <version>2.10.1</version>
         </dependency>
         <dependency>
             <groupId>com.github.Max-Person</groupId>

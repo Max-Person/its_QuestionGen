@@ -10,8 +10,7 @@ import its.questions.gen.formulations.TemplatingUtils.endingCause
 import its.questions.gen.states.*
 import its.questions.gen.visitors.GetNodesLCA._static.getNodesLCA
 import its.questions.gen.visitors.GetPossibleEndingNodes._static.getPossibleEndingNodes
-import its.reasoner.nodes.DecisionTreeReasoner._static.getAnswer
-import its.reasoner.nodes.DecisionTreeReasoner._static.getCorrectPath
+import its.reasoner.nodes.DecisionTreeReasoner.Companion.solve
 
 object FullBranchStrategy : QuestioningStrategy {
 
@@ -55,9 +54,8 @@ object FullBranchStrategy : QuestioningStrategy {
             }
 
             override fun options(situation: QuestioningSituation): List<SingleChoiceOption<NodeLCAinfo>> {
-                val considered = branch.getCorrectPath(situation)
+                val correctEndingNode = branch.solve(situation).resultingNode
                 val possibleEndingNodes = branch.getPossibleEndingNodes(situation)
-                val correctEndingNode = endingNodes.first { considered.contains(it) }
 
                 val options = possibleEndingNodes.map{end ->
                     val lca = branch.getNodesLCA(end, correctEndingNode)!!
@@ -80,7 +78,13 @@ object FullBranchStrategy : QuestioningStrategy {
         val redir = RedirectQuestionState()
         val branchEnd = object : SkipQuestionState() {
             override fun skip(situation: QuestioningSituation): QuestionStateChange {
-                val explanation = Explanation(situation.localization.SO_WEVE_DISCUSSED_WHY(result = branch.description(situation.localizationCode, situation.templating, branch.getAnswer(situation))))
+                val explanation = Explanation(situation.localization.SO_WEVE_DISCUSSED_WHY(
+                    result = branch.description(
+                        situation.localizationCode,
+                        situation.templating,
+                        branch.solve(situation).branchResult)
+                )
+                )
                 return QuestionStateChange(explanation, redir)
             }
 

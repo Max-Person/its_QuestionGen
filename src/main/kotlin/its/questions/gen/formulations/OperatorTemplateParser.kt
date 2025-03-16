@@ -4,7 +4,7 @@ import com.github.max_person.templating.InterpretationData
 import com.github.max_person.templating.TemplateInterpolationParser
 import com.github.max_person.templating.TemplateSection
 import its.model.definition.ThisShouldNotHappen
-import its.model.definition.loqi.OperatorBuilder
+import its.model.definition.loqi.OperatorLoqiBuilder
 import its.model.definition.types.*
 import its.model.expressions.Operator
 import its.questions.gen.QuestioningSituation
@@ -16,7 +16,7 @@ object OperatorTemplateParser : TemplateInterpolationParser<OperatorTemplatePars
     const val QUESTIONING_SITUATION = "QuestioningSituation"
 
     override fun parse(interpolationContent: TemplateInterpolationParser.InterpolationContent): OperatorSection {
-        val operator = OperatorBuilder.buildExp(interpolationContent.content)
+        val operator = OperatorLoqiBuilder.buildExp(interpolationContent.content)
         return OperatorSection(operator)
     }
 

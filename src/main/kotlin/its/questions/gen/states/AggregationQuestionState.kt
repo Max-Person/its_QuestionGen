@@ -9,24 +9,19 @@ import its.questions.gen.formulations.TemplatingUtils.description
 import its.questions.gen.strategies.QuestionAutomata
 import its.questions.gen.strategies.QuestioningStrategy
 import its.reasoner.nodes.DecisionTreeReasoner
-import its.reasoner.nodes.DecisionTreeReasoner._static.getAnswer
+import its.reasoner.nodes.DecisionTreeReasoner.Companion.getAnswer
+import its.reasoner.nodes.DecisionTreeReasoner.Companion.solve
 
 //Можно выделить над ним некий AssociationQuestionState, но пока что это не нужно
 sealed class AggregationQuestionState<Node : AggregationNode, BranchInfo>(
     val node: Node,
-    nextStateIfTrue: QuestionState,
-    nextStateIfFalse: QuestionState,
+    nextStates : Map<BranchResult, QuestionState>,
     branchSelectState: QuestionState,
 ) : GeneralQuestionState<Boolean>(
-    setOf(
-        QuestionStateLink(
-            { situation, answer -> answer && node.getAnswer(situation.forEval()) == true },
-            nextStateIfTrue
-        ),
-        QuestionStateLink(
-            { situation, answer -> answer && node.getAnswer(situation.forEval()) == false },
-            nextStateIfFalse
-        ),
+    nextStates.map { (key, value) ->  QuestionStateLink<Boolean>(
+        { situation, answer -> answer && node.getAnswer(situation.forEval()) ==  key},
+        value
+    )}.toSet().plus(
         QuestionStateLink(
             { situation, answer -> !answer },
             branchSelectState
@@ -41,18 +36,18 @@ sealed class AggregationQuestionState<Node : AggregationNode, BranchInfo>(
 
     abstract fun getBranchInfo(situation: QuestioningSituation) : List<BranchInfo>
     abstract fun getBranchAlias(branchInfo: BranchInfo) : String
-    abstract fun getBranchResult(situation: QuestioningSituation, branchInfo: BranchInfo) : Boolean
-    abstract fun getBranchDescription(situation: QuestioningSituation, branchInfo: BranchInfo, result: Boolean) : String
+    abstract fun getBranchResult(situation: QuestioningSituation, branchInfo: BranchInfo): BranchResult
+    abstract fun getBranchDescription(situation: QuestioningSituation, branchInfo: BranchInfo, result: BranchResult) : String
 
     protected fun text(situation: QuestioningSituation) : String {
-        val answer = node.getAnswer(situation)
-        val descrIncorrect = node.description(situation.localizationCode, situation.templating, !answer)
+        val assumedAnswer = situation.assumedResults[node.alias]
+        val descrIncorrect = node.description(situation.localizationCode, situation.templating, assumedAnswer!!)
         return situation.localization.WHY_DO_YOU_THINK_THAT(descrIncorrect)
     }
 
     override fun getQuestion(situation: QuestioningSituation): QuestionStateResult {
         val text = text(situation).prependId()
-        val options = getBranchInfo(situation).map{getBranchDescription(situation, it, true)}
+        val options = getBranchInfo(situation).map{getBranchDescription(situation, it, BranchResult.CORRECT)}
         return Question(text, options, QuestionType.matching)
     }
 
@@ -71,12 +66,12 @@ sealed class AggregationQuestionState<Node : AggregationNode, BranchInfo>(
                     else AggregationImpact.None
         }.toMap()
 
-        val results : Map<BranchInfo, Boolean> = branches
+        val results : Map<BranchInfo, BranchResult> = branches
             .map{ branch -> branch to getBranchResult(situation, branch)}
             .toMap()
         val actualImpact : Map<BranchInfo, AggregationImpact> = results.map{ (branch, res) ->
             branch to
-                    if (res) AggregationImpact.Positive
+                    if (res == BranchResult.CORRECT) AggregationImpact.Positive // TODO
                     else AggregationImpact.Negative
         }.toMap()
 
@@ -84,16 +79,23 @@ sealed class AggregationQuestionState<Node : AggregationNode, BranchInfo>(
         val incorrectBranches = givenAnswer.filter{(branch, impact) -> impact != AggregationImpact.None && impact != actualImpact[branch]}.keys
         val missedBranches = givenAnswer.filter{(branch, impact) ->
             impact == AggregationImpact.None &&
-                    !(node.logicalOp == LogicalOp.AND && !nodeRes && results[branch]!!) &&
-                    !(node.logicalOp == LogicalOp.OR && nodeRes && !results[branch]!!)
+                    !(node.aggregationMethod == AggregationMethod.AND && nodeRes == BranchResult.ERROR
+                            && results[branch] == BranchResult.CORRECT) &&
+                    !(node.aggregationMethod == AggregationMethod.OR && nodeRes == BranchResult.CORRECT
+                            && results[branch] == BranchResult.ERROR)
         }.keys
 
-        branches.forEach { branch ->
-            val branchResult = results[branch]!!
-            val assumedResult = if(incorrectBranches.contains(branch) || missedBranches.contains(branch)) !branchResult else branchResult
-            situation.assumedResults.put(getBranchAlias(branch), assumedResult)
-            situation.addAssumedResult(getThoughtBranch(branch), assumedResult)
-        }
+        // TODO спросить про результат ветки при углублении чтобы узнать предполагаемый результат
+//        branches.forEach { branch ->
+//            val branchResult = results[branch]!!
+//            val assumedResult = if(incorrectBranches.contains(branch) || missedBranches.contains(branch)) {
+//                !branchResult
+//            } else {
+//                branchResult
+//            }
+//            situation.assumedResults.put(getBranchAlias(branch), assumedResult)
+//            situation.addAssumedResult(getThoughtBranch(branch), assumedResult)
+//        }
 
         val explanation = Explanation(
             if (incorrectBranches.isEmpty() && missedBranches.isEmpty()) {
@@ -199,12 +201,11 @@ sealed class AggregationQuestionState<Node : AggregationNode, BranchInfo>(
 }
 
 class LogicalAggregationState(
-    node: LogicAggregationNode,
-    nextStateIfTrue: QuestionState,
-    nextStateIfFalse: QuestionState,
+    node: BranchAggregationNode,
+    nextStates: Map<BranchResult, QuestionState>,
     branchSelectState: QuestionState,
-) : AggregationQuestionState<LogicAggregationNode, ThoughtBranch>(
-    node, nextStateIfTrue, nextStateIfFalse, branchSelectState,
+) : AggregationQuestionState<BranchAggregationNode, ThoughtBranch>(
+    node, nextStates, branchSelectState,
 ) {
     override fun getBranchInfo(situation: QuestioningSituation): List<ThoughtBranch> {
         return node.thoughtBranches
@@ -214,14 +215,14 @@ class LogicalAggregationState(
         return branchInfo.alias
     }
 
-    override fun getBranchResult(situation: QuestioningSituation, branchInfo: ThoughtBranch): Boolean {
-        return branchInfo.getAnswer(situation.forEval())
+    override fun getBranchResult(situation: QuestioningSituation, branchInfo: ThoughtBranch): BranchResult {
+        return branchInfo.solve(situation.forEval()).branchResult
     }
 
     override fun getBranchDescription(
         situation: QuestioningSituation,
         branchInfo: ThoughtBranch,
-        result: Boolean
+        result: BranchResult
     ): String {
         return branchInfo.description(situation.localizationCode, situation.templating, result)
     }
@@ -238,17 +239,16 @@ class LogicalAggregationState(
 
 class CycleAggregationState(
     node: CycleAggregationNode,
-    nextStateIfTrue: QuestionState,
-    nextStateIfFalse: QuestionState,
+    nextStates : Map<BranchResult, QuestionState>,
     branchSelectState: QuestionState,
 ) : AggregationQuestionState<CycleAggregationNode, Obj>(
-    node, nextStateIfTrue, nextStateIfFalse, branchSelectState,
+    node, nextStates, branchSelectState,
 ) {
     override fun getBranchInfo(situation: QuestioningSituation): List<Obj> {
         return DecisionTreeReasoner(situation).searchWithErrors(node).correct
     }
 
-    override fun getBranchDescription(situation: QuestioningSituation, branchInfo: Obj, result: Boolean): String {
+    override fun getBranchDescription(situation: QuestioningSituation, branchInfo: Obj, result: BranchResult): String {
         val varName = node.variable.varName
         val alreadyContains = situation.decisionTreeVariables.containsKey(varName)
         situation.decisionTreeVariables[varName] = branchInfo
@@ -257,10 +257,10 @@ class CycleAggregationState(
         return description
     }
 
-    override fun getBranchResult(situation: QuestioningSituation, branchInfo: Obj): Boolean {
-        return node.thoughtBranch.getAnswer(
+    override fun getBranchResult(situation: QuestioningSituation, branchInfo: Obj): BranchResult {
+        return node.thoughtBranch.solve(
             situation.forEval().also { it.decisionTreeVariables[node.variable.varName] = branchInfo }
-        )
+        ).branchResult
     }
 
     override fun getBranchAlias(branchInfo: Obj): String {

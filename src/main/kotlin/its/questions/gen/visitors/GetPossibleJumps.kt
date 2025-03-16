@@ -3,7 +3,7 @@ package its.questions.gen.visitors
 import its.model.nodes.*
 import its.model.nodes.visitors.SimpleDecisionTreeBehaviour
 import its.questions.gen.QuestioningSituation
-import its.reasoner.nodes.DecisionTreeReasoner._static.getAnswer
+import its.reasoner.nodes.DecisionTreeReasoner.Companion.getAnswer
 
 class GetPossibleJumps private constructor( val situation: QuestioningSituation) : SimpleDecisionTreeBehaviour<List<DecisionTreeNode>>{
     private var isTransitional = false
@@ -23,7 +23,7 @@ class GetPossibleJumps private constructor( val situation: QuestioningSituation)
 
     // ---------------------- Функции поведения ---------------------------
 
-    override fun <AnswerType> process(node: LinkNode<AnswerType>): List<DecisionTreeNode> {
+    override fun <AnswerType : Any> process(node: LinkNode<AnswerType>): List<DecisionTreeNode> {
         val l = mutableListOf<DecisionTreeNode>(node)
         isTransitional = true
         node.outcomes.forEach { l.addAll(it.node.getPossibleJumps()) }

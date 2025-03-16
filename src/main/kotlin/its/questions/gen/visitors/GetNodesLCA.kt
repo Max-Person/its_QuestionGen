@@ -35,7 +35,7 @@ class GetNodesLCA private constructor(val a : DecisionTreeNode, val b : Decision
 
     // ---------------------- Функции поведения ---------------------------
 
-    override fun <AnswerType> process(node: LinkNode<AnswerType>): Int {
+    override fun <AnswerType : Any> process(node: LinkNode<AnswerType>): Int {
         var res = none_found
         if(node == a)
             res = res or a_found

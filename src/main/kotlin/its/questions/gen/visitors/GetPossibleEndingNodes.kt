@@ -4,12 +4,13 @@ import its.model.nodes.*
 import its.model.nodes.visitors.SimpleDecisionTreeBehaviour
 import its.questions.gen.QuestioningSituation
 import its.reasoner.AmbiguousObjectException
-import its.reasoner.nodes.DecisionTreeReasoner._static.getAnswer
-import its.reasoner.nodes.DecisionTreeReasoner._static.getCorrectPath
+import its.reasoner.nodes.DecisionTreeReasoner.Companion.getAnswer
+import its.reasoner.nodes.DecisionTreeReasoner.Companion.solve
 
 class GetPossibleEndingNodes private constructor(val branch: ThoughtBranch, val situation: QuestioningSituation) :
     SimpleDecisionTreeBehaviour<Unit> {
-    val consideredNodes: List<DecisionTreeNode> = branch.getCorrectPath(situation)
+        // TODO подумать что будет если это узел агрегации, сейчас только бранч резулт ноде
+    val correctEndingNode: DecisionTreeNode = branch.solve(situation).resultingNode
     val set = mutableSetOf<DecisionTreeNode>()
     lateinit var correct : DecisionTreeNode
 
@@ -33,11 +34,11 @@ class GetPossibleEndingNodes private constructor(val branch: ThoughtBranch, val 
 
     // ---------------------- Функции поведения ---------------------------
 
-    override fun <AnswerType> process(node: LinkNode<AnswerType>) {
+    override fun <AnswerType : Any> process(node: LinkNode<AnswerType>) {
         node.outcomes.forEach { it.node.getEndingNodes() }
         if(node.outcomes.any{it.node is BranchResultNode})
             set.add(node)
-        if(node.outcomes.any{it.node is BranchResultNode && consideredNodes.contains(it.node)})
+        if(node.outcomes.any{it.node is BranchResultNode && correctEndingNode == it.node})
             correct = node
     }
 
@@ -46,7 +47,7 @@ class GetPossibleEndingNodes private constructor(val branch: ThoughtBranch, val 
         node.outcomes[node.getAnswer(situation)]?.node?.getEndingNodes()
         if(node.outcomes.any{it.node is BranchResultNode})
             set.add(node)
-        if(node.outcomes.any{it.node is BranchResultNode && consideredNodes.contains(it.node)})
+        if(node.outcomes.any{it.node is BranchResultNode && correctEndingNode == it.node})
             correct = node
     }
 

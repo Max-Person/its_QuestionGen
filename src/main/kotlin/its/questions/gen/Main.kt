@@ -3,6 +3,7 @@ package its.questions.gen
 import ConsoleView
 import its.model.DomainSolvingModel
 import its.model.definition.loqi.DomainLoqiBuilder
+import its.model.nodes.BranchResult
 import its.questions.gen.states.*
 import its.questions.gen.strategies.QuestioningStrategy
 import java.io.File
@@ -35,7 +36,7 @@ fun run() {
     situationDomain.validateAndThrow()
 
     val situation = QuestioningSituation(situationDomain)
-    situation.addAssumedResult(model.decisionTree.mainBranch, true)
+    situation.addAssumedResult(model.decisionTree.mainBranch, BranchResult.CORRECT)
     var state: QuestionState? = automata.initState
 //    state = automata[94]
 //    situation.addAssumedResult(DomainModel.decisionTree.getByAlias("right") as ThoughtBranch, true)
