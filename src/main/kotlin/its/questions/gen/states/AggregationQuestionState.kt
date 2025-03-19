@@ -41,7 +41,7 @@ sealed class AggregationQuestionState<Node : AggregationNode, BranchInfo>(
 
     protected fun text(situation: QuestioningSituation) : String {
         val assumedAnswer = situation.assumedResults[node.alias]
-        val descrIncorrect = node.description(situation.localizationCode, situation.templating, assumedAnswer!!)
+        val descrIncorrect = node.description(situation, assumedAnswer!!)
         return situation.localization.WHY_DO_YOU_THINK_THAT(descrIncorrect)
     }
 
@@ -101,8 +101,7 @@ sealed class AggregationQuestionState<Node : AggregationNode, BranchInfo>(
             if (incorrectBranches.isEmpty() && missedBranches.isEmpty()) {
                 situation.localization.AGGREGATION_CORRECT_EXPL(
                     answer_descr = node.description(
-                        situation.localizationCode,
-                        situation.templating,
+                        situation,
                         nodeRes
                     ),
                     branches_descr = branches
@@ -224,7 +223,7 @@ class LogicalAggregationState(
         branchInfo: ThoughtBranch,
         result: BranchResult
     ): String {
-        return branchInfo.description(situation.localizationCode, situation.templating, result)
+        return branchInfo.description(situation, result)
     }
 
 
@@ -252,7 +251,7 @@ class CycleAggregationState(
         val varName = node.variable.varName
         val alreadyContains = situation.decisionTreeVariables.containsKey(varName)
         situation.decisionTreeVariables[varName] = branchInfo
-        val description = node.thoughtBranch.description(situation.localizationCode, situation.templating, result)
+        val description = node.thoughtBranch.description(situation, result)
         if(alreadyContains) situation.decisionTreeVariables.remove(varName)
         return description
     }

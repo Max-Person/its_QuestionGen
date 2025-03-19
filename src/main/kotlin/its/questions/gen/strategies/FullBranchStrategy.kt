@@ -50,7 +50,7 @@ object FullBranchStrategy : QuestioningStrategy {
 
         val endingNodeSelect = object : SingleChoiceQuestionState<NodeLCAinfo>(endingNodeSelectlinks.toSet()){
             override fun text(situation: QuestioningSituation): String {
-                return situation.localization.WHY_DO_YOU_THINK_THAT(assumed_result = branch.description(situation.localizationCode, situation.templating, situation.assumedResult(branch)!!))
+                return situation.localization.WHY_DO_YOU_THINK_THAT(assumed_result = branch.description(situation, situation.assumedResult(branch)!!))
             }
 
             override fun options(situation: QuestioningSituation): List<SingleChoiceOption<NodeLCAinfo>> {
@@ -60,7 +60,7 @@ object FullBranchStrategy : QuestioningStrategy {
                 val options = possibleEndingNodes.map{end ->
                     val lca = branch.getNodesLCA(end, correctEndingNode)!!
                     SingleChoiceOption<NodeLCAinfo>(
-                        end.endingCause(situation.localizationCode, situation.templating),
+                        end.endingCause(situation),
                         Explanation(situation.localization.LETS_FIGURE_IT_OUT),
                         NodeLCAinfo(lca, lca != end)
                     )
@@ -80,8 +80,7 @@ object FullBranchStrategy : QuestioningStrategy {
             override fun skip(situation: QuestioningSituation): QuestionStateChange {
                 val explanation = Explanation(situation.localization.SO_WEVE_DISCUSSED_WHY(
                     result = branch.description(
-                        situation.localizationCode,
-                        situation.templating,
+                        situation,
                         branch.solve(situation).branchResult)
                 )
                 )

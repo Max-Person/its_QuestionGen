@@ -5,6 +5,7 @@ import its.model.definition.types.Obj
 import its.model.nodes.*
 import its.questions.gen.QuestioningSituation
 import its.questions.gen.formulations.TemplatingUtils.explanation
+import its.questions.gen.formulations.TemplatingUtils.getLocalizedName
 import its.questions.gen.formulations.TemplatingUtils.question
 import its.questions.gen.states.*
 import its.questions.gen.visitors.getUsedVariables
@@ -62,22 +63,22 @@ object VariableValueStrategy : QuestioningStrategy {
             ))
             {
                 override fun text(situation: QuestioningSituation): String {
-                    return declarationNode.question(situation.localizationCode, situation.templating)
+                    return declarationNode.question(situation)
                 }
 
                 override fun options(situation: QuestioningSituation): List<SingleChoiceOption<Pair<Obj?, Boolean>>> {
                     val answer = declarationNode.getAnswer(situation)
                     val explanation = situation.localization.IN_THIS_SITUATION(
-                        fact = declarationNode.outcomes[answer]!!.explanation(situation.localizationCode, situation.templating)!!
+                        fact = declarationNode.outcomes[answer]!!.explanation(situation)!!
                     )
 
                     val possibleObjects = DecisionTreeReasoner(situation).processWithErrors(declarationNode)
                     val options = possibleObjects.errors.map { (error, objects) ->
                         objects.map{
                             SingleChoiceOption<Pair<Obj?, Boolean>>(
-                                with(situation.formulations){it.localizedName},
+                                it.getLocalizedName(situation.domainModel, situation.localizationCode),
                                 Explanation(
-                                    "${error.explanation(situation.localizationCode, situation.templating, it.objectName)} $explanation",
+                                    "${error.explanation(situation, it.objectName)} $explanation",
                                     type = ExplanationType.Error
                                 ),
                                 it to false,
@@ -87,7 +88,7 @@ object VariableValueStrategy : QuestioningStrategy {
                         .plus(
                             if(possibleObjects.correct.isNotEmpty())
                                 SingleChoiceOption<Pair<Obj?, Boolean>>(
-                                    with(situation.formulations){possibleObjects.correct.single().localizedName},
+                                    possibleObjects.correct.single().getLocalizedName(situation.domainModel, situation.localizationCode),
                                     null,
                                     possibleObjects.correct.single() to true,
                                 )
@@ -95,7 +96,7 @@ object VariableValueStrategy : QuestioningStrategy {
                                 null).filterNotNull()
                         .plus(SingleChoiceOption<Pair<Obj?, Boolean>>(
                             if(declarationNode.nextIfNone != null)
-                                declarationNode.nextIfNone!!.explanation(situation.localizationCode, situation.templating)
+                                declarationNode.nextIfNone!!.explanation(situation)
                                         .nullCheck("'none' outcome for Find Action Node $declarationNode has no ${situation.localizationCode} explanation.")
                                         .capitalize()
                             else

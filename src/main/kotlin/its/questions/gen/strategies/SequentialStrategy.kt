@@ -7,6 +7,7 @@ import its.questions.gen.QuestioningSituation
 import its.questions.gen.formulations.TemplatingUtils.asNextStep
 import its.questions.gen.formulations.TemplatingUtils.description
 import its.questions.gen.formulations.TemplatingUtils.explanation
+import its.questions.gen.formulations.TemplatingUtils.getLocalizedName
 import its.questions.gen.formulations.TemplatingUtils.nextStepBranchResult
 import its.questions.gen.formulations.TemplatingUtils.nextStepExplanation
 import its.questions.gen.formulations.TemplatingUtils.nextStepQuestion
@@ -74,7 +75,7 @@ object SequentialStrategy : QuestioningStrategyWithInfo<SequentialStrategy.Seque
 
                     object : CorrectnessCheckQuestionState<BranchResult>(mainLinks) {
                         override fun text(situation: QuestioningSituation): String {
-                            val descr = node.description(situation.localizationCode, situation.templating, BranchResult.CORRECT)
+                            val descr = node.description(situation, BranchResult.CORRECT)
                             return situation.localization.IS_IT_TRUE_THAT(descr)
                         }
 
@@ -99,14 +100,14 @@ object SequentialStrategy : QuestioningStrategyWithInfo<SequentialStrategy.Seque
             val secondToThirdRedirect = RedirectQuestionState()
             val objectSelectQuestionSecond = object : MultipleChoiceQuestionState<Obj>(secondToThirdRedirect) {
                 override fun text(situation: QuestioningSituation): String {
-                    return node.question(situation.localizationCode, situation.templating)
+                    return node.question(situation)
                 }
 
                 override fun options(situation: QuestioningSituation): List<MultipleChoiceOption<Obj>> {
                     val searchResult = DecisionTreeReasoner(situation).searchWithErrors(node)
                     val options = searchResult.correct
                         .map { obj ->
-                            val objectName = with(situation.formulations) { obj.localizedName }
+                            val objectName = obj.getLocalizedName(situation.domainModel, situation.localizationCode)
                             MultipleChoiceOption(
                                 objectName,
                                 obj,
@@ -117,12 +118,12 @@ object SequentialStrategy : QuestioningStrategyWithInfo<SequentialStrategy.Seque
                         .plus(searchResult.errors
                             .flatMap { (error, objects) -> objects.map { error to it }}
                             .map { (error, obj) ->
-                                val objectName = with(situation.formulations) { obj.localizedName }
+                                val objectName = obj.getLocalizedName(situation.domainModel, situation.localizationCode)
                                 MultipleChoiceOption(
                                     objectName,
                                     obj,
                                     false,
-                                    error.explanation(situation.localizationCode, situation.templating, obj.objectName)
+                                    error.explanation(situation, obj.objectName)
                                 )
                             }
                         )
@@ -191,7 +192,7 @@ object SequentialStrategy : QuestioningStrategyWithInfo<SequentialStrategy.Seque
 
                     val explanation = Explanation(situation.localization.WE_ALREADY_DISCUSSED_THAT(
                             node.outcomes[correctAnswer]!!
-                                .explanation(situation.localizationCode, situation.templating)!!
+                                .explanation(situation)!!
                     ))
                     val nextState = nextSteps[correctAnswer]
                     return QuestionStateChange(explanation, nextState)
@@ -227,7 +228,7 @@ object SequentialStrategy : QuestioningStrategyWithInfo<SequentialStrategy.Seque
 
                     object : CorrectnessCheckQuestionState<BranchResult>(mainLinks) {
                         override fun text(situation: QuestioningSituation): String {
-                            val descr = node.description(situation.localizationCode, situation.templating, BranchResult.CORRECT)
+                            val descr = node.description(situation, BranchResult.CORRECT)
                             return situation.localization.IS_IT_TRUE_THAT(descr)
                         }
 
@@ -290,15 +291,15 @@ object SequentialStrategy : QuestioningStrategyWithInfo<SequentialStrategy.Seque
 
             val question = object : CorrectnessCheckQuestionState<Any>(links) {
                 override fun text(situation: QuestioningSituation): String {
-                    return node.question(situation.localizationCode, situation.templating)
+                    return node.question(situation)
                 }
 
                 override fun options(situation: QuestioningSituation): List<SingleChoiceOption<Pair<Any, Boolean>>> {
                     val answer = node.getAnswer(situation)
                     val correctOutcome = node.outcomes[answer]!!
-                    val explText = correctOutcome.explanation(situation.localizationCode, situation.templating)
+                    val explText = correctOutcome.explanation(situation)
                     return node.outcomes.map { SingleChoiceOption(
-                        it.text(situation.localizationCode, situation.templating)?:it.key.toAnswerString(situation),
+                        it.text(situation)?:it.key.toAnswerString(situation),
                         if(explText != null) Explanation(explText, type = ExplanationType.Error) else null,
                         it.key to (it == correctOutcome),
                     )}
@@ -309,7 +310,7 @@ object SequentialStrategy : QuestioningStrategyWithInfo<SequentialStrategy.Seque
                     if(node.isSwitch)
                         return QuestionStateChange(null, nextState)
                     if(node.trivialityExpr?.use(OperatorReasoner.defaultReasoner(situation)) == true)
-                        return QuestionStateChange(node.trivialityExplanation(situation.localizationCode, situation.templating)?.let { Explanation(it, shouldPause = false) }, nextState)
+                        return QuestionStateChange(node.trivialityExplanation(situation)?.let { Explanation(it, shouldPause = false) }, nextState)
                     return super.preliminarySkip(situation)
                 }
             }
@@ -341,15 +342,15 @@ object SequentialStrategy : QuestioningStrategyWithInfo<SequentialStrategy.Seque
             for(part in node.parts.asReversed()){
                 question = object : CorrectnessCheckQuestionState<Any>(linkToSingle(question)) {
                     override fun text(situation: QuestioningSituation): String {
-                        return part.question(situation.localizationCode, situation.templating)
+                        return part.question(situation)
                     }
 
                     override fun options(situation: QuestioningSituation): List<SingleChoiceOption<Pair<Any, Boolean>>> {
                         val answer = part.expr.use(OperatorReasoner.defaultReasoner(situation))
                         val correctOutcome = part.possibleOutcomes.first { it.value == answer }
-                        val explText = correctOutcome.explanation(situation.localizationCode, situation.templating)
+                        val explText = correctOutcome.explanation(situation)
                         return part.possibleOutcomes.map { SingleChoiceOption(
-                            it.text(situation.localizationCode, situation.templating) ?: it.value.toAnswerString(situation),
+                            it.text(situation) ?: it.value.toAnswerString(situation),
                             explText?.let { Explanation(it, ExplanationType.Error) },
                             it.value to (it == correctOutcome),
                         )}
@@ -371,7 +372,7 @@ object SequentialStrategy : QuestioningStrategyWithInfo<SequentialStrategy.Seque
                 QuestionStateLink({situation, answer ->  true}, nextState)
             )) {
                 override fun text(situation: QuestioningSituation): String {
-                    return branch.nextStepQuestion(situation.localizationCode, situation.templating) ?: situation.localization.DEFAULT_REASONING_START_QUESTION(reasoning_topic = branch.description(situation.localizationCode, situation.templating, BranchResult.CORRECT))
+                    return branch.nextStepQuestion(situation) ?: situation.localization.DEFAULT_REASONING_START_QUESTION(reasoning_topic = branch.description(situation, BranchResult.CORRECT))
                 }
 
                 override fun options(situation: QuestioningSituation): List<SingleChoiceOption<Pair<DecisionTreeNode, Boolean>>> {
@@ -379,8 +380,8 @@ object SequentialStrategy : QuestioningStrategyWithInfo<SequentialStrategy.Seque
 
                     return jumps.filter { it !is BranchResultNode}.map{
                         SingleChoiceOption(
-                            it.asNextStep(situation.localizationCode, situation.templating),
-                            Explanation(branch.nextStepExplanation(situation.localizationCode, situation.templating), type = ExplanationType.Error),
+                            it.asNextStep(situation),
+                            Explanation(branch.nextStepExplanation(situation), type = ExplanationType.Error),
                             it to (it == branch.start)
                         )
                     }
@@ -405,31 +406,31 @@ object SequentialStrategy : QuestioningStrategyWithInfo<SequentialStrategy.Seque
                 QuestionStateLink({situation, answer ->  true}, nextState)
             )) {
                 override fun text(situation: QuestioningSituation): String {
-                    return outcome.nextStepQuestion(situation.localizationCode, situation.templating) ?: situation.localization.DEFAULT_NEXT_STEP_QUESTION
+                    return outcome.nextStepQuestion(situation) ?: situation.localization.DEFAULT_NEXT_STEP_QUESTION
                 }
 
                 override fun options(situation: QuestioningSituation): List<SingleChoiceOption<Pair<DecisionTreeNode, Boolean>>> {
-                    val explText = outcome.nextStepExplanation(situation.localizationCode, situation.templating)
+                    val explText = outcome.nextStepExplanation(situation)
                     val explanation = if(explText == null) null else Explanation(explText, type = ExplanationType.Error)
                     val jumps = node.getPossibleJumps(situation) //TODO? правильная работа со структурой дерева, включая известность переменных
 
                     val options = jumps.filter { it !is BranchResultNode}.map{SingleChoiceOption(
-                        it.asNextStep(situation.localizationCode, situation.templating),
+                        it.asNextStep(situation),
                         explanation,
                         it to (it == nextNode),
                     )}.plus(SingleChoiceOption<Pair<DecisionTreeNode, Boolean>>(
-                        outcome.nextStepBranchResult(situation.localizationCode, situation.templating, true)
-                            ?: situation.localization.WE_CAN_CONCLUDE_THAT(result = currentBranch.description(situation.localizationCode, situation.templating, BranchResult.CORRECT)),
+                        outcome.nextStepBranchResult(situation, BranchResult.CORRECT)
+                            ?: situation.localization.WE_CAN_CONCLUDE_THAT(result = currentBranch.description(situation, BranchResult.CORRECT)),
                         explanation,
                         BranchResultNode(BranchResult.CORRECT, null) to nextNodeIsResultTrue,
                     )).plus(SingleChoiceOption<Pair<DecisionTreeNode, Boolean>>(
-                        outcome.nextStepBranchResult(situation.localizationCode, situation.templating, false)
-                            ?: situation.localization.WE_CAN_CONCLUDE_THAT(result = currentBranch.description(situation.localizationCode, situation.templating, BranchResult.ERROR)),
+                        outcome.nextStepBranchResult(situation, BranchResult.ERROR)
+                            ?: situation.localization.WE_CAN_CONCLUDE_THAT(result = currentBranch.description(situation, BranchResult.ERROR)),
                         explanation,
                         BranchResultNode(BranchResult.ERROR, null) to nextNodeIsResultFalse,
                     )).plus(SingleChoiceOption<Pair<DecisionTreeNode, Boolean>>(
-                        outcome.nextStepBranchResult(situation.localizationCode, situation.templating, false)
-                            ?: situation.localization.WE_CAN_CONCLUDE_THAT(result = currentBranch.description(situation.localizationCode, situation.templating, BranchResult.NULL)),
+                        outcome.nextStepBranchResult(situation, BranchResult.NULL)
+                            ?: situation.localization.WE_CAN_CONCLUDE_THAT(result = currentBranch.description(situation, BranchResult.NULL)),
                         explanation,
                         BranchResultNode(BranchResult.NULL, null) to nextNodeIsResultNull,
                     ))

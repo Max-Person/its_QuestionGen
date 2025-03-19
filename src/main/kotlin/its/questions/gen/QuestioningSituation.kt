@@ -1,13 +1,10 @@
 package its.questions.gen
 
-import com.github.max_person.templating.InterpretationData
 import its.model.definition.DomainModel
 import its.model.definition.types.Obj
 import its.model.nodes.BranchResult
 import its.model.nodes.ThoughtBranch
 import its.questions.gen.formulations.Localization
-import its.questions.gen.formulations.SituationTextGenerator
-import its.questions.gen.formulations.TemplatingUtils
 import its.questions.gen.formulations.TemplatingUtils.alias
 import its.reasoner.LearningSituation
 
@@ -39,9 +36,6 @@ class QuestioningSituation : LearningSituation{
         this.assumedResults = mutableMapOf()
         this.localizationCode = localizationCode
     }
-
-    internal val formulations = SituationTextGenerator(this)
-    val templating = InterpretationData().withGlobalObj(formulations).withParser(TemplatingUtils.templatingParser)
 
     fun addGivenAnswer(questionStateId: Int, value: Int){
         givenAnswers[questionStateId] = value

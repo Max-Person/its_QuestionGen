@@ -5,6 +5,7 @@ import its.model.definition.types.Clazz
 import its.model.definition.types.Comparison
 import its.model.definition.types.EnumValue
 import its.questions.gen.QuestioningSituation
+import its.questions.gen.formulations.TemplatingUtils.getLocalizedName
 
 object ValueToAnswerString {
 
@@ -25,9 +26,7 @@ object ValueToAnswerString {
 
     // ---------------------- Функции поведения ---------------------------
     private fun Clazz.toAnswerString(situation: QuestioningSituation): String {
-        with(situation.formulations){
-            return this@toAnswerString.localizedName
-        }
+        return this@toAnswerString.getLocalizedName(situation.domainModel, situation.localizationCode)
     }
 
     private fun EnumValue.toAnswerString(situation: QuestioningSituation): String {
@@ -35,9 +34,8 @@ object ValueToAnswerString {
             Comparison.Values.Greater -> situation.localization.GREATER
             Comparison.Values.Less -> situation.localization.LESS
             Comparison.Values.Equal -> situation.localization.EQUAL
-            else -> with(situation.formulations){
-                this@toAnswerString.localizedName
-            }
+            else -> this@toAnswerString.getLocalizedName(situation.domainModel, situation.localizationCode)
+
         }
     }
 

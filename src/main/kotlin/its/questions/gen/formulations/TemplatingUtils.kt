@@ -1,20 +1,30 @@
 package its.questions.gen.formulations
 
-import com.github.drapostolos.typeparser.ParserHelper
-import com.github.drapostolos.typeparser.TypeParser
-import com.github.jsonldjava.utils.Obj
 import com.github.max_person.templating.InterpretationData
-import com.github.max_person.templating.TemplatingSafeMethod
+import com.github.max_person.templating.Template
+import com.github.max_person.templating.TemplatingModifier
+import its.model.definition.*
+import its.model.definition.build.DomainBuilderUtils.newClass
+import its.model.definition.build.DomainBuilderUtils.newObject
+import its.model.definition.build.DomainBuilderUtils.setEnumProperty
+import its.model.definition.types.EnumType
+import its.model.definition.types.Obj
 import its.model.nodes.*
 import its.questions.gen.QuestioningSituation
+import its.reasoner.LearningSituation
 import padeg.lib.Padeg
 
-internal object TemplatingUtils {
+object TemplatingUtils {
 
     @JvmStatic
-    internal val templatingParser  = TypeParser.newBuilder()
-        .registerParser(Case::class.java) { s: String, h: ParserHelper -> Case.fromString(s) }
-        .build()
+    fun DomainDefWithMeta<*>.getLocalizedName(localizationCode : String) : String {
+        return  this.metadata[localizationCode, "localizedName"].toString()
+    }
+
+    @JvmStatic
+    fun <T : DomainDefWithMeta<T>> DomainRef<T>.getLocalizedName(domainModel : DomainModel, localizationCode : String) : String {
+        return this.findInOrUnkown(domainModel).getLocalizedName(localizationCode)
+    }
 
     @JvmStatic
     fun String.toCase(case: Case?) : String{
@@ -32,9 +42,47 @@ internal object TemplatingUtils {
         return this.replace(Regex("\\s+"), " ")
     }
 
+    private object TemplateModifier{
+        @TemplatingModifier
+        fun String.case(case : String) : String {
+            return this.toCase(Case.fromString(case))
+        }
+    }
+
+    private fun addParamsObj(model: DomainModel, branchResult: BranchResult) : Obj {
+        val enumName = "BranchResult"
+        val enumDef = model.enums.added(EnumDef(enumName))
+        BranchResult.values().forEach { br ->  enumDef.values.add(EnumValueDef(enumName, br.name))}
+
+        val classDef = model.newClass("TemplateParams")
+        classDef.declaredProperties.add(PropertyDef("TemplateParams", "branchResult",
+            EnumType("BranchResult"), PropertyDef.PropertyKind.OBJECT, ParamsDecl()))
+
+        val obj = model.newObject("params", "TemplateParams")
+        obj.setEnumProperty("branchResult", "BranchResult", branchResult.name)
+        return obj.reference
+    }
+
+    private fun deleteParamsObj(model: DomainModel) {
+        model.enums.remove("BranchResult")
+        model.objects.remove("params")
+        model.classes.remove("TemplateParams")
+    }
+
     @JvmStatic
-    internal fun String.interpret(interpretationData: InterpretationData) : String{
-        return interpretationData.interpret(this).cleanup()
+    fun String.interpret(
+        learningSituation: LearningSituation,
+        localizationCode: String,
+        contextVars : Map<String, Obj> = emptyMap()
+    ) : String{
+        val parse = Template(this, OperatorTemplateParser)
+        return parse.interpret(
+            InterpretationData()
+                .withModifierObj(TemplateModifier)
+                .withVar(OperatorTemplateParser.LEARNING_SITUATION, learningSituation)
+                .withVar(OperatorTemplateParser.LOCALIZATION_CODE, localizationCode)
+                .withVar(OperatorTemplateParser.CONTEXT_VARS, contextVars)
+        ).cleanup()
     }
 
     //region Получение и шаблонизация текстовой информации
@@ -54,137 +102,151 @@ internal object TemplatingUtils {
 
     //Узлы
     @JvmStatic
-    internal fun DecisionTreeNode.asNextStep(localizationCode: String, interpretationData: InterpretationData) : String {
+    internal fun DecisionTreeNode.asNextStep(situation: QuestioningSituation) : String {
+        val localizationCode = situation.localizationCode
         return getMeta(localizationCode, "asNextStep")
             .stringCheck("Node '$this' doesn't have a $localizationCode associated 'as next step' description")
-            .interpret(interpretationData)
+            .interpret(situation, localizationCode)
     }
 
     @JvmStatic
-    internal fun DecisionTreeNode.question(localizationCode: String, interpretationData: InterpretationData) : String {
+    internal fun DecisionTreeNode.question(situation: QuestioningSituation) : String {
+        val localizationCode = situation.localizationCode
         return getMeta(localizationCode, "question")
             .stringCheck("Node '$this' doesn't have a $localizationCode associated question")
-            .interpret(interpretationData) //TODO Если такого нет - у агрегаций, например.
+            .interpret(situation, localizationCode)
     }
 
     @JvmStatic
-    internal fun TupleQuestionNode.TupleQuestionPart.question(
-        localizationCode: String,
-        interpretationData: InterpretationData
-    ) : String {
+    internal fun TupleQuestionNode.TupleQuestionPart.question(situation: QuestioningSituation) : String {
+        val localizationCode = situation.localizationCode
         return getMeta(localizationCode, "question")
             .stringCheck("'$this' doesn't have a $localizationCode associated question")
-            .interpret(interpretationData)
+            .interpret(situation, localizationCode)
     }
 
     @JvmStatic
-    internal fun DecisionTreeNode.endingCause(localizationCode: String, interpretationData: InterpretationData) : String {
+    internal fun DecisionTreeNode.endingCause(situation: QuestioningSituation) : String {
+        val localizationCode = situation.localizationCode
         return getMeta(localizationCode, "endingCause")
             .stringCheck("Node '$this' doesn't have a $localizationCode ending cause")
-            .interpret(interpretationData) //TODO Если такого нет - т.е. у не-конечных узлов
+            .interpret(situation, localizationCode) //TODO Если такого нет - т.е. у не-конечных узлов
     }
 
     @JvmStatic
-    internal fun AggregationNode.description(localizationCode: String, interpretationData: InterpretationData, result : BranchResult) : String {
-        return getMeta(localizationCode, "description")
+    internal fun AggregationNode.description(situation: QuestioningSituation, result : BranchResult) : String {
+        val localizationCode = situation.localizationCode
+        val obj = addParamsObj(situation.domainModel, result)
+        val res = getMeta(localizationCode, "description")
             .stringCheck("Aggregation node '$this' doesn't have a $localizationCode description")
-            .interpret(interpretationData.usingVar("result", result == BranchResult.CORRECT)) // TODO
+            .interpret(situation, localizationCode, mapOf("params" to obj)) // TODO
+        deleteParamsObj(situation.domainModel)
+        return res
     }
 
     @JvmStatic
-    internal fun QuestionNode.trivialityExplanation(localizationCode: String, interpretationData: InterpretationData) : String? {
-        return getMeta(localizationCode, "triviality")?.let{it as String}?.interpret(interpretationData)
+    internal fun QuestionNode.trivialityExplanation(situation: QuestioningSituation) : String? {
+        val localizationCode = situation.localizationCode
+        return getMeta(localizationCode, "triviality")?.let{it as String}?.interpret(situation, localizationCode)
     }
 
     //Выходы (стрелки)
     @JvmStatic
-    internal fun Outcome<*>.text(localizationCode: String, interpretationData: InterpretationData) : String? {
-        return getMeta(localizationCode, "text")?.let{it as String}?.interpret(interpretationData)
+    internal fun Outcome<*>.text(situation: QuestioningSituation) : String? {
+        val localizationCode = situation.localizationCode
+        return getMeta(localizationCode, "text")?.let{it as String}?.interpret(situation, localizationCode)
     }
 
     @JvmStatic
-    internal fun Outcome<*>.explanation(localizationCode: String, interpretationData: InterpretationData) : String? { //TODO? если это PredeterminingOutcome то использовать другую функцию
-        return getMeta(localizationCode, "explanation")?.let{it as String}?.interpret(interpretationData)
+    internal fun Outcome<*>.explanation(situation: QuestioningSituation) : String? {
+        val localizationCode = situation.localizationCode
+        return getMeta(localizationCode, "explanation")?.let{it as String}?.interpret(situation, localizationCode)
     }
 
     @JvmStatic
-    internal fun TupleQuestionNode.TupleQuestionOutcome.text(
-        localizationCode: String,
-        interpretationData: InterpretationData
-    ) : String? {
-        return getMeta(localizationCode, "text")?.let{it as String}?.interpret(interpretationData)
+    internal fun TupleQuestionNode.TupleQuestionOutcome.text(situation: QuestioningSituation) : String? {
+        val localizationCode = situation.localizationCode
+        return getMeta(localizationCode, "text")?.let{it as String}?.interpret(situation, localizationCode)
     }
 
     @JvmStatic
-    internal fun TupleQuestionNode.TupleQuestionOutcome.explanation(
-        localizationCode: String,
-        interpretationData: InterpretationData
-    ) : String? {
-        return getMeta(localizationCode, "explanation")?.let{it as String}?.interpret(interpretationData)
+    internal fun TupleQuestionNode.TupleQuestionOutcome.explanation(situation: QuestioningSituation) : String? {
+        val localizationCode = situation.localizationCode
+        return getMeta(localizationCode, "explanation")?.let{it as String}?.interpret(situation, localizationCode)
     }
 
     @JvmStatic
-    internal fun FindErrorCategory.explanation(localizationCode: String, interpretationData: InterpretationData, entityAlias : String) : String {
+    internal fun FindErrorCategory.explanation(situation: QuestioningSituation, entityAlias : String) : String {
+        val localizationCode = situation.localizationCode
         return getMeta(localizationCode, "explanation")!!
             .stringCheck("FindErrorCategory '$this' doesn't have a $localizationCode explanation")
-            .interpret(interpretationData.usingVar("checked", entityAlias))
+            .interpret(situation, localizationCode, mapOf("checked" to Obj(entityAlias)))
     }
 
     @JvmStatic
-    internal fun Outcome<ThoughtBranch?>.predeterminingExplanation(localizationCode: String, interpretationData: InterpretationData, result: Boolean) : String {
-        return getMeta(localizationCode, "explanation")
-            .stringCheck("Predetermining outcome leading to node '$node' doesn't have a $localizationCode explanation")
-            .interpret(interpretationData.usingVar("result", result))
-    }
-
-    @JvmStatic
-    internal fun Outcome<*>.nextStepQuestion(localizationCode: String, interpretationData: InterpretationData) : String? {
+    internal fun Outcome<*>.nextStepQuestion(situation: QuestioningSituation) : String? {
+        val localizationCode = situation.localizationCode
         return getMeta(localizationCode, "nextStepQuestion")
             ?.let{it as String}
-            ?.interpret(interpretationData)
+            ?.interpret(situation, localizationCode)
     }
 
     @JvmStatic
-    internal fun Outcome<*>.nextStepBranchResult(localizationCode: String, interpretationData: InterpretationData, branchResult : Boolean) : String? {
-        return getMeta(localizationCode, "nextStepBranchResult")
+    internal fun Outcome<*>.nextStepBranchResult(situation: QuestioningSituation, branchResult : BranchResult) : String? {
+        val localizationCode = situation.localizationCode
+        val obj = addParamsObj(situation.domainModel, branchResult)
+        val res = getMeta(localizationCode, "nextStepBranchResult")
             ?.let{it as String}
-            ?.interpret(interpretationData.usingVar("branchResult", branchResult))
+            ?.interpret(situation, localizationCode, mapOf("params" to obj))
+        deleteParamsObj(situation.domainModel)
+        return res
     }
 
     @JvmStatic
-    internal fun Outcome<*>.nextStepExplanation(localizationCode: String, interpretationData: InterpretationData) : String? {
+    internal fun Outcome<*>.nextStepExplanation(situation: QuestioningSituation) : String? {
+        val localizationCode = situation.localizationCode
         return getMeta(localizationCode, "nextStepExplanation")
             ?.let{it as String}
-            ?.interpret(interpretationData)
+            ?.interpret(situation, localizationCode)
     }
 
     //Ветки
     @JvmStatic
-    internal fun ThoughtBranch.description(localizationCode: String, interpretationData: InterpretationData, result : BranchResult) : String {
-        return getMeta(localizationCode, "description")
+    internal fun ThoughtBranch.description(situation: QuestioningSituation, result : BranchResult) : String {
+        val localizationCode = situation.localizationCode
+        val obj = addParamsObj(situation.domainModel, result)
+        val res =  getMeta(localizationCode, "description")
             .stringCheck("Branch '$this' doesn't have a $localizationCode description")
-            .interpret(interpretationData.usingVar("result", result == BranchResult.CORRECT)) // TODO
+            .interpret(situation, localizationCode, mapOf("params" to obj))
+        deleteParamsObj(situation.domainModel)
+        return res
     }
 
     @JvmStatic
-    internal fun ThoughtBranch.nextStepQuestion(localizationCode: String, interpretationData: InterpretationData) : String? {
+    internal fun ThoughtBranch.nextStepQuestion(situation: QuestioningSituation) : String? {
+        val localizationCode = situation.localizationCode
         return getMeta(localizationCode, "nextStepQuestion")
             ?.let{it as String}
-            ?.interpret(interpretationData)
+            ?.interpret(situation, localizationCode)
     }
 
     @JvmStatic
-    internal fun ThoughtBranch.nextStepBranchResult(localizationCode: String, interpretationData: InterpretationData, branchResult : Boolean) : String? {
-        return getMeta(localizationCode, "nextStepBranchResult")
+    internal fun ThoughtBranch.nextStepBranchResult(situation: QuestioningSituation, branchResult : BranchResult) : String? {
+        val localizationCode = situation.localizationCode
+        val obj = addParamsObj(situation.domainModel, branchResult)
+        val res = getMeta(localizationCode, "nextStepBranchResult")
             ?.let{it as String}
-            ?.interpret(interpretationData.usingVar("branchResult", branchResult))
+            ?.interpret(situation, localizationCode, mapOf("params" to obj))
+        deleteParamsObj(situation.domainModel)
+        return res
     }
 
     @JvmStatic
-    internal fun ThoughtBranch.nextStepExplanation(localizationCode: String, interpretationData: InterpretationData) : String {
+    internal fun ThoughtBranch.nextStepExplanation(situation: QuestioningSituation) : String {
+        val localizationCode = situation.localizationCode
         return getMeta(localizationCode, "nextStepExplanation")
             .stringCheck("Branch '$this' doesn't have a $localizationCode next step explanation")
-            .interpret(interpretationData)
+            .interpret(situation ,localizationCode)
     }
 }
 
