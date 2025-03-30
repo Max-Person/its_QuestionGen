@@ -40,8 +40,8 @@ sealed class AggregationQuestionState<Node : AggregationNode, BranchInfo>(
     abstract fun getBranchDescription(situation: QuestioningSituation, branchInfo: BranchInfo, result: BranchResult) : String
 
     protected fun text(situation: QuestioningSituation) : String {
-        val assumedAnswer = situation.assumedResults[node.alias]
-        val descrIncorrect = node.description(situation, assumedAnswer!!)
+        val assumedAnswer = situation.assumedResults[node.alias]!!
+        val descrIncorrect = node.description(situation, assumedAnswer)
         return situation.localization.WHY_DO_YOU_THINK_THAT(descrIncorrect)
     }
 

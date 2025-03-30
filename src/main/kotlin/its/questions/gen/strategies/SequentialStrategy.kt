@@ -55,46 +55,56 @@ object SequentialStrategy : QuestioningStrategyWithInfo<SequentialStrategy.Seque
             val toEndRedirect = RedirectQuestionState()
 
             //1. спросить про результат узла в общем, как в агрегации
-            var nextSteps : Map<BranchResult, QuestionState> = mapOf(BranchResult.CORRECT to toEndRedirect,
-                BranchResult.ERROR to toEndRedirect, BranchResult.NULL to toEndRedirect)
+            var nextSteps: Map<BranchResult, QuestionState> = mapOf(
+                BranchResult.CORRECT to toEndRedirect,
+                BranchResult.ERROR to toEndRedirect,
+                BranchResult.NULL to toEndRedirect
+            )
 
             val firstToSecondRedirect = RedirectQuestionState()
-            val nodeAnswerQuestionFirst =
-                if(currentBranch.isTrivial()) firstToSecondRedirect
-                else {
-                    nextSteps = node.outcomes.keys.map { outcome -> outcome to nextStep(node, outcome)}.toMap()
-                    val mainLinks = node.outcomes.keys.map { outcome ->
-                        GeneralQuestionState.QuestionStateLink<Pair<BranchResult, Boolean>>(
-                            {situation, answer -> answer.second && (answer.first == outcome) },
-                            nextSteps[outcome]!!
-                        )
-                    }.plus(GeneralQuestionState.QuestionStateLink(
-                        {situation, answer -> !answer.second },
+            val nodeAnswerQuestionFirst: QuestionState
+            if (currentBranch.isTrivial()) {
+                nodeAnswerQuestionFirst = firstToSecondRedirect
+            } else {
+                nextSteps = node.outcomes.keys.map { outcome -> outcome to nextStep(node, outcome) }.toMap()
+                val mainLinks = node.outcomes.keys.map { outcome ->
+                    GeneralQuestionState.QuestionStateLink<CorrectnessCheckQuestionState.Correctness<BranchResult>>(
+                        { situation, answer -> answer.isCorrect && (answer.answerInfo == outcome) },
+                        nextSteps[outcome]!!
+                    )
+                }.plus(
+                    GeneralQuestionState.QuestionStateLink(
+                        { situation, answer -> !answer.isCorrect },
                         firstToSecondRedirect
-                    )).toSet()
+                    )
+                ).toSet()
 
-                    object : CorrectnessCheckQuestionState<BranchResult>(mainLinks) {
-                        override fun text(situation: QuestioningSituation): String {
-                            val descr = node.description(situation, BranchResult.CORRECT)
-                            return situation.localization.IS_IT_TRUE_THAT(descr)
-                        }
+                nodeAnswerQuestionFirst = object : CorrectnessCheckQuestionState<BranchResult>(mainLinks) {
+                    override fun text(situation: QuestioningSituation): String {
+                        val descr = node.description(situation, BranchResult.CORRECT)
+                        return situation.localization.IS_IT_TRUE_THAT(descr)
+                    }
 
-                        override fun options(situation: QuestioningSituation): List<SingleChoiceOption<Pair<BranchResult, Boolean>>> {
-                            val correctAnswer = node.getAnswer(situation)
-                            return node.outcomes.map {
-                                SingleChoiceOption(
-                                    when(it.key) {
-                                        BranchResult.CORRECT -> situation.localization.TRUE
-                                        BranchResult.ERROR -> situation.localization.FALSE
-                                        BranchResult.NULL -> situation.localization.CANNOT_BE_DETERMINED
-                                    },
-                                    Explanation(situation.localization.THATS_INCORRECT + " " + situation.localization.LETS_FIGURE_IT_OUT, type = ExplanationType.Error, shouldPause = false),
-                                    it.key to (it.key == correctAnswer),
-                                )
-                            }
+                    override fun options(situation: QuestioningSituation): List<SingleChoiceOption<Correctness<BranchResult>>> {
+                        val correctAnswer = node.getAnswer(situation)
+                        return node.outcomes.map {
+                            SingleChoiceOption(
+                                when (it.key) {
+                                    BranchResult.CORRECT -> situation.localization.TRUE
+                                    BranchResult.ERROR -> situation.localization.FALSE
+                                    BranchResult.NULL -> situation.localization.CANNOT_BE_DETERMINED
+                                },
+                                Explanation(
+                                    situation.localization.THATS_INCORRECT + " " + situation.localization.LETS_FIGURE_IT_OUT,
+                                    type = ExplanationType.Error,
+                                    shouldPause = false
+                                ),
+                                Correctness(it.key, it.key == correctAnswer),
+                            )
                         }
                     }
                 }
+            }
 
             //2. Если неверно, то попросить выбрать все подходящие переменные цикла
             val secondToThirdRedirect = RedirectQuestionState()
@@ -214,39 +224,48 @@ object SequentialStrategy : QuestioningStrategyWithInfo<SequentialStrategy.Seque
             var nextSteps : Map<BranchResult, QuestionState> = mapOf(BranchResult.CORRECT to endRedir,
                 BranchResult.ERROR to endRedir, BranchResult.NULL to endRedir)
 
-            val initQuestion =
-                if(currentBranch.isTrivial()) aggregationRedirect
-                else {
-                    nextSteps = node.outcomes.keys.map { outcome -> outcome to nextStep(node, outcome)}.toMap()
-                    val mainLinks = node.outcomes.keys.map { outcome -> GeneralQuestionState.QuestionStateLink<Pair<BranchResult, Boolean>>(
-                        {situation, answer -> answer.second && (answer.first == outcome) },
+            val initQuestion: QuestionState
+            if (currentBranch.isTrivial()) {
+                initQuestion = aggregationRedirect
+            } else {
+                nextSteps = node.outcomes.keys.map { outcome -> outcome to nextStep(node, outcome) }.toMap()
+                val mainLinks = node.outcomes.keys.map { outcome ->
+                    GeneralQuestionState.QuestionStateLink<CorrectnessCheckQuestionState.Correctness<BranchResult>>(
+                        { situation, answer -> answer.isCorrect && (answer.answerInfo == outcome) },
                         nextSteps[outcome]!!
-                    )}.plus(GeneralQuestionState.QuestionStateLink<Pair<BranchResult, Boolean>>(
-                        {situation, answer -> !answer.second },
+                    )
+                }.plus(
+                    GeneralQuestionState.QuestionStateLink(
+                        { situation, answer -> !answer.isCorrect },
                         aggregationRedirect
-                    )).toSet()
+                    )
+                ).toSet()
 
-                    object : CorrectnessCheckQuestionState<BranchResult>(mainLinks) {
-                        override fun text(situation: QuestioningSituation): String {
-                            val descr = node.description(situation, BranchResult.CORRECT)
-                            return situation.localization.IS_IT_TRUE_THAT(descr)
-                        }
+                initQuestion = object : CorrectnessCheckQuestionState<BranchResult>(mainLinks) {
+                    override fun text(situation: QuestioningSituation): String {
+                        val descr = node.description(situation, BranchResult.CORRECT)
+                        return situation.localization.IS_IT_TRUE_THAT(descr)
+                    }
 
-                        override fun options(situation: QuestioningSituation): List<SingleChoiceOption<Pair<BranchResult, Boolean>>> {
-                            val correctAnswer = node.getAnswer(situation)
-                            return node.outcomes.map {
-                                SingleChoiceOption(
-                                    when(it.key) {
-                                        BranchResult.CORRECT -> situation.localization.TRUE
-                                        BranchResult.ERROR -> situation.localization.FALSE
-                                        BranchResult.NULL -> situation.localization.CANNOT_BE_DETERMINED
-                                    },
-                                    Explanation(situation.localization.THATS_INCORRECT + " " + situation.localization.LETS_FIGURE_IT_OUT, type = ExplanationType.Error, shouldPause = false),
-                                    it.key to (it.key == correctAnswer),
-                                )
-                            }
+                    override fun options(situation: QuestioningSituation): List<SingleChoiceOption<Correctness<BranchResult>>> {
+                        val correctAnswer = node.getAnswer(situation)
+                        return node.outcomes.map {
+                            SingleChoiceOption(
+                                when (it.key) {
+                                    BranchResult.CORRECT -> situation.localization.TRUE
+                                    BranchResult.ERROR -> situation.localization.FALSE
+                                    BranchResult.NULL -> situation.localization.CANNOT_BE_DETERMINED
+                                },
+                                Explanation(
+                                    situation.localization.THATS_INCORRECT + " " + situation.localization.LETS_FIGURE_IT_OUT,
+                                    type = ExplanationType.Error,
+                                    shouldPause = false
+                                ),
+                                Correctness(it.key, it.key == correctAnswer),
+                            )
                         }
                     }
+                }
             }
 
             //Если результат выполнения узла был выбран неверно, то спросить про результаты веток
@@ -283,7 +302,7 @@ object SequentialStrategy : QuestioningStrategyWithInfo<SequentialStrategy.Seque
                 return RedirectQuestionState()
 
             val links = node.outcomes.keys.map { outcomeValue ->
-                GeneralQuestionState.QuestionStateLink<Pair<Any, Boolean>>(
+                GeneralQuestionState.QuestionStateLink<CorrectnessCheckQuestionState.Correctness<Any>>(
                     { situation, answer -> node.getAnswer(situation) == outcomeValue },
                     nextStep(node, outcomeValue)
                 )
@@ -294,19 +313,19 @@ object SequentialStrategy : QuestioningStrategyWithInfo<SequentialStrategy.Seque
                     return node.question(situation)
                 }
 
-                override fun options(situation: QuestioningSituation): List<SingleChoiceOption<Pair<Any, Boolean>>> {
+                override fun options(situation: QuestioningSituation): List<SingleChoiceOption<Correctness<Any>>> {
                     val answer = node.getAnswer(situation)
                     val correctOutcome = node.outcomes[answer]!!
                     val explText = correctOutcome.explanation(situation)
                     return node.outcomes.map { SingleChoiceOption(
                         it.text(situation)?:it.key.toAnswerString(situation),
                         if(explText != null) Explanation(explText, type = ExplanationType.Error) else null,
-                        it.key to (it == correctOutcome),
+                        Correctness(it.key, it == correctOutcome),
                     )}
                 }
 
                 override fun preliminarySkip(situation: QuestioningSituation): QuestionStateChange? {
-                    val nextState = links.first { it.condition(situation, true to true) }.nextState
+                    val nextState = links.first { it.condition(situation, Correctness(true, true)) }.nextState
                     if(node.isSwitch)
                         return QuestionStateChange(null, nextState)
                     if(node.trivialityExpr?.use(OperatorReasoner.defaultReasoner(situation)) == true)
@@ -335,7 +354,8 @@ object SequentialStrategy : QuestioningStrategyWithInfo<SequentialStrategy.Seque
 
             }
 
-            fun linkToSingle(state: QuestionState) = setOf(GeneralQuestionState.QuestionStateLink<Pair<Any, Boolean>>(
+            fun linkToSingle(state: QuestionState) = setOf(
+                GeneralQuestionState.QuestionStateLink<CorrectnessCheckQuestionState.Correctness<Any>>(
                 { situation, answer -> true },
                 state
             ))
@@ -345,14 +365,14 @@ object SequentialStrategy : QuestioningStrategyWithInfo<SequentialStrategy.Seque
                         return part.question(situation)
                     }
 
-                    override fun options(situation: QuestioningSituation): List<SingleChoiceOption<Pair<Any, Boolean>>> {
+                    override fun options(situation: QuestioningSituation): List<SingleChoiceOption<Correctness<Any>>> {
                         val answer = part.expr.use(OperatorReasoner.defaultReasoner(situation))
                         val correctOutcome = part.possibleOutcomes.first { it.value == answer }
                         val explText = correctOutcome.explanation(situation)
                         return part.possibleOutcomes.map { SingleChoiceOption(
                             it.text(situation) ?: it.value.toAnswerString(situation),
                             explText?.let { Explanation(it, ExplanationType.Error) },
-                            it.value to (it == correctOutcome),
+                            Correctness(it.value, it == correctOutcome),
                         )}
                     }
                 }
@@ -375,14 +395,14 @@ object SequentialStrategy : QuestioningStrategyWithInfo<SequentialStrategy.Seque
                     return branch.nextStepQuestion(situation) ?: situation.localization.DEFAULT_REASONING_START_QUESTION(reasoning_topic = branch.description(situation, BranchResult.CORRECT))
                 }
 
-                override fun options(situation: QuestioningSituation): List<SingleChoiceOption<Pair<DecisionTreeNode, Boolean>>> {
+                override fun options(situation: QuestioningSituation): List<SingleChoiceOption<Correctness<DecisionTreeNode>>> {
                     val jumps = branch.start.getPossibleJumps(situation)
 
                     return jumps.filter { it !is BranchResultNode}.map{
                         SingleChoiceOption(
                             it.asNextStep(situation),
                             Explanation(branch.nextStepExplanation(situation), type = ExplanationType.Error),
-                            it to (it == branch.start)
+                            Correctness(it, it == branch.start)
                         )
                     }
                 }
@@ -396,9 +416,6 @@ object SequentialStrategy : QuestioningStrategyWithInfo<SequentialStrategy.Seque
         fun <AnswerType : Any> nextStep(node: LinkNode<AnswerType>, answer: AnswerType): QuestionState {
             val outcome = node.outcomes[answer]!!
             val nextNode = outcome.node
-            val nextNodeIsResultTrue = nextNode is BranchResultNode && nextNode.value == BranchResult.CORRECT
-            val nextNodeIsResultFalse = nextNode is BranchResultNode && nextNode.value == BranchResult.ERROR
-            val nextNodeIsResultNull = nextNode is BranchResultNode && nextNode.value == BranchResult.NULL
             val nextState = nextNode.use(this)
             val currentBranch = currentBranch
 
@@ -409,31 +426,36 @@ object SequentialStrategy : QuestioningStrategyWithInfo<SequentialStrategy.Seque
                     return outcome.nextStepQuestion(situation) ?: situation.localization.DEFAULT_NEXT_STEP_QUESTION
                 }
 
-                override fun options(situation: QuestioningSituation): List<SingleChoiceOption<Pair<DecisionTreeNode, Boolean>>> {
+                override fun options(situation: QuestioningSituation): List<SingleChoiceOption<Correctness<DecisionTreeNode>>> {
                     val explText = outcome.nextStepExplanation(situation)
                     val explanation = if(explText == null) null else Explanation(explText, type = ExplanationType.Error)
                     val jumps = node.getPossibleJumps(situation) //TODO? правильная работа со структурой дерева, включая известность переменных
 
-                    val options = jumps.filter { it !is BranchResultNode}.map{SingleChoiceOption(
-                        it.asNextStep(situation),
-                        explanation,
-                        it to (it == nextNode),
-                    )}.plus(SingleChoiceOption<Pair<DecisionTreeNode, Boolean>>(
-                        outcome.nextStepBranchResult(situation, BranchResult.CORRECT)
-                            ?: situation.localization.WE_CAN_CONCLUDE_THAT(result = currentBranch.description(situation, BranchResult.CORRECT)),
-                        explanation,
-                        BranchResultNode(BranchResult.CORRECT, null) to nextNodeIsResultTrue,
-                    )).plus(SingleChoiceOption<Pair<DecisionTreeNode, Boolean>>(
-                        outcome.nextStepBranchResult(situation, BranchResult.ERROR)
-                            ?: situation.localization.WE_CAN_CONCLUDE_THAT(result = currentBranch.description(situation, BranchResult.ERROR)),
-                        explanation,
-                        BranchResultNode(BranchResult.ERROR, null) to nextNodeIsResultFalse,
-                    )).plus(SingleChoiceOption<Pair<DecisionTreeNode, Boolean>>(
-                        outcome.nextStepBranchResult(situation, BranchResult.NULL)
-                            ?: situation.localization.WE_CAN_CONCLUDE_THAT(result = currentBranch.description(situation, BranchResult.NULL)),
-                        explanation,
-                        BranchResultNode(BranchResult.NULL, null) to nextNodeIsResultNull,
-                    ))
+                    val options = jumps
+                        .filter { it !is BranchResultNode }
+                        .map {
+                            SingleChoiceOption(
+                                it.asNextStep(situation),
+                                explanation,
+                                Correctness(it, it == nextNode),
+                            )
+                        }
+                        .plus(BranchResult.entries.map { result ->
+                            SingleChoiceOption(
+                                outcome.nextStepBranchResult(situation, result)
+                                    ?: situation.localization.WE_CAN_CONCLUDE_THAT(
+                                        currentBranch.description(
+                                            situation,
+                                            result
+                                        )
+                                    ),
+                                explanation,
+                                Correctness(
+                                    nextNode,
+                                    nextNode is BranchResultNode && nextNode.value == BranchResult.CORRECT
+                                ),
+                            )
+                        })
                     //WARN Дополнительные опции не работают с situation.addGivenAnswer() потому что BranchResultNode сравниваются по ссылке.
                     //Пока с этим ничего не делаем, однако в дальнейшем это может повлиять на что-то
                     return options

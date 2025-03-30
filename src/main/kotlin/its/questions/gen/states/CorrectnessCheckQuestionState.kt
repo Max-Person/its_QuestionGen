@@ -3,12 +3,24 @@ package its.questions.gen.states
 import its.questions.gen.QuestioningSituation
 
 abstract class CorrectnessCheckQuestionState<AnswerInfo> (
-    links: Set<QuestionStateLink<Pair<AnswerInfo, Boolean>>>
-) : SingleChoiceQuestionState<Pair<AnswerInfo, Boolean>>(links) {
-    override fun explanation(situation: QuestioningSituation, chosenOption: SingleChoiceOption<Pair<AnswerInfo, Boolean>>): Explanation? {
-        if(chosenOption.assocAnswer.second)
-            return Explanation(situation.localization.THATS_CORRECT, type = ExplanationType.Success, shouldPause = false)
+    links: Set<QuestionStateLink<Correctness<AnswerInfo>>>
+) : SingleChoiceQuestionState<CorrectnessCheckQuestionState.Correctness<AnswerInfo>>(links) {
+    data class Correctness<AnswerInfo>(
+        val answerInfo: AnswerInfo,
+        val isCorrect: Boolean,
+    )
+
+    override fun explanation(
+        situation: QuestioningSituation,
+        chosenOption: SingleChoiceOption<Correctness<AnswerInfo>>
+    ): Explanation? {
+        return if (chosenOption.assocAnswer.isCorrect)
+            Explanation(situation.localization.THATS_CORRECT, type = ExplanationType.Success, shouldPause = false)
         else
-            return chosenOption.explanation ?: Explanation(situation.localization.THATS_INCORRECT, type = ExplanationType.Error, shouldPause = false)
+            chosenOption.explanation ?: Explanation(
+                situation.localization.THATS_INCORRECT,
+                type = ExplanationType.Error,
+                shouldPause = false
+            )
     }
 }

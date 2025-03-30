@@ -66,7 +66,7 @@ object VariableValueStrategy : QuestioningStrategy {
                     return declarationNode.question(situation)
                 }
 
-                override fun options(situation: QuestioningSituation): List<SingleChoiceOption<Pair<Obj?, Boolean>>> {
+                override fun options(situation: QuestioningSituation): List<SingleChoiceOption<Correctness<Obj?>>> {
                     val answer = declarationNode.getAnswer(situation)
                     val explanation = situation.localization.IN_THIS_SITUATION(
                         fact = declarationNode.outcomes[answer]!!.explanation(situation)!!
@@ -75,26 +75,29 @@ object VariableValueStrategy : QuestioningStrategy {
                     val possibleObjects = DecisionTreeReasoner(situation).processWithErrors(declarationNode)
                     val options = possibleObjects.errors.map { (error, objects) ->
                         objects.map{
-                            SingleChoiceOption<Pair<Obj?, Boolean>>(
+                            SingleChoiceOption<Correctness<Obj?>>(
                                 it.getLocalizedName(situation.domainModel, situation.localizationCode),
                                 Explanation(
                                     "${error.explanation(situation, it.objectName)} $explanation",
                                     type = ExplanationType.Error
                                 ),
-                                it to false,
+                                Correctness(it, false)
                             )
                         }
                     }.flatten()
                         .plus(
                             if(possibleObjects.correct.isNotEmpty())
-                                SingleChoiceOption<Pair<Obj?, Boolean>>(
+                                SingleChoiceOption<Correctness<Obj?>>(
                                     possibleObjects.correct.single().getLocalizedName(situation.domainModel, situation.localizationCode),
                                     null,
-                                    possibleObjects.correct.single() to true,
+                                    Correctness(possibleObjects.correct.single(), true)
                                 )
                             else
-                                null).filterNotNull()
-                        .plus(SingleChoiceOption<Pair<Obj?, Boolean>>(
+                                null
+                        )
+                        .filterNotNull()
+                        .plus(
+                            SingleChoiceOption<Correctness<Obj?>>(
                             if(declarationNode.nextIfNone != null)
                                 declarationNode.nextIfNone!!.explanation(situation)
                                         .nullCheck("'none' outcome for Find Action Node $declarationNode has no ${situation.localizationCode} explanation.")
@@ -103,15 +106,15 @@ object VariableValueStrategy : QuestioningStrategy {
                                 situation.localization.IMPOSSIBLE_TO_FIND
                             ,
                             Explanation("${situation.localization.THATS_INCORRECT} $explanation", type = ExplanationType.Error),
-                            null to (possibleObjects.correct == null)
+                                Correctness(null, possibleObjects.correct.isEmpty())
                         ))
 
                     return options
                 }
 
-                override fun additionalActions(situation: QuestioningSituation, chosenAnswer: Pair<Obj?, Boolean>) {
+                override fun additionalActions(situation: QuestioningSituation, chosenAnswer: Correctness<Obj?>) {
                     super.additionalActions(situation, chosenAnswer)
-                    situation.discussedVariables[varInfo.name] = chosenAnswer.first?.objectName ?: ""
+                    situation.discussedVariables[varInfo.name] = chosenAnswer.answerInfo?.objectName ?: ""
                 }
 
                 override fun preliminarySkip(situation: QuestioningSituation): QuestionStateChange? {
