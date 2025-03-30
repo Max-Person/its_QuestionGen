@@ -58,10 +58,7 @@ object VariableValueStrategy : QuestioningStrategy {
             val declarationNode = varInfo.declarationNode
             val nextState = lastState
 
-            val question = object : CorrectnessCheckQuestionState<Obj?>(setOf(
-                QuestionStateLink({_, _ -> true }, nextState),
-            ))
-            {
+            val question = object : CorrectnessCheckQuestionState<Obj?>() {
                 override fun text(situation: QuestioningSituation): String {
                     return declarationNode.question(situation)
                 }
@@ -127,9 +124,9 @@ object VariableValueStrategy : QuestioningStrategy {
                     }
                     return super.preliminarySkip(situation)
                 }
-
             }
 
+            question.linkTo(nextState)
 
             val prerequisites = varInfo.prerequisites.filter { infoMap.containsKey(it) }
             val prerequisitesAutomata = if(!prerequisites.isEmpty()) create(prerequisites, infoMap, currentBranch) else null

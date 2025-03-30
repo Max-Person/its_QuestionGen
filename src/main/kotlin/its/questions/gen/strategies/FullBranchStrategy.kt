@@ -29,26 +29,7 @@ object FullBranchStrategy : QuestioningStrategy {
             return QuestionAutomata(variableValueAutomata.initState).finalizeForBranch(branch)
         }
 
-        val knownLCAs = mutableSetOf<DecisionTreeNode>()
-        val endingNodeSelectlinks = mutableListOf<GeneralQuestionState.QuestionStateLink<NodeLCAinfo>>()
-        for(endA in endingNodes){
-            for(endB in endingNodes.subList(endingNodes.indexOf(endA), endingNodes.size)){
-                val lca = branch.getNodesLCA(endA, endB)!!
-                if(knownLCAs.contains(lca))
-                    continue
-                knownLCAs.add(lca)
-                endingNodeSelectlinks.add(GeneralQuestionState.QuestionStateLink(
-                    {_, chosenAnswer -> chosenAnswer.node == lca && !chosenAnswer.startAbove },
-                    sequential.info.nodeStates[lca]!!
-                ))
-                endingNodeSelectlinks.add(GeneralQuestionState.QuestionStateLink(
-                    {_, chosenAnswer -> chosenAnswer.node == lca && chosenAnswer.startAbove },
-                    sequential.info.preNodeStates[lca]!!
-                ))
-            }
-        }
-
-        val endingNodeSelect = object : SingleChoiceQuestionState<NodeLCAinfo>(endingNodeSelectlinks.toSet()){
+        val endingNodeSelect = object : SingleChoiceQuestionState<NodeLCAinfo>() {
             override fun text(situation: QuestioningSituation): String {
                 return situation.localization.WHY_DO_YOU_THINK_THAT(assumed_result = branch.description(situation, situation.assumedResult(branch)!!))
             }
@@ -69,6 +50,22 @@ object FullBranchStrategy : QuestioningStrategy {
             }
         }
 
+        val knownLCAs = mutableSetOf<DecisionTreeNode>()
+        for (endA in endingNodes) {
+            for (endB in endingNodes.subList(endingNodes.indexOf(endA), endingNodes.size)) {
+                val lca = branch.getNodesLCA(endA, endB)!!
+                if (knownLCAs.contains(lca)) continue
+                knownLCAs.add(lca)
+
+                endingNodeSelect.linkTo(sequential.info.nodeStates[lca]!!) { _, chosenAnswer ->
+                    chosenAnswer.node == lca && !chosenAnswer.startAbove
+                }
+                endingNodeSelect.linkTo(sequential.info.preNodeStates[lca]!!) { _, chosenAnswer ->
+                    chosenAnswer.node == lca && chosenAnswer.startAbove
+                }
+            }
+        }
+
 
         variableValueAutomata.finalize(endingNodeSelect)
         return QuestionAutomata(variableValueAutomata.initState).finalizeForBranch(branch)
@@ -79,9 +76,7 @@ object FullBranchStrategy : QuestioningStrategy {
         val branchEnd = object : SkipQuestionState() {
             override fun skip(situation: QuestioningSituation): QuestionStateChange {
                 val explanation = Explanation(situation.localization.SO_WEVE_DISCUSSED_WHY(
-                    result = branch.description(
-                        situation,
-                        branch.solve(situation).branchResult)
+                    branch.description(situation, branch.solve(situation).branchResult)
                 )
                 )
                 return QuestionStateChange(explanation, redir)

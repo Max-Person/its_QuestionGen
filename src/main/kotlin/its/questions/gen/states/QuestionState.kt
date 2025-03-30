@@ -83,9 +83,9 @@ class EndQuestionState: SkipQuestionState() {
     override fun skip(situation: QuestioningSituation): QuestionStateChange = QuestionStateChange(null, null)
 }
 
-abstract class GeneralQuestionState<AnswerInfo>(
-    protected val links: Set<QuestionStateLink<AnswerInfo>>
-) : QuestionState() {
+abstract class GeneralQuestionState<AnswerInfo> : QuestionState() {
+    private val links: MutableSet<QuestionStateLink<AnswerInfo>> = mutableSetOf()
+
     override val id: Int = nextId()
 
     protected fun String.prependId(): String {
@@ -94,10 +94,37 @@ abstract class GeneralQuestionState<AnswerInfo>(
 
     data class QuestionStateLink<AnswerInfo>(
         val condition: (situation: QuestioningSituation, chosenAnswer: AnswerInfo) -> Boolean,
-        val nextState: QuestionState
+        val nextState: QuestionState,
 
         //TODO конструктор из пары и тп?
     )
+
+    /**
+     * Связать текущее состояние с некоторым другим.
+     * Предполагается, что это безусловный переход, и в связи с этим он должен быть единственным -
+     * вызов данного метода очищает массив переходов.
+     */
+    internal fun linkTo(nextState: QuestionState) {
+        links.clear()
+        links.add(QuestionStateLink({ _, _ -> true }, nextState))
+    }
+
+    /**
+     * Связать текущее состояние с некоторым другим - переход будет осуществляться при выполнении условия [condition]
+     */
+    internal fun linkTo(
+        nextState: QuestionState,
+        condition: (situation: QuestioningSituation, chosenAnswer: AnswerInfo) -> Boolean,
+    ) {
+        links.add(QuestionStateLink(condition, nextState))
+    }
+
+    /**
+     * Получить из массива переходов состояние, чье условие перехода выполняется в данной конкретной ситуации
+     */
+    internal fun getStateFromLinks(situation: QuestioningSituation, chosenAnswer: AnswerInfo): QuestionState {
+        return links.first { it.condition(situation, chosenAnswer) }.nextState
+    }
 
     companion object _static {
         @JvmStatic

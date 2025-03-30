@@ -6,8 +6,7 @@ import its.questions.gen.QuestioningSituation
 /**
  * Состояние автомата вопросов, создающее вопросы с множественным выбором
  */
-abstract class MultipleChoiceQuestionState<AnswerInfo>(val nextState: QuestionState)
-    : GeneralQuestionState<AnswerInfo>(setOf(QuestionStateLink({_, _ -> true}, nextState))) {
+abstract class MultipleChoiceQuestionState<AnswerInfo> : GeneralQuestionState<List<AnswerInfo>>() {
 
     protected data class MultipleChoiceOption<AnswerInfo>(
         val text : String,
@@ -77,6 +76,7 @@ abstract class MultipleChoiceQuestionState<AnswerInfo>(val nextState: QuestionSt
                 type = ExplanationType.Error
             )
 
-        return QuestionStateChange(explanation, nextState)
+        val correctAnswers = correctOptions.map { it.assocAnswer }
+        return QuestionStateChange(explanation, getStateFromLinks(situation, correctAnswers))
     }
 }

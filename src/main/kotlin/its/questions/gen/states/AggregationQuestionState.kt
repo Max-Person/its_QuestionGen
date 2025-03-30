@@ -15,19 +15,33 @@ import its.reasoner.nodes.DecisionTreeReasoner.Companion.solve
 //Можно выделить над ним некий AssociationQuestionState, но пока что это не нужно
 sealed class AggregationQuestionState<Node : AggregationNode, BranchInfo>(
     val node: Node,
-    nextStates : Map<BranchResult, QuestionState>,
-    branchSelectState: QuestionState,
-) : GeneralQuestionState<Boolean>(
-    nextStates.map { (key, value) ->  QuestionStateLink<Boolean>(
-        { situation, answer -> answer && node.getAnswer(situation.forEval()) ==  key},
-        value
-    )}.toSet().plus(
-        QuestionStateLink(
-            { situation, answer -> !answer },
-            branchSelectState
-        ),
-    )
-) {
+    nodeResultNextStates: Map<BranchResult, QuestionState>,
+) : GeneralQuestionState<Boolean>() {
+    init { //Если ответили правильно, то переходим к выходам из узла
+        nodeResultNextStates.forEach { (nodeResult, nextState) ->
+            linkTo(nextState) { situation, answer ->
+                answer && node.getAnswer(situation.forEval()) == nodeResult
+            }
+        }
+
+        //Если хотя бы одна неправильная, то спросить в какую углубиться
+        val (branchSelectQuestion, branchAutomata) = createSelectBranchState()
+        linkTo(branchSelectQuestion) { situation, chosenAnswer ->
+            !chosenAnswer
+        }
+
+        //После выхода из веток пропускающее состояние определяет, к какому из верных ответов надо совершить переход
+        val shadowSkip = object : SkipQuestionState() {
+            override fun skip(situation: QuestioningSituation): QuestionStateChange {
+                return QuestionStateChange(null, nodeResultNextStates[node.getAnswer(situation)])
+            }
+
+            override val reachableStates: Collection<QuestionState>
+                get() = nodeResultNextStates.values
+        }
+        branchAutomata.forEach { it.finalize(shadowSkip) }
+    }
+
     enum class AggregationImpact{
         Negative,
         None,
@@ -97,8 +111,9 @@ sealed class AggregationQuestionState<Node : AggregationNode, BranchInfo>(
 //            situation.addAssumedResult(getThoughtBranch(branch), assumedResult)
 //        }
 
+        val isAnswerCorrect = incorrectBranches.isEmpty() && missedBranches.isEmpty()
         val explanation = Explanation(
-            if (incorrectBranches.isEmpty() && missedBranches.isEmpty()) {
+            if (isAnswerCorrect) {
                 situation.localization.AGGREGATION_CORRECT_EXPL(
                     answer_descr = node.description(
                         situation,
@@ -132,34 +147,21 @@ sealed class AggregationQuestionState<Node : AggregationNode, BranchInfo>(
             type = ExplanationType.Error
         )
 
-        val nextState = links.first { link ->
-            link.condition(situation, incorrectBranches.isEmpty() && missedBranches.isEmpty())
-        }.nextState
-        return QuestionStateChange(explanation, nextState)
+        return QuestionStateChange(explanation, getStateFromLinks(situation, isAnswerCorrect))
     }
 
     abstract fun getThoughtBranches(): List<ThoughtBranch>
     abstract fun getThoughtBranch(branchInfo: BranchInfo): ThoughtBranch
     open fun onGoIntoBranch(situation: QuestioningSituation, branchInfo: BranchInfo){}
 
-    data class SelectBranchState(
-        val state: QuestionState,
+    data class SelectBranchState<BranchInfo>(
+        val state: SingleChoiceQuestionState<BranchInfo>,
         val branchAutomata: List<QuestionAutomata>,
     )
 
-    fun createSelectBranchState(): SelectBranchState {
+    fun createSelectBranchState(): SelectBranchState<BranchInfo> {
         //Если были сделаны ошибки в ветках, то спросить про углубление в одну из веток
-        val thoughtBranches = getThoughtBranches()
-        val branchAutomata = thoughtBranches.associateWith { QuestioningStrategy.defaultFullBranchStrategy.build(it) }
-        val worthAsking = thoughtBranches.associateWith { (branchAutomata[it]!!.hasQuestions()) }
-        val branchLinks = thoughtBranches
-            .filter{worthAsking[it]!!}
-            .map{branch -> QuestionStateLink<BranchInfo>(
-                {situation, answer -> getThoughtBranch(answer) == branch }, branchAutomata[branch]!!.initState
-            )}
-            .toSet()
-
-        val state = object : SingleChoiceQuestionState<BranchInfo>(branchLinks) {
+        val state = object : SingleChoiceQuestionState<BranchInfo>() {
             override fun text(situation: QuestioningSituation): String {
                 return situation.localization.WHAT_DO_YOU_WANT_TO_DISCUSS_FURTHER
             }
@@ -195,6 +197,15 @@ sealed class AggregationQuestionState<Node : AggregationNode, BranchInfo>(
                 onGoIntoBranch(situation, chosenAnswer)
             }
         }
+
+        val thoughtBranches = getThoughtBranches()
+        val branchAutomata = thoughtBranches.associateWith { QuestioningStrategy.defaultFullBranchStrategy.build(it) }
+        thoughtBranches.filter { branch -> branchAutomata[branch]!!.hasQuestions() }.forEach { branch ->
+                state.linkTo(branchAutomata[branch]!!.initState) { situation, answer ->
+                    getThoughtBranch(answer) == branch
+                }
+            }
+
         return SelectBranchState(state, branchAutomata.values.toList())
     }
 }
@@ -202,10 +213,7 @@ sealed class AggregationQuestionState<Node : AggregationNode, BranchInfo>(
 class LogicalAggregationState(
     node: BranchAggregationNode,
     nextStates: Map<BranchResult, QuestionState>,
-    branchSelectState: QuestionState,
-) : AggregationQuestionState<BranchAggregationNode, ThoughtBranch>(
-    node, nextStates, branchSelectState,
-) {
+) : AggregationQuestionState<BranchAggregationNode, ThoughtBranch>(node, nextStates) {
     override fun getBranchInfo(situation: QuestioningSituation): List<ThoughtBranch> {
         return node.thoughtBranches
     }
@@ -238,11 +246,8 @@ class LogicalAggregationState(
 
 class CycleAggregationState(
     node: CycleAggregationNode,
-    nextStates : Map<BranchResult, QuestionState>,
-    branchSelectState: QuestionState,
-) : AggregationQuestionState<CycleAggregationNode, Obj>(
-    node, nextStates, branchSelectState,
-) {
+    nodeResultNextStates: Map<BranchResult, QuestionState>,
+) : AggregationQuestionState<CycleAggregationNode, Obj>(node, nodeResultNextStates) {
     override fun getBranchInfo(situation: QuestioningSituation): List<Obj> {
         return DecisionTreeReasoner(situation).searchWithErrors(node).correct
     }

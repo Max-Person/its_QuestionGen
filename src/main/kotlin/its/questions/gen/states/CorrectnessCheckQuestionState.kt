@@ -2,9 +2,8 @@ package its.questions.gen.states
 
 import its.questions.gen.QuestioningSituation
 
-abstract class CorrectnessCheckQuestionState<AnswerInfo> (
-    links: Set<QuestionStateLink<Correctness<AnswerInfo>>>
-) : SingleChoiceQuestionState<CorrectnessCheckQuestionState.Correctness<AnswerInfo>>(links) {
+abstract class CorrectnessCheckQuestionState<AnswerInfo> :
+    SingleChoiceQuestionState<CorrectnessCheckQuestionState.Correctness<AnswerInfo>>() {
     data class Correctness<AnswerInfo>(
         val answerInfo: AnswerInfo,
         val isCorrect: Boolean,

@@ -2,9 +2,7 @@ package its.questions.gen.states
 
 import its.questions.gen.QuestioningSituation
 
-abstract class SingleChoiceQuestionState<AnswerInfo>(
-    links: Set<QuestionStateLink<AnswerInfo>>
-) : GeneralQuestionState<AnswerInfo>(links) {
+abstract class SingleChoiceQuestionState<AnswerInfo> : GeneralQuestionState<AnswerInfo>() {
 
     protected data class SingleChoiceOption<AnswerInfo>(
         val text : String,
@@ -49,8 +47,7 @@ abstract class SingleChoiceQuestionState<AnswerInfo>(
         additionalActions(situation, chosenOption.assocAnswer)
 
         val explanation = explanation(situation, chosenOption)
-        val nextState = links.first { link -> link.condition(situation, chosenOption.assocAnswer) }.nextState
-        return QuestionStateChange(explanation, nextState)
+        return QuestionStateChange(explanation, getStateFromLinks(situation, chosenOption.assocAnswer))
     }
 
     fun previouslyChosenAnswer(situation: QuestioningSituation) : AnswerInfo?{

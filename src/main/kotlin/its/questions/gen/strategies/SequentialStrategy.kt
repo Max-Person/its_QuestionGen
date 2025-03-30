@@ -52,34 +52,21 @@ object SequentialStrategy : QuestioningStrategyWithInfo<SequentialStrategy.Seque
         }
 
         override fun process(node: CycleAggregationNode): QuestionState {
-            val toEndRedirect = RedirectQuestionState()
-
-            //1. спросить про результат узла в общем, как в агрегации
-            var nextSteps: Map<BranchResult, QuestionState> = mapOf(
-                BranchResult.CORRECT to toEndRedirect,
-                BranchResult.ERROR to toEndRedirect,
-                BranchResult.NULL to toEndRedirect
-            )
-
             val firstToSecondRedirect = RedirectQuestionState()
+            //1. спросить про результат узла в общем, как в агрегации
+            val nextSteps: Map<BranchResult, QuestionState>
             val nodeAnswerQuestionFirst: QuestionState
             if (currentBranch.isTrivial()) {
+                val toEndRedirect = RedirectQuestionState()
+                nextSteps = mapOf(
+                    BranchResult.CORRECT to toEndRedirect,
+                    BranchResult.ERROR to toEndRedirect,
+                    BranchResult.NULL to toEndRedirect
+                )
                 nodeAnswerQuestionFirst = firstToSecondRedirect
             } else {
                 nextSteps = node.outcomes.keys.map { outcome -> outcome to nextStep(node, outcome) }.toMap()
-                val mainLinks = node.outcomes.keys.map { outcome ->
-                    GeneralQuestionState.QuestionStateLink<CorrectnessCheckQuestionState.Correctness<BranchResult>>(
-                        { situation, answer -> answer.isCorrect && (answer.answerInfo == outcome) },
-                        nextSteps[outcome]!!
-                    )
-                }.plus(
-                    GeneralQuestionState.QuestionStateLink(
-                        { situation, answer -> !answer.isCorrect },
-                        firstToSecondRedirect
-                    )
-                ).toSet()
-
-                nodeAnswerQuestionFirst = object : CorrectnessCheckQuestionState<BranchResult>(mainLinks) {
+                nodeAnswerQuestionFirst = object : CorrectnessCheckQuestionState<BranchResult>() {
                     override fun text(situation: QuestioningSituation): String {
                         val descr = node.description(situation, BranchResult.CORRECT)
                         return situation.localization.IS_IT_TRUE_THAT(descr)
@@ -104,11 +91,19 @@ object SequentialStrategy : QuestioningStrategyWithInfo<SequentialStrategy.Seque
                         }
                     }
                 }
+
+                node.outcomes.keys.forEach { outcome ->
+                    nodeAnswerQuestionFirst.linkTo(nextSteps[outcome]!!) { situation, answer ->
+                        answer.isCorrect && (answer.answerInfo == outcome)
+                    }
+                }
+                nodeAnswerQuestionFirst.linkTo(firstToSecondRedirect) { situation, answer ->
+                    !answer.isCorrect
+                }
             }
 
             //2. Если неверно, то попросить выбрать все подходящие переменные цикла
-            val secondToThirdRedirect = RedirectQuestionState()
-            val objectSelectQuestionSecond = object : MultipleChoiceQuestionState<Obj>(secondToThirdRedirect) {
+            val objectSelectQuestionSecond = object : MultipleChoiceQuestionState<Obj>() {
                 override fun text(situation: QuestioningSituation): String {
                     return node.question(situation)
                 }
@@ -143,28 +138,8 @@ object SequentialStrategy : QuestioningStrategyWithInfo<SequentialStrategy.Seque
             firstToSecondRedirect.redir = objectSelectQuestionSecond
 
             //3. Спросить про конкретные переменные цикла, как они влияют на агрегацию
-            val thirdToFourthRedirect = RedirectQuestionState()
-            val variableAggregationQuestionThird = CycleAggregationState(
-                node,
-                nextSteps,
-                thirdToFourthRedirect
-            )
-            secondToThirdRedirect.redir = variableAggregationQuestionThird
-
-            //Если хотя бы одна неправильная, то спросить в какую углубиться
-            val (selectBranchQuestionFourth, branchAutomata) = variableAggregationQuestionThird.createSelectBranchState()
-            thirdToFourthRedirect.redir = selectBranchQuestionFourth
-
-            //После выхода из веток пропускающее состояние определяет, к какому из верных ответов надо совершить переход
-            val shadowSkip = object : SkipQuestionState(){
-                override fun skip(situation: QuestioningSituation): QuestionStateChange {
-                    return QuestionStateChange(null, nextSteps[node.getAnswer(situation)])
-                }
-
-                override val reachableStates: Collection<QuestionState>
-                    get() = nextSteps.values
-            }
-            branchAutomata.forEach{it.finalize(shadowSkip)}
+            val variableAggregationQuestionThird = CycleAggregationState(node, nextSteps)
+            objectSelectQuestionSecond.linkTo(variableAggregationQuestionThird)
 
             nodeStates[node] = nodeAnswerQuestionFirst
             return nodeAnswerQuestionFirst
@@ -220,28 +195,19 @@ object SequentialStrategy : QuestioningStrategyWithInfo<SequentialStrategy.Seque
             //сначала задать вопрос о результате выполнения узла
             val aggregationRedirect = RedirectQuestionState()
 
-            val endRedir = RedirectQuestionState()
-            var nextSteps : Map<BranchResult, QuestionState> = mapOf(BranchResult.CORRECT to endRedir,
-                BranchResult.ERROR to endRedir, BranchResult.NULL to endRedir)
-
+            val nextSteps: Map<BranchResult, QuestionState>
             val initQuestion: QuestionState
+
             if (currentBranch.isTrivial()) {
+                val endRedir = RedirectQuestionState()
+                nextSteps = mapOf(
+                    BranchResult.CORRECT to endRedir, BranchResult.ERROR to endRedir, BranchResult.NULL to endRedir
+                )
                 initQuestion = aggregationRedirect
             } else {
-                nextSteps = node.outcomes.keys.map { outcome -> outcome to nextStep(node, outcome) }.toMap()
-                val mainLinks = node.outcomes.keys.map { outcome ->
-                    GeneralQuestionState.QuestionStateLink<CorrectnessCheckQuestionState.Correctness<BranchResult>>(
-                        { situation, answer -> answer.isCorrect && (answer.answerInfo == outcome) },
-                        nextSteps[outcome]!!
-                    )
-                }.plus(
-                    GeneralQuestionState.QuestionStateLink(
-                        { situation, answer -> !answer.isCorrect },
-                        aggregationRedirect
-                    )
-                ).toSet()
+                nextSteps = node.outcomes.keys.associateWith { outcome -> nextStep(node, outcome) }
 
-                initQuestion = object : CorrectnessCheckQuestionState<BranchResult>(mainLinks) {
+                initQuestion = object : CorrectnessCheckQuestionState<BranchResult>() {
                     override fun text(situation: QuestioningSituation): String {
                         val descr = node.description(situation, BranchResult.CORRECT)
                         return situation.localization.IS_IT_TRUE_THAT(descr)
@@ -266,32 +232,20 @@ object SequentialStrategy : QuestioningStrategyWithInfo<SequentialStrategy.Seque
                         }
                     }
                 }
+
+                node.outcomes.keys.forEach { outcome ->
+                    initQuestion.linkTo(nextSteps[outcome]!!) { situation, answer ->
+                        answer.isCorrect && (answer.answerInfo == outcome)
+                    }
+                }
+                initQuestion.linkTo(aggregationRedirect) { situation, answer ->
+                    !answer.isCorrect
+                }
             }
 
             //Если результат выполнения узла был выбран неверно, то спросить про результаты веток
-            val branchSelectRedirect = RedirectQuestionState()
-
-            val aggregationQuestion = LogicalAggregationState(
-                node,
-                nextSteps,
-                branchSelectRedirect
-            )
+            val aggregationQuestion = LogicalAggregationState(node, nextSteps)
             aggregationRedirect.redir = aggregationQuestion
-
-            //Если были сделаны ошибки в ветках, то спросить про углубление в одну из веток
-            val (selectBranchState, branchAutomata) = aggregationQuestion.createSelectBranchState()
-            branchSelectRedirect.redir = selectBranchState
-
-            //После выхода из веток пропускающее состояние определяет, к какому из верных ответов надо совершить переход
-            val shadowSkip = object : SkipQuestionState(){
-                override fun skip(situation: QuestioningSituation): QuestionStateChange {
-                    return QuestionStateChange(null, nextSteps[node.getAnswer(situation)])
-                }
-
-                override val reachableStates: Collection<QuestionState>
-                    get() = nextSteps.values
-            }
-            branchAutomata.forEach{it.finalize(shadowSkip)}
 
             nodeStates[node] = initQuestion
             return initQuestion
@@ -301,14 +255,7 @@ object SequentialStrategy : QuestioningStrategyWithInfo<SequentialStrategy.Seque
             if(currentBranch.isTrivial())
                 return RedirectQuestionState()
 
-            val links = node.outcomes.keys.map { outcomeValue ->
-                GeneralQuestionState.QuestionStateLink<CorrectnessCheckQuestionState.Correctness<Any>>(
-                    { situation, answer -> node.getAnswer(situation) == outcomeValue },
-                    nextStep(node, outcomeValue)
-                )
-            }.toSet()
-
-            val question = object : CorrectnessCheckQuestionState<Any>(links) {
+            val question = object : CorrectnessCheckQuestionState<Any>() {
                 override fun text(situation: QuestioningSituation): String {
                     return node.question(situation)
                 }
@@ -325,12 +272,18 @@ object SequentialStrategy : QuestioningStrategyWithInfo<SequentialStrategy.Seque
                 }
 
                 override fun preliminarySkip(situation: QuestioningSituation): QuestionStateChange? {
-                    val nextState = links.first { it.condition(situation, Correctness(true, true)) }.nextState
+                    val nextState = getStateFromLinks(situation, Correctness(true, true))
                     if(node.isSwitch)
                         return QuestionStateChange(null, nextState)
                     if(node.trivialityExpr?.use(OperatorReasoner.defaultReasoner(situation)) == true)
                         return QuestionStateChange(node.trivialityExplanation(situation)?.let { Explanation(it, shouldPause = false) }, nextState)
                     return super.preliminarySkip(situation)
+                }
+            }
+
+            node.outcomes.keys.forEach { outcomeValue ->
+                question.linkTo(nextStep(node, outcomeValue)) { situation, answer ->
+                    node.getAnswer(situation) == outcomeValue
                 }
             }
 
@@ -354,13 +307,8 @@ object SequentialStrategy : QuestioningStrategyWithInfo<SequentialStrategy.Seque
 
             }
 
-            fun linkToSingle(state: QuestionState) = setOf(
-                GeneralQuestionState.QuestionStateLink<CorrectnessCheckQuestionState.Correctness<Any>>(
-                { situation, answer -> true },
-                state
-            ))
             for(part in node.parts.asReversed()){
-                question = object : CorrectnessCheckQuestionState<Any>(linkToSingle(question)) {
+                val newQuestion = object : CorrectnessCheckQuestionState<Any>() {
                     override fun text(situation: QuestioningSituation): String {
                         return part.question(situation)
                     }
@@ -376,6 +324,8 @@ object SequentialStrategy : QuestioningStrategyWithInfo<SequentialStrategy.Seque
                         )}
                     }
                 }
+                newQuestion.linkTo(question)
+                question = newQuestion
             }
 
             nodeStates[node] = question
@@ -388,9 +338,7 @@ object SequentialStrategy : QuestioningStrategyWithInfo<SequentialStrategy.Seque
             if(nextState is RedirectQuestionState)
                 return nextState
 
-            val question = object : CorrectnessCheckQuestionState<DecisionTreeNode>(setOf(
-                QuestionStateLink({situation, answer ->  true}, nextState)
-            )) {
+            val question = object : CorrectnessCheckQuestionState<DecisionTreeNode>() {
                 override fun text(situation: QuestioningSituation): String {
                     return branch.nextStepQuestion(situation) ?: situation.localization.DEFAULT_REASONING_START_QUESTION(reasoning_topic = branch.description(situation, BranchResult.CORRECT))
                 }
@@ -408,6 +356,8 @@ object SequentialStrategy : QuestioningStrategyWithInfo<SequentialStrategy.Seque
                 }
             }
 
+            question.linkTo(nextState)
+
             branchDiving.pop()
             preNodeStates[branch.start] = question
             return question
@@ -416,12 +366,9 @@ object SequentialStrategy : QuestioningStrategyWithInfo<SequentialStrategy.Seque
         fun <AnswerType : Any> nextStep(node: LinkNode<AnswerType>, answer: AnswerType): QuestionState {
             val outcome = node.outcomes[answer]!!
             val nextNode = outcome.node
-            val nextState = nextNode.use(this)
             val currentBranch = currentBranch
 
-            val question = object : CorrectnessCheckQuestionState<DecisionTreeNode>(setOf(
-                QuestionStateLink({situation, answer ->  true}, nextState)
-            )) {
+            val question = object : CorrectnessCheckQuestionState<DecisionTreeNode>() {
                 override fun text(situation: QuestioningSituation): String {
                     return outcome.nextStepQuestion(situation) ?: situation.localization.DEFAULT_NEXT_STEP_QUESTION
                 }
@@ -461,6 +408,8 @@ object SequentialStrategy : QuestioningStrategyWithInfo<SequentialStrategy.Seque
                     return options
                 }
             }
+
+            question.linkTo(nextNode.use(this))
 
             preNodeStates[nextNode] = question
             return question
