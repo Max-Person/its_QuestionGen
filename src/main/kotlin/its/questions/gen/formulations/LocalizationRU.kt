@@ -1,5 +1,7 @@
 package its.questions.gen.formulations
 
+import its.model.nodes.AggregationMethod
+
 object LocalizationRU : Localization {
     override val codePrefix: String = "RU"
 
@@ -8,6 +10,7 @@ object LocalizationRU : Localization {
     override val FALSE = "Неверно"
 
     override val NOT_IMPORTANT = "Не имеет значения"
+    override val NO_EFFECT = "Не влияет"
 
     override val YES = "Да"
     override val NO = "Нет"
@@ -23,12 +26,16 @@ object LocalizationRU : Localization {
     override val THATS_INCORRECT = "Это неверно."
     override fun THATS_INCORRECT_BECAUSE(reason: String): String = "Это неверно, поскольку $reason."
     override fun IN_THIS_SITUATION(fact: String): String = "В данной ситуации $fact."
+    override val PLEASE_MATCH = "Пожалуйста, сопоставьте ответы"
 
     override fun WHY_DO_YOU_THINK_THAT(assumed_result: String): String = "Почему вы считаете, что $assumed_result?"
     override val LETS_FIGURE_IT_OUT = "Давайте разберемся."
     override fun WE_CAN_CONCLUDE_THAT(result: String): String  = "Можно заключить, что $result."
     override fun SO_WEVE_DISCUSSED_WHY(result: String): String = "Итак, мы обсудили, почему $result."
     override fun WE_ALREADY_DISCUSSED_THAT(fact: String): String = "Мы уже говорили о том, что $fact."
+
+    override val WHICH_IS_TRUE_HERE = "Что из перечисленного применимо в данной ситуации?"
+    override val NONE_OF_THE_ABOVE_APPLIES = "Ничто из вышеперечисленного не применимо"
 
     override fun IS_IT_TRUE_THAT(statement: String): String = "Верно ли, что $statement?"
     override fun WHY_IS_IT_THAT(statement: String): String = "Почему $statement?"
@@ -46,4 +53,14 @@ object LocalizationRU : Localization {
     override fun AGGREGATION_INCORRECT_BRANCHES_DESCR(branches_descr: String): String = THATS_INCORRECT_BECAUSE(branches_descr)
     override fun AGGREGATION_MISSED_BRANCHES_DESCR_PRIMARY(branches_descr: String): String = "Это неверно, поскольку вы не упомянули, что $branches_descr - это влияет на ситуацию в данном случае."
     override fun AGGREGATION_MISSED_BRANCHES_DESCR_CONCAT(branches_descr: String): String = "Вы также не упомянули, что $branches_descr - это влияет на ситуацию в данном случае."
+    override fun SIM_AGGREGATION_EXPLANATION(
+        aggregationMethod: AggregationMethod,
+        aggregationDescription: String,
+        branchesDescription: String,
+        isCorrect: Boolean,
+    ): String =
+        "Это неверно. Чтобы понять, что $aggregationDescription, " + "${if (aggregationMethod == AggregationMethod.AND) "все" else "хотя бы один"} из описанных выше факторов (${branchesDescription}) " + "${if (aggregationMethod == AggregationMethod.AND) "должны" else "должен"} выполняться. " + if (isCorrect) "В данном случае так и происходит." else "Однако в данном случае это не так."
+
+    override fun SIM_AGGREGATION_NULL_EXPLANATION(branchesDescription: String): String =
+        "Это неверно, поскольку в данной ситуации все из описанных выше факторов (${branchesDescription}) " + "не влияют на решение, а значит, об общем результате в данном случае говорить не приходится."
 }

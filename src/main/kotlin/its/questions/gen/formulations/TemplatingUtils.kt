@@ -91,13 +91,31 @@ object TemplatingUtils {
     internal val DecisionTreeElement.alias get() = metadata[ALIAS_ATR]!! as String
 
     private fun Any?.stringCheck(message: String): String {
-        if(this !is String) throw IllegalArgumentException(message)
+        if (this !is String) throw IllegalArgumentException(message)
         return this
     }
     
     private fun DecisionTreeElement.getMeta(localizationCode: String, metaName: String) : Any? {
         //вынесено для возможности переопределить получение шаблона для всех - для тестирования и т.п.
         return metadata[localizationCode, metaName]
+    }
+
+    private fun DecisionTreeElement.getAndInterpretWithBranchResult(
+        metaName: String,
+        situation: QuestioningSituation,
+        branchResult: BranchResult,
+    ): String? {
+        val localizationCode = situation.localizationCode
+        val template = getMeta(localizationCode, metaName) ?: getMeta(
+            localizationCode,
+            metaName + "_" + branchResult.toString().lowercase()
+        )
+        return template?.toString()?.let {
+            val paramsObj = addParamsObj(situation.domainModel, branchResult)
+            val result = it.interpret(situation, localizationCode, mapOf("params" to paramsObj))
+            deleteParamsObj(situation.domainModel)
+            result
+        }
     }
 
     //Узлы
@@ -136,12 +154,15 @@ object TemplatingUtils {
     @JvmStatic
     internal fun AggregationNode.description(situation: QuestioningSituation, result : BranchResult) : String {
         val localizationCode = situation.localizationCode
-        val obj = addParamsObj(situation.domainModel, result)
-        val res = getMeta(localizationCode, "description")
+        return getAndInterpretWithBranchResult("description", situation, result)
             .stringCheck("Aggregation node '$this' doesn't have a $localizationCode description")
-            .interpret(situation, localizationCode, mapOf("params" to obj)) // TODO
-        deleteParamsObj(situation.domainModel)
-        return res
+    }
+
+    @JvmStatic
+    internal fun AggregationNode.nullFormulation(situation: QuestioningSituation): String {
+        val localizationCode = situation.localizationCode
+        return getMeta(localizationCode, "nullFormulation").let { it as? String }
+                   ?.interpret(situation, localizationCode) ?: situation.localization.NO_EFFECT
     }
 
     @JvmStatic
@@ -194,12 +215,7 @@ object TemplatingUtils {
     @JvmStatic
     internal fun Outcome<*>.nextStepBranchResult(situation: QuestioningSituation, branchResult : BranchResult) : String? {
         val localizationCode = situation.localizationCode
-        val obj = addParamsObj(situation.domainModel, branchResult)
-        val res = getMeta(localizationCode, "nextStepBranchResult")
-            ?.let{it as String}
-            ?.interpret(situation, localizationCode, mapOf("params" to obj))
-        deleteParamsObj(situation.domainModel)
-        return res
+        return getAndInterpretWithBranchResult("nextStepBranchResult", situation, branchResult)
     }
 
     @JvmStatic
@@ -214,12 +230,8 @@ object TemplatingUtils {
     @JvmStatic
     internal fun ThoughtBranch.description(situation: QuestioningSituation, result : BranchResult) : String {
         val localizationCode = situation.localizationCode
-        val obj = addParamsObj(situation.domainModel, result)
-        val res =  getMeta(localizationCode, "description")
+        return getAndInterpretWithBranchResult("description", situation, result)
             .stringCheck("Branch '$this' doesn't have a $localizationCode description")
-            .interpret(situation, localizationCode, mapOf("params" to obj))
-        deleteParamsObj(situation.domainModel)
-        return res
     }
 
     @JvmStatic
@@ -232,13 +244,7 @@ object TemplatingUtils {
 
     @JvmStatic
     internal fun ThoughtBranch.nextStepBranchResult(situation: QuestioningSituation, branchResult : BranchResult) : String? {
-        val localizationCode = situation.localizationCode
-        val obj = addParamsObj(situation.domainModel, branchResult)
-        val res = getMeta(localizationCode, "nextStepBranchResult")
-            ?.let{it as String}
-            ?.interpret(situation, localizationCode, mapOf("params" to obj))
-        deleteParamsObj(situation.domainModel)
-        return res
+        return getAndInterpretWithBranchResult("nextStepBranchResult", situation, branchResult)
     }
 
     @JvmStatic

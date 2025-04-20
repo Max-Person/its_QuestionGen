@@ -3,57 +3,64 @@ package its.questions.gen.visitors
 import its.model.nodes.*
 import its.model.nodes.visitors.SimpleDecisionTreeBehaviour
 import its.questions.gen.QuestioningSituation
-import its.reasoner.AmbiguousObjectException
 import its.reasoner.nodes.DecisionTreeReasoner.Companion.getAnswer
 import its.reasoner.nodes.DecisionTreeReasoner.Companion.solve
 
-class GetPossibleEndingNodes private constructor(val branch: ThoughtBranch, val situation: QuestioningSituation) :
-    SimpleDecisionTreeBehaviour<Unit> {
-        // TODO подумать что будет если это узел агрегации, сейчас только бранч резулт ноде
-    val correctEndingNode: DecisionTreeNode = branch.solve(situation).resultingNode
-    val set = mutableSetOf<DecisionTreeNode>()
-    lateinit var correct : DecisionTreeNode
+class GetPossibleEndingNodes(
+    val branch: ThoughtBranch,
+    val situation: QuestioningSituation? = null,
+) : SimpleDecisionTreeBehaviour<GetPossibleEndingNodes.PossibleEndingNodes> {
 
-    // ---------------------- Удобства ---------------------------
+    private val correctResultingNode = situation?.forEval()?.let { branch.solve(it).resultingNode }
 
-    companion object _static{
-        @JvmStatic
-        fun ThoughtBranch.getPossibleEndingNodes(situation: QuestioningSituation) : Set<DecisionTreeNode>{
-            val behaviour = GetPossibleEndingNodes(this, situation)
-            this.start.use(behaviour)
-            return behaviour.set
+    data class PossibleEndingNodes(
+        val endingNodes: Set<DecisionTreeNode> = setOf(),
+        val correctEndingNode: DecisionTreeNode? = null,
+    ) {
+        operator fun plus(other: PossibleEndingNodes): PossibleEndingNodes {
+            return PossibleEndingNodes(
+                endingNodes + other.endingNodes, correctEndingNode ?: other.correctEndingNode
+            )
         }
     }
 
-    private fun DecisionTreeNode.getEndingNodes(){
-        try {
-            this.use(this@GetPossibleEndingNodes)
-        }
-        catch (_: AmbiguousObjectException){}
+    fun get(): PossibleEndingNodes {
+        return process(branch)
     }
 
     // ---------------------- Функции поведения ---------------------------
 
-    override fun <AnswerType : Any> process(node: LinkNode<AnswerType>) {
-        node.outcomes.forEach { it.node.getEndingNodes() }
-        if(node.outcomes.any{it.node is BranchResultNode})
-            set.add(node)
-        if(node.outcomes.any{it.node is BranchResultNode && correctEndingNode == it.node})
-            correct = node
+    override fun <AnswerType : Any> process(node: LinkNode<AnswerType>): PossibleEndingNodes {
+        val childrenRes = node.outcomes.map { it.node.use(this) }.reduce(PossibleEndingNodes::plus)
+
+        return childrenRes + getCurrentRes(node)
     }
 
-    override fun process(node: FindActionNode) {
+    private fun <AnswerType : Any> getCurrentRes(node: LinkNode<AnswerType>): PossibleEndingNodes {
+        return PossibleEndingNodes(
+            if (isAggregationEndingNode(node) || node.outcomes.any { it.node is BranchResultNode }) setOf(node) else setOf(),
+            if (node == correctResultingNode || node.outcomes.any { it.node is BranchResultNode && correctResultingNode == it.node }) node else null
+        )
+    }
+
+    private fun isAggregationEndingNode(node: LinkNode<*>): Boolean {
+        return node is AggregationNode && !node.outcomes.keys.containsAll(BranchResult.entries)
+    }
+
+    override fun process(node: FindActionNode): PossibleEndingNodes {
+        if (situation == null) return process(node as LinkNode<*>)
+
         //Особое поведение, так как не интересуют конечные узлы, которые используют несуществующие переменные
-        node.outcomes[node.getAnswer(situation)]?.node?.getEndingNodes()
-        if(node.outcomes.any{it.node is BranchResultNode})
-            set.add(node)
-        if(node.outcomes.any{it.node is BranchResultNode && correctEndingNode == it.node})
-            correct = node
+        val childrenRes = node.outcomes[node.getAnswer(situation)]?.node?.use(this) ?: PossibleEndingNodes()
+
+        return childrenRes + getCurrentRes(node)
     }
 
-    override fun process(node: BranchResultNode) {}
+    override fun process(node: BranchResultNode): PossibleEndingNodes {
+        return PossibleEndingNodes()
+    }
 
-    override fun process(branch: ThoughtBranch) {
-        branch.start.getEndingNodes()
+    override fun process(branch: ThoughtBranch): PossibleEndingNodes {
+        return branch.start.use(this)
     }
 }

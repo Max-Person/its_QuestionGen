@@ -1,5 +1,7 @@
 package its.questions.gen.formulations
 
+import its.model.nodes.AggregationMethod
+
 sealed interface Localization {
     val codePrefix: String
 
@@ -8,6 +10,7 @@ sealed interface Localization {
     val FALSE: String
 
     val NOT_IMPORTANT: String
+    val NO_EFFECT: String
 
     val YES: String
     val NO: String
@@ -24,11 +27,16 @@ sealed interface Localization {
     fun THATS_INCORRECT_BECAUSE(reason: String): String
     fun IN_THIS_SITUATION(fact: String): String
 
+    val PLEASE_MATCH: String
+
     fun WHY_DO_YOU_THINK_THAT(assumed_result: String): String
     val LETS_FIGURE_IT_OUT: String
     fun WE_CAN_CONCLUDE_THAT(result: String): String
     fun SO_WEVE_DISCUSSED_WHY(result: String): String
     fun WE_ALREADY_DISCUSSED_THAT(fact: String): String
+
+    val WHICH_IS_TRUE_HERE: String
+    val NONE_OF_THE_ABOVE_APPLIES: String
 
     fun IS_IT_TRUE_THAT(statement: String): String
     fun WHY_IS_IT_THAT(statement: String): String
@@ -47,6 +55,15 @@ sealed interface Localization {
     fun AGGREGATION_INCORRECT_BRANCHES_DESCR(branches_descr: String): String
     fun AGGREGATION_MISSED_BRANCHES_DESCR_PRIMARY(branches_descr: String): String
     fun AGGREGATION_MISSED_BRANCHES_DESCR_CONCAT(branches_descr: String): String
+
+    fun SIM_AGGREGATION_EXPLANATION(
+        aggregationMethod: AggregationMethod,
+        aggregationDescription: String,
+        branchesDescription: String,
+        isCorrect: Boolean,
+    ): String
+
+    fun SIM_AGGREGATION_NULL_EXPLANATION(branchesDescription: String): String
 
     companion object _static{
         @JvmStatic

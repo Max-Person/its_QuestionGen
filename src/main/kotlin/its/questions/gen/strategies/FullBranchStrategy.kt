@@ -1,15 +1,13 @@
 package its.questions.gen.strategies
 
-import its.model.nodes.BranchResultNode
 import its.model.nodes.DecisionTreeNode
-import its.model.nodes.LinkNode
 import its.model.nodes.ThoughtBranch
 import its.questions.gen.QuestioningSituation
 import its.questions.gen.formulations.TemplatingUtils.description
 import its.questions.gen.formulations.TemplatingUtils.endingCause
 import its.questions.gen.states.*
 import its.questions.gen.visitors.GetNodesLCA._static.getNodesLCA
-import its.questions.gen.visitors.GetPossibleEndingNodes._static.getPossibleEndingNodes
+import its.questions.gen.visitors.GetPossibleEndingNodes
 import its.reasoner.nodes.DecisionTreeReasoner.Companion.solve
 
 object FullBranchStrategy : QuestioningStrategy {
@@ -23,7 +21,7 @@ object FullBranchStrategy : QuestioningStrategy {
         val sequential = SequentialStrategy.buildWithInfo(branch)
         val variableValueAutomata = VariableValueStrategy.build(branch)
 
-        val endingNodes = branch.start.getEndingNodes()
+        val endingNodes = GetPossibleEndingNodes(branch).get().endingNodes.toList()
         if(endingNodes.size <= 1){
             variableValueAutomata.finalize(sequential.automata.initState)
             return QuestionAutomata(variableValueAutomata.initState).finalizeForBranch(branch)
@@ -35,11 +33,10 @@ object FullBranchStrategy : QuestioningStrategy {
             }
 
             override fun options(situation: QuestioningSituation): List<SingleChoiceOption<NodeLCAinfo>> {
-                val correctEndingNode = branch.solve(situation).resultingNode
-                val possibleEndingNodes = branch.getPossibleEndingNodes(situation)
+                val (possibleEndingNodes, correctEndingNode) = GetPossibleEndingNodes(branch, situation).get()
 
                 val options = possibleEndingNodes.map{end ->
-                    val lca = branch.getNodesLCA(end, correctEndingNode)!!
+                    val lca = branch.getNodesLCA(end, correctEndingNode!!)!!
                     SingleChoiceOption<NodeLCAinfo>(
                         end.endingCause(situation),
                         Explanation(situation.localization.LETS_FIGURE_IT_OUT),
@@ -87,16 +84,5 @@ object FullBranchStrategy : QuestioningStrategy {
         }
         this.finalize(branchEnd)
         return QuestionAutomata(this.initState)
-    }
-
-    @JvmStatic
-    private fun DecisionTreeNode.getEndingNodes() : List<DecisionTreeNode> {
-        val list = mutableListOf<DecisionTreeNode>()
-        if(this is LinkNode<*>){
-            outcomes.forEach { list.addAll(it.node.getEndingNodes()) }
-            if(outcomes.any{it.node is BranchResultNode })
-                list.add(this)
-        }
-        return list
     }
 }
