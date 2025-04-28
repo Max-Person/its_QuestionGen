@@ -1,5 +1,6 @@
 package its.questions.gen.formulations
 
+import its.model.expressions.operators.CompareWithComparisonOperator
 import its.model.nodes.AggregationMethod
 
 object LocalizationEN : Localization {
@@ -63,4 +64,25 @@ object LocalizationEN : Localization {
 
     override fun SIM_AGGREGATION_NULL_EXPLANATION(branchesDescription: String): String =
         "That's incorrect, because in this case none of the factors mentioned (${branchesDescription}) " + "have no effect, which means that no determined result can be decided on this stage."
+
+    override fun COMPARE_A_PROPERTY_TO_A_CONSTANT(propertyName: String, objName: String, propertyVal: String) : String {
+        return "Is $propertyName of $objName equal to $propertyVal,"
+    }
+
+    override fun COMPARE_A_PROPERTY_TO_A_NUMERIC_CONST(
+        propertyName: String,
+        objName: String,
+        propertyVal: String,
+        operator: CompareWithComparisonOperator.ComparisonOperator
+    ): String {
+        val operatorMap = mapOf(
+            CompareWithComparisonOperator.ComparisonOperator.Equal to "equal to",
+            CompareWithComparisonOperator.ComparisonOperator.Greater to "greater than",
+            CompareWithComparisonOperator.ComparisonOperator.Less to "less than"
+        )
+        return "Is $propertyName of $objName ${operatorMap[operator]} $propertyVal?"
+    }
+
+
+
 }

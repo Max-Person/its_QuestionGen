@@ -1,0 +1,72 @@
+package its.questions.gen.formulations.v2.generation.constant
+
+import its.model.definition.PropertyDef
+import its.model.definition.types.ObjectType
+import its.model.definition.types.Type
+import its.model.expressions.Operator
+import its.model.expressions.literals.DecisionTreeVarLiteral
+import its.model.expressions.literals.ValueLiteral
+import its.model.expressions.operators.CompareWithComparisonOperator
+import its.model.expressions.operators.GetPropertyValue
+import its.questions.gen.formulations.Localization
+import its.questions.gen.formulations.TemplatingUtils.getLocalizedName
+import its.questions.gen.formulations.v2.AbstractContext
+import its.questions.gen.formulations.v2.generation.AbstractQuestionGeneration
+import its.reasoner.LearningSituation
+
+abstract class CompareWithConstant(learningSituation: LearningSituation, val localization: Localization) : AbstractQuestionGeneration<CompareWithConstant.CompareWithConstantContext>(
+    learningSituation
+) {
+    override fun generate(context: CompareWithConstantContext): String {
+        val question = context.propertyDef.metadata[localization.codePrefix, "question"]
+        if (question != null && question is String) {
+            return question // TODO тут должен быть вызов шаблонизатора
+        }
+        val assertion = context.propertyDef.metadata[localization.codePrefix, "assertion"]
+        if (assertion != null && assertion is String) {
+            return localization.IS_IT_TRUE_THAT(assertion) // TODO тут тоже шаблонизатор
+        }
+        return localization.COMPARE_A_PROPERTY_TO_A_CONSTANT(
+            context.propertyDef.metadata.getString(localization.codePrefix, "name"),
+            learningSituation
+                .decisionTreeVariables[context.varLiteral.name]!!
+                .findIn(learningSituation.domainModel)!!
+                .getLocalizedName(localization.codePrefix),
+            context.valueConstant.value.toString()
+        )
+    }
+
+    override fun fits(operator: Operator): CompareWithConstantContext? {
+        if (operator is CompareWithComparisonOperator
+            && operator.firstExpr is GetPropertyValue
+            && operator.secondExpr is ValueLiteral<*, *>
+            && (operator.firstExpr as GetPropertyValue).objectExpr is DecisionTreeVarLiteral
+        ) {
+            val propertyValue = operator.firstExpr as GetPropertyValue
+            val varLiteral = propertyValue.objectExpr as DecisionTreeVarLiteral
+            val valueLiteral = operator.secondExpr as ValueLiteral<*, *>
+
+            val objectType = varLiteral.resolvedType(learningSituation.domainModel) as ObjectType
+            val classDef = objectType.findIn(learningSituation.domainModel)
+
+            val propertyDef = classDef.findPropertyDef(propertyValue.propertyName)!!
+            if (typeFits(propertyDef.type)) {
+                return CompareWithConstantContext(
+                        valueLiteral, operator.operator, varLiteral, propertyDef, operator)
+            }
+
+        }
+        return null
+    }
+
+    protected abstract fun typeFits(type: Type<*>): Boolean
+
+    class CompareWithConstantContext(
+        val valueConstant: ValueLiteral<*, *>, // справа от оператора сравнения
+        val operator: CompareWithComparisonOperator.ComparisonOperator, // оператор
+        val varLiteral: DecisionTreeVarLiteral, // переменная
+        val propertyDef: PropertyDef, // для получения мета данных (локализации и тд)
+        expr: Operator
+    ) : AbstractContext(expr) // TODO
+
+}

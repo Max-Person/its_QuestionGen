@@ -304,11 +304,11 @@ object SequentialStrategy : QuestioningStrategyWithInfo<SequentialStrategy.Seque
 
             val question = object : CorrectnessCheckQuestionState<Any>() {
                 override fun text(situation: QuestioningSituation): String {
-                    return node.question(situation)
+                    return node.question(situation) // TODO впихнуться сюда
                 }
 
                 override fun options(situation: QuestioningSituation): List<SingleChoiceOption<Correctness<Any>>> {
-                    val answer = node.getAnswer(situation)
+                    val answer = node.getAnswer(situation) // TODO сюда тоже впихнуться
                     val correctOutcome = node.outcomes[answer]!!
                     val explText = correctOutcome.explanation(situation)
                     return node.outcomes.map { SingleChoiceOption(

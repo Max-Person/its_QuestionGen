@@ -1,5 +1,6 @@
 package its.questions.gen.formulations
 
+import its.model.expressions.operators.CompareWithComparisonOperator
 import its.model.nodes.AggregationMethod
 
 sealed interface Localization {
@@ -64,6 +65,11 @@ sealed interface Localization {
     ): String
 
     fun SIM_AGGREGATION_NULL_EXPLANATION(branchesDescription: String): String
+
+    fun COMPARE_A_PROPERTY_TO_A_CONSTANT(propertyName : String, objName : String, propertyVal : String) : String
+
+    fun COMPARE_A_PROPERTY_TO_A_NUMERIC_CONST(propertyName : String, objName : String, propertyVal : String,
+                                              operator : CompareWithComparisonOperator.ComparisonOperator) : String
 
     companion object _static{
         @JvmStatic

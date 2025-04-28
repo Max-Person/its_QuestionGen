@@ -1,6 +1,8 @@
 package its.questions.gen.formulations
 
+import its.model.expressions.operators.CompareWithComparisonOperator
 import its.model.nodes.AggregationMethod
+import its.questions.gen.formulations.TemplatingUtils.toCase
 
 object LocalizationRU : Localization {
     override val codePrefix: String = "RU"
@@ -63,4 +65,22 @@ object LocalizationRU : Localization {
 
     override fun SIM_AGGREGATION_NULL_EXPLANATION(branchesDescription: String): String =
         "Это неверно, поскольку в данной ситуации все из описанных выше факторов (${branchesDescription}) " + "не влияют на решение, а значит, об общем результате в данном случае говорить не приходится."
+
+    override fun COMPARE_A_PROPERTY_TO_A_CONSTANT(propertyName: String, objName: String, propertyVal: String): String {
+        return "Имеет ли $propertyName ${objName.toCase(Case.Gen)} значение $propertyVal?" // TODO использовать это для оператора равно
+    }
+
+    override fun COMPARE_A_PROPERTY_TO_A_NUMERIC_CONST(
+        propertyName: String,
+        objName: String,
+        propertyVal: String,
+        operator: CompareWithComparisonOperator.ComparisonOperator
+    ): String {
+        val operatorMap = mapOf(
+            CompareWithComparisonOperator.ComparisonOperator.Equal to "Равен ли",
+            CompareWithComparisonOperator.ComparisonOperator.Greater to "Больше ли",
+            CompareWithComparisonOperator.ComparisonOperator.Less to "Меньше ли"
+        )
+        return "${operatorMap[operator]} $propertyName ${objName.toCase(Case.Gen)} $propertyVal?"
+    }
 }
