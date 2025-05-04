@@ -153,6 +153,13 @@
             <version>3.3.0.24</version>
         </dependency>
 
+        <!-- Lucene Core -->
+        <dependency>
+            <groupId>org.apache.lucene</groupId>
+            <artifactId>lucene-core</artifactId>
+            <version>9.10.0</version> <!-- Актуальная версия -->
+        </dependency>
+
     </dependencies>
 
 </project>

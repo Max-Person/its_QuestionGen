@@ -1,10 +1,10 @@
 package its.questions.gen.formulations.v2.generation.constant
 
 import its.model.definition.PropertyDef
+import its.model.definition.types.Obj
 import its.model.definition.types.ObjectType
 import its.model.definition.types.Type
 import its.model.expressions.Operator
-import its.model.expressions.literals.DecisionTreeVarLiteral
 import its.model.expressions.literals.ValueLiteral
 import its.model.expressions.operators.CompareWithComparisonOperator
 import its.model.expressions.operators.GetPropertyValue
@@ -13,10 +13,12 @@ import its.questions.gen.formulations.TemplatingUtils.getLocalizedName
 import its.questions.gen.formulations.v2.AbstractContext
 import its.questions.gen.formulations.v2.generation.AbstractQuestionGeneration
 import its.reasoner.LearningSituation
+import its.reasoner.operators.OperatorReasoner
 
-abstract class CompareWithConstant(learningSituation: LearningSituation, val localization: Localization) : AbstractQuestionGeneration<CompareWithConstant.CompareWithConstantContext>(
-    learningSituation
-) {
+abstract class CompareWithConstant(learningSituation: LearningSituation, val localization: Localization) :
+    AbstractQuestionGeneration<CompareWithConstant.CompareWithConstantContext>(
+        learningSituation
+    ) {
     override fun generate(context: CompareWithConstantContext): String {
         val question = context.propertyDef.metadata[localization.codePrefix, "question"]
         if (question != null && question is String) {
@@ -28,8 +30,7 @@ abstract class CompareWithConstant(learningSituation: LearningSituation, val loc
         }
         return localization.COMPARE_A_PROPERTY_TO_A_CONSTANT(
             context.propertyDef.metadata.getString(localization.codePrefix, "name"),
-            learningSituation
-                .decisionTreeVariables[context.varLiteral.name]!!
+            (context.objExpr.use(OperatorReasoner.defaultReasoner(learningSituation)) as Obj)
                 .findIn(learningSituation.domainModel)!!
                 .getLocalizedName(localization.codePrefix),
             context.valueConstant.value.toString()
@@ -40,19 +41,19 @@ abstract class CompareWithConstant(learningSituation: LearningSituation, val loc
         if (operator is CompareWithComparisonOperator
             && operator.firstExpr is GetPropertyValue
             && operator.secondExpr is ValueLiteral<*, *>
-            && (operator.firstExpr as GetPropertyValue).objectExpr is DecisionTreeVarLiteral
         ) {
             val propertyValue = operator.firstExpr as GetPropertyValue
-            val varLiteral = propertyValue.objectExpr as DecisionTreeVarLiteral
+            val objExpr = propertyValue.objectExpr
             val valueLiteral = operator.secondExpr as ValueLiteral<*, *>
 
-            val objectType = varLiteral.resolvedType(learningSituation.domainModel) as ObjectType
+            val objectType = objExpr.resolvedType(learningSituation.domainModel) as ObjectType
             val classDef = objectType.findIn(learningSituation.domainModel)
 
             val propertyDef = classDef.findPropertyDef(propertyValue.propertyName)!!
             if (typeFits(propertyDef.type)) {
                 return CompareWithConstantContext(
-                        valueLiteral, operator.operator, varLiteral, propertyDef, operator)
+                    valueLiteral, operator.operator, objExpr, propertyDef
+                )
             }
 
         }
@@ -64,9 +65,8 @@ abstract class CompareWithConstant(learningSituation: LearningSituation, val loc
     class CompareWithConstantContext(
         val valueConstant: ValueLiteral<*, *>, // справа от оператора сравнения
         val operator: CompareWithComparisonOperator.ComparisonOperator, // оператор
-        val varLiteral: DecisionTreeVarLiteral, // переменная
+        val objExpr: Operator, // переменная
         val propertyDef: PropertyDef, // для получения мета данных (локализации и тд)
-        expr: Operator
-    ) : AbstractContext(expr) // TODO
+    ) : AbstractContext
 
 }

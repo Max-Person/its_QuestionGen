@@ -66,8 +66,17 @@ object LocalizationEN : Localization {
         "That's incorrect, because in this case none of the factors mentioned (${branchesDescription}) " + "have no effect, which means that no determined result can be decided on this stage."
 
     override fun COMPARE_A_PROPERTY_TO_A_CONSTANT(propertyName: String, objName: String, propertyVal: String) : String {
-        return "Is $propertyName of $objName equal to $propertyVal,"
+        return "Is $propertyName of $objName equal to $propertyVal?"
     }
+
+    private val operatorMap = mapOf(
+        CompareWithComparisonOperator.ComparisonOperator.Equal to "equal to",
+        CompareWithComparisonOperator.ComparisonOperator.NotEqual to "equal to",
+        CompareWithComparisonOperator.ComparisonOperator.GreaterEqual to "greater than",
+        CompareWithComparisonOperator.ComparisonOperator.Greater to "greater than",
+        CompareWithComparisonOperator.ComparisonOperator.Less to "less than",
+        CompareWithComparisonOperator.ComparisonOperator.LessEqual to "less than"
+    )
 
     override fun COMPARE_A_PROPERTY_TO_A_NUMERIC_CONST(
         propertyName: String,
@@ -75,14 +84,21 @@ object LocalizationEN : Localization {
         propertyVal: String,
         operator: CompareWithComparisonOperator.ComparisonOperator
     ): String {
-        val operatorMap = mapOf(
-            CompareWithComparisonOperator.ComparisonOperator.Equal to "equal to",
-            CompareWithComparisonOperator.ComparisonOperator.Greater to "greater than",
-            CompareWithComparisonOperator.ComparisonOperator.Less to "less than"
-        )
         return "Is $propertyName of $objName ${operatorMap[operator]} $propertyVal?"
     }
 
+    override fun CHECK_OBJ_PROPERTY_OR_CLASS(propertyName: String, objName: String): String {
+        return "What is the $propertyName of $objName"
+    }
+
+    override fun COMPARE_WITH_SAME_PROPS_OF_DIFF_OBJ(
+        propertyName: String,
+        objName1: String,
+        objName2: String,
+        operator: CompareWithComparisonOperator.ComparisonOperator
+    ): String {
+        return "Is $propertyName of $objName1 ${operatorMap[operator]} that of $objName2?"
+    }
 
 
 }
