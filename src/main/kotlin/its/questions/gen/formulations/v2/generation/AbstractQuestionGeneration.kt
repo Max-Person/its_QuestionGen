@@ -6,12 +6,12 @@ import its.reasoner.LearningSituation
 
 abstract class AbstractQuestionGeneration<T : AbstractContext>(protected val learningSituation: LearningSituation) {
 
-    fun generateQuestion(operator: Operator) : String {
+    fun generateQuestion(operator: Operator) : String? {
         val context = fits(operator)
         if (context != null) {
             return generate(context)
         }
-        TODO("Не поддерживается")
+        return null
     }
 
     protected abstract fun generate(context: T) : String
