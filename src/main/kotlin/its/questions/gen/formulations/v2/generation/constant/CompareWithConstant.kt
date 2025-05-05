@@ -2,7 +2,6 @@ package its.questions.gen.formulations.v2.generation.constant
 
 import its.model.definition.PropertyDef
 import its.model.definition.types.Obj
-import its.model.definition.types.ObjectType
 import its.model.definition.types.Type
 import its.model.expressions.Operator
 import its.model.expressions.literals.ValueLiteral
@@ -20,16 +19,16 @@ abstract class CompareWithConstant(learningSituation: LearningSituation, val loc
         learningSituation
     ) {
     override fun generate(context: CompareWithConstantContext): String {
-        val question = context.propertyDef.metadata[localization.codePrefix, "question"]
-        if (question != null && question is String) {
+        val question = context.propertyDef.metadata.getString(localization.codePrefix, "question")
+        if (question != null) {
             return question // TODO тут должен быть вызов шаблонизатора
         }
-        val assertion = context.propertyDef.metadata[localization.codePrefix, "assertion"]
-        if (assertion != null && assertion is String) {
+        val assertion = context.propertyDef.metadata.getString(localization.codePrefix, "assertion")
+        if (assertion != null) {
             return localization.IS_IT_TRUE_THAT(assertion) // TODO тут тоже шаблонизатор
         }
         return localization.COMPARE_A_PROPERTY_TO_A_CONSTANT(
-            context.propertyDef.metadata.getString(localization.codePrefix, "name"),
+            context.propertyDef.metadata.getString(localization.codePrefix, "name")!!,
             (context.objExpr.use(OperatorReasoner.defaultReasoner(learningSituation)) as Obj)
                 .findIn(learningSituation.domainModel)!!
                 .getLocalizedName(localization.codePrefix),
@@ -46,10 +45,7 @@ abstract class CompareWithConstant(learningSituation: LearningSituation, val loc
             val objExpr = propertyValue.objectExpr
             val valueLiteral = operator.secondExpr as ValueLiteral<*, *>
 
-            val objectType = objExpr.resolvedType(learningSituation.domainModel) as ObjectType
-            val classDef = objectType.findIn(learningSituation.domainModel)
-
-            val propertyDef = classDef.findPropertyDef(propertyValue.propertyName)!!
+            val propertyDef = propertyValue.getPropertyDef(learningSituation.domainModel)
             if (typeFits(propertyDef.type)) {
                 return CompareWithConstantContext(
                     valueLiteral, operator.operator, objExpr, propertyDef
