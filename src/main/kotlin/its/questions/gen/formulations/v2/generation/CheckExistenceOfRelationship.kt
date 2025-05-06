@@ -21,7 +21,7 @@ class CheckExistenceOfRelationship(learningSituation: LearningSituation, val loc
 
     override fun fits(operator: Operator): CheckExistenceOfRelationshipContext? {
         if (operator is CheckRelationship) {
-            val objectType = operator.resolvedType(learningSituation.domainModel) as ObjectType
+            val objectType = operator.subjectExpr.resolvedType(learningSituation.domainModel) as ObjectType
             val classDef = objectType.findIn(learningSituation.domainModel)
             val relDef = classDef.findRelationshipDef(operator.relationshipName)!!
 
@@ -30,5 +30,5 @@ class CheckExistenceOfRelationship(learningSituation: LearningSituation, val loc
         return null
     }
 
-    class CheckExistenceOfRelationshipContext(val subjExpr : Operator, val objectExprs: List<Operator>, val relationShipDef: RelationshipDef,) : AbstractContext
+    class CheckExistenceOfRelationshipContext(val subjExpr : Operator, val objectExprs: List<Operator>, val relationShipDef: RelationshipDef) : AbstractContext
 }

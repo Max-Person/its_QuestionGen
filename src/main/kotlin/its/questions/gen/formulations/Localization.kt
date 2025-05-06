@@ -76,6 +76,10 @@ sealed interface Localization {
     fun COMPARE_WITH_SAME_PROPS_OF_DIFF_OBJ(propertyName: String, objName1: String, objName2: String,
                                             operator: CompareWithComparisonOperator.ComparisonOperator) : String
 
+    fun CHECK_OBJECT_CLASS(className : String, objName: String) : String
+
+    fun IS_OBJ_A_CLASS(className : String, objName: String) : String
+
     companion object _static{
         @JvmStatic
         val localizations = mapOf(

@@ -100,5 +100,19 @@ object LocalizationEN : Localization {
         return "Is $propertyName of $objName1 ${operatorMap[operator]} that of $objName2?"
     }
 
+    override fun CHECK_OBJECT_CLASS(className: String, objName: String): String {
+        return "Which $className is $objName?"
+    }
 
+    override fun IS_OBJ_A_CLASS(className: String, objName: String): String {
+        return "Is $objName ${if (startsWithVowel(className)) "an" else "a"} $className?"
+    }
+
+    fun startsWithVowel(word: String): Boolean {
+        if (word.isEmpty()) return false
+        return when (word.first().lowercaseChar()) {
+            'a', 'e', 'i', 'o', 'u' -> true
+            else -> false
+        }
+    }
 }

@@ -17,7 +17,8 @@ class QuestionGeneratorFabric(val learningSituation: LearningSituation, localiza
         CompareWithString(learningSituation, localization),
         CheckPropertyQuestionGeneration(learningSituation, localization),
         CompareWithPropertyOfDiffObj(learningSituation, localization),
-        CheckExistenceOfRelationship(learningSituation, localization)
+        CheckExistenceOfRelationship(learningSituation, localization),
+        CheckObjectClass(learningSituation, localization)
     )
 
     fun generateQuestion(operator : Operator) : String {

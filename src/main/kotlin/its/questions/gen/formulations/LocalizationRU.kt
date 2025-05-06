@@ -125,6 +125,14 @@ object LocalizationRU : Localization {
         return "$operatorStr $propertyName ${objName1.toCase(Case.Gen)} ${objName2.toCase(Case.Dat)}"
     }
 
+    override fun CHECK_OBJECT_CLASS(className: String, objName: String): String {
+        return "Каким ${className.toCase(Case.Ins)} является $objName?"
+    }
+
+    override fun IS_OBJ_A_CLASS(className: String, objName: String): String {
+        return "Является ли $objName ${objName.toCase(Case.Ins)}"
+    }
+
     private fun extractGender(morphInfo: List<String>): String? {
         for (info in morphInfo) {
             if (info.contains("жр")) return "жр"
