@@ -19,22 +19,28 @@ class CheckObjectClass(learningSituation: LearningSituation, val localization: L
     AbstractQuestionGeneration<CheckObjectClass.CheckClassContext>(learningSituation) {
 
     override fun generate(context: CheckClassContext): String {
-        if (context.operator is CheckClass) {
-            return localization.IS_OBJ_A_CLASS(
-                context.classDef!!.metadata.getString(localization.codePrefix, "name")!!,
-                (context.objExpr.use(OperatorReasoner.defaultReasoner(learningSituation)) as Obj)
-                    .findIn(learningSituation.domainModel)!!
-                    .getLocalizedName(localization.codePrefix)
-            )
-        } else if (context.operator is GetClass) {
-            return localization.CHECK_OBJECT_CLASS(
-                context.classDef!!.metadata.getString(localization.codePrefix, "name")!!,
-                (context.objExpr.use(OperatorReasoner.defaultReasoner(learningSituation)) as Obj)
-                    .findIn(learningSituation.domainModel)!!
-                    .getLocalizedName(localization.codePrefix)
-            )
-        } else {
-            return "йоу"
+        when (context.operator) {
+            is CheckClass -> {
+                return localization.IS_OBJ_A_CLASS(
+                    context.classDef!!.metadata.getString(localization.codePrefix, "name")!!,
+                    (context.objExpr.use(OperatorReasoner.defaultReasoner(learningSituation)) as Obj)
+                        .findIn(learningSituation.domainModel)!!
+                        .getLocalizedName(localization.codePrefix)
+                )
+            }
+
+            is GetClass -> {
+                return localization.CHECK_OBJECT_CLASS(
+                    context.classDef!!.metadata.getString(localization.codePrefix, "name")!!,
+                    (context.objExpr.use(OperatorReasoner.defaultReasoner(learningSituation)) as Obj)
+                        .findIn(learningSituation.domainModel)!!
+                        .getLocalizedName(localization.codePrefix)
+                )
+            }
+
+            else -> {
+                return "йоу"
+            }
         }
     }
 

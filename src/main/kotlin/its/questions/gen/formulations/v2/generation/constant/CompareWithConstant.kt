@@ -9,6 +9,7 @@ import its.model.expressions.operators.CompareWithComparisonOperator
 import its.model.expressions.operators.GetPropertyValue
 import its.questions.gen.formulations.Localization
 import its.questions.gen.formulations.TemplatingUtils.getLocalizedName
+import its.questions.gen.formulations.TemplatingUtils.interpret
 import its.questions.gen.formulations.v2.AbstractContext
 import its.questions.gen.formulations.v2.generation.AbstractQuestionGeneration
 import its.reasoner.LearningSituation
@@ -20,17 +21,22 @@ abstract class CompareWithConstant(learningSituation: LearningSituation, val loc
     ) {
     override fun generate(context: CompareWithConstantContext): String {
         val question = context.propertyDef.metadata.getString(localization.codePrefix, "question")
+        val obj =  context.objExpr.use(OperatorReasoner.defaultReasoner(learningSituation)) as Obj
+        val contextVars = mapOf(
+            "obj" to obj,
+            "value" to context.valueConstant.value
+        )
         if (question != null) {
-            return question // TODO тут должен быть вызов шаблонизатора
+            return question.interpret(learningSituation, localization.codePrefix, contextVars)
         }
         val assertion = context.propertyDef.metadata.getString(localization.codePrefix, "assertion")
         if (assertion != null) {
-            return localization.IS_IT_TRUE_THAT(assertion) // TODO тут тоже шаблонизатор
+            val interpreted = assertion.interpret(learningSituation, localization.codePrefix, contextVars)
+            return localization.IS_IT_TRUE_THAT(interpreted)
         }
         return localization.COMPARE_A_PROPERTY_TO_A_CONSTANT(
             context.propertyDef.metadata.getString(localization.codePrefix, "name")!!,
-            (context.objExpr.use(OperatorReasoner.defaultReasoner(learningSituation)) as Obj)
-                .findIn(learningSituation.domainModel)!!
+            obj.findIn(learningSituation.domainModel)!!
                 .getLocalizedName(localization.codePrefix),
             context.valueConstant.value.toString()
         )

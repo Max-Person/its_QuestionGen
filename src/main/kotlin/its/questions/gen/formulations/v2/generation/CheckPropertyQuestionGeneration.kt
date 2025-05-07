@@ -6,6 +6,7 @@ import its.model.expressions.Operator
 import its.model.expressions.operators.GetPropertyValue
 import its.questions.gen.formulations.Localization
 import its.questions.gen.formulations.TemplatingUtils.getLocalizedName
+import its.questions.gen.formulations.TemplatingUtils.interpret
 import its.questions.gen.formulations.v2.AbstractContext
 import its.reasoner.LearningSituation
 import its.reasoner.operators.OperatorReasoner
@@ -14,9 +15,12 @@ class CheckPropertyQuestionGeneration(learningSituation: LearningSituation, val 
     AbstractQuestionGeneration<CheckPropertyQuestionGeneration.CheckPropertyContext>(learningSituation) {
 
     override fun generate(context: CheckPropertyContext): String {
-        val question = context.propertyDef.metadata.getString(localization.codePrefix, "question")
+        val question = context.propertyDef.metadata.getString(localization.codePrefix, "question_check_property")
+        val contextVars = mapOf(
+            "obj" to context.objExpr.use(OperatorReasoner.defaultReasoner(learningSituation)) as Obj
+        )
         if (question != null) {
-            return question // TODO тут должен быть вызов шаблонизатора
+            return question.interpret(learningSituation, localization.codePrefix, contextVars)
         }
         return localization.CHECK_OBJ_PROPERTY_OR_CLASS(
             context.propertyDef.metadata.getString(localization.codePrefix, "name")!!,
