@@ -25,7 +25,7 @@ object OperatorTemplateParser : TemplateInterpolationParser<OperatorTemplatePars
 
     class OperatorSection(private val operator: Operator) : TemplateSection {
         override fun interpret(data: InterpretationData): String {
-            val contextVars = data.getVar(CONTEXT_VARS) as Map<String, Obj>
+            val contextVars = data.getVar(CONTEXT_VARS) as Map<String, Any>
             val situation = data.getVar(LEARNING_SITUATION) as LearningSituation
             val reasoner = DomainInterpreterReasoner(situation, contextVars)
             val res = operator.evalAs<Any>(reasoner)

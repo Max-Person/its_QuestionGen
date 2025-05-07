@@ -3,11 +3,10 @@ package its.questions.gen.formulations
 import com.github.max_person.templating.InterpretationData
 import com.github.max_person.templating.Template
 import com.github.max_person.templating.TemplatingModifier
-import its.model.definition.*
-import its.model.definition.build.DomainBuilderUtils.newClass
-import its.model.definition.build.DomainBuilderUtils.newObject
-import its.model.definition.build.DomainBuilderUtils.setEnumProperty
-import its.model.definition.types.EnumType
+import its.model.definition.DomainDefWithMeta
+import its.model.definition.DomainModel
+import its.model.definition.DomainRef
+import its.model.definition.types.EnumValue
 import its.model.definition.types.Obj
 import its.model.nodes.*
 import its.questions.gen.QuestioningSituation
@@ -49,31 +48,11 @@ object TemplatingUtils {
         }
     }
 
-    private fun addParamsObj(model: DomainModel, branchResult: BranchResult) : Obj {
-        val enumName = "BranchResult"
-        val enumDef = model.enums.added(EnumDef(enumName))
-        BranchResult.values().forEach { br ->  enumDef.values.add(EnumValueDef(enumName, br.name))}
-
-        val classDef = model.newClass("TemplateParams")
-        classDef.declaredProperties.add(PropertyDef("TemplateParams", "branchResult",
-            EnumType("BranchResult"), PropertyDef.PropertyKind.OBJECT, ParamsDecl()))
-
-        val obj = model.newObject("params", "TemplateParams")
-        obj.setEnumProperty("branchResult", "BranchResult", branchResult.name)
-        return obj.reference
-    }
-
-    private fun deleteParamsObj(model: DomainModel) {
-        model.enums.remove("BranchResult")
-        model.objects.remove("params")
-        model.classes.remove("TemplateParams")
-    }
-
     @JvmStatic
     fun String.interpret(
         learningSituation: LearningSituation,
         localizationCode: String,
-        contextVars : Map<String, Obj> = emptyMap()
+        contextVars: Map<String, Any> = emptyMap(),
     ) : String{
         val parse = Template(this, OperatorTemplateParser)
         return parse.interpret(
@@ -111,9 +90,9 @@ object TemplatingUtils {
             metaName + "_" + branchResult.toString().lowercase()
         )
         return template?.toString()?.let {
-            val paramsObj = addParamsObj(situation.domainModel, branchResult)
-            val result = it.interpret(situation, localizationCode, mapOf("params" to paramsObj))
-            deleteParamsObj(situation.domainModel)
+            val result = it.interpret(
+                situation, localizationCode, mapOf("branchResult" to EnumValue("BranchResult", branchResult.name))
+            )
             result
         }
     }
