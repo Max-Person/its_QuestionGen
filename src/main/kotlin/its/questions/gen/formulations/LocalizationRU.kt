@@ -75,9 +75,9 @@ object LocalizationRU : Localization {
 
     private val operatorMap = mapOf(
         CompareWithComparisonOperator.ComparisonOperator.Greater to "Больше ли",
-        CompareWithComparisonOperator.ComparisonOperator.GreaterEqual to "Больше ли",
+        CompareWithComparisonOperator.ComparisonOperator.LessEqual to "Больше ли",
         CompareWithComparisonOperator.ComparisonOperator.Less to "Меньше ли",
-        CompareWithComparisonOperator.ComparisonOperator.LessEqual to "Меньше ли"
+        CompareWithComparisonOperator.ComparisonOperator.GreaterEqual to "Меньше ли"
     )
 
     private val genderToEqualOpMap = mapOf(
@@ -122,7 +122,13 @@ object LocalizationRU : Localization {
             operatorMap[operator]!!
         }
 
-        return "$operatorStr $propertyName ${objName1.toCase(Case.Gen)} ${propertyName.toCase(Case.Dat)} ${objName2.toCase(Case.Gen)}"
+        val propertyOfObj2: String = if (operator == CompareWithComparisonOperator.ComparisonOperator.Equal ||
+            operator == CompareWithComparisonOperator.ComparisonOperator.NotEqual) {
+            propertyName.toCase(Case.Dat)
+        } else {
+            propertyName.toCase(Case.Gen)
+        }
+        return "$operatorStr $propertyName ${objName1.toCase(Case.Gen)} $propertyOfObj2 ${objName2.toCase(Case.Gen)}"
     }
 
     override fun CHECK_OBJECT_CLASS(className: String, objName: String): String {
