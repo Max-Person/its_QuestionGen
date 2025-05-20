@@ -32,12 +32,12 @@ class CompareWithPropertyOfDiffObj(learningSituation: LearningSituation, val loc
         if (operator is CompareWithComparisonOperator &&
             operator.firstExpr is GetPropertyValue && operator.secondExpr is GetPropertyValue) {
             val getPropVal1 = operator.firstExpr as GetPropertyValue
-            val objectType1 = getPropVal1.resolvedType(learningSituation.domainModel) as ObjectType
+            val objectType1 = getPropVal1.objectExpr.resolvedType(learningSituation.domainModel) as ObjectType
             val classDef1 = objectType1.findIn(learningSituation.domainModel)
             val propertyDef1 = classDef1.findPropertyDef(getPropVal1.propertyName)!!
 
             val getPropVal2 = operator.secondExpr as GetPropertyValue
-            val objectType2 = getPropVal2.resolvedType(learningSituation.domainModel) as ObjectType
+            val objectType2 = getPropVal2.objectExpr.resolvedType(learningSituation.domainModel) as ObjectType
             val classDef2 = objectType2.findIn(learningSituation.domainModel)
             val propertyDef2 = classDef2.findPropertyDef(getPropVal1.propertyName)!!
 
