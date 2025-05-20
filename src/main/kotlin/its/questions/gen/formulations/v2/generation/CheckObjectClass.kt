@@ -2,6 +2,7 @@ package its.questions.gen.formulations.v2.generation
 
 import its.model.definition.ClassDef
 import its.model.definition.PropertyDef
+import its.model.definition.ThisShouldNotHappen
 import its.model.definition.types.Obj
 import its.model.definition.types.ObjectType
 import its.model.expressions.Operator
@@ -39,7 +40,7 @@ class CheckObjectClass(learningSituation: LearningSituation, val localization: L
             }
 
             else -> {
-                return "йоу"
+                throw ThisShouldNotHappen()
             }
         }
     }
@@ -51,14 +52,9 @@ class CheckObjectClass(learningSituation: LearningSituation, val localization: L
             return CheckClassContext(operator.objectExpr, operator.classExpr, operator, classDef)
         }
         if (operator is GetClass) {
-            return CheckClassContext(operator.objectExpr, null, operator, null)
-        }
-        if (operator is CompareWithComparisonOperator && operator.firstExpr is GetClass &&
-            operator.secondExpr is ClassLiteral
-        ) {
-            val objectType = operator.firstExpr.resolvedType(learningSituation.domainModel) as ObjectType
+            val objectType = operator.objectExpr.resolvedType(learningSituation.domainModel) as ObjectType
             val classDef = objectType.findIn(learningSituation.domainModel)
-            return CheckClassContext(operator.firstExpr, operator.secondExpr, operator, classDef)
+            return CheckClassContext(operator.objectExpr, null, operator, classDef)
         }
         return null
     }
