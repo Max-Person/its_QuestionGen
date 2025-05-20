@@ -21,7 +21,10 @@ class QuestionGeneratorFabric(val learningSituation: LearningSituation, localiza
         CheckObjectClass(learningSituation, localization)
     )
 
-    fun generateQuestion(operator : Operator) : String {
-        return generators.firstNotNullOf { it.generateQuestion(operator) }
+    fun generateQuestion(operator : Operator) : String? {
+        return generators.stream()
+            .map { it.generateQuestion(operator) }
+            .filter {it != null}
+            .findFirst().orElse(null)
     }
 }
