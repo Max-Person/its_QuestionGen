@@ -15,7 +15,7 @@ class CompareWithNumeric(learningSituation: LearningSituation, localization: Loc
 
     override fun generate(context: CompareWithConstantContext): String {
         return localization.COMPARE_A_PROPERTY_TO_A_NUMERIC_CONST(
-            context.propertyDef.metadata.getString(localization.codePrefix, "name")!!, // получение названия свойства
+            context.propertyDef.getLocalizedName(localization.codePrefix), // получение названия свойства
             (context.objExpr.use(OperatorReasoner.defaultReasoner(learningSituation)) as Obj)
                 .findIn(learningSituation.domainModel)!!
                 .getLocalizedName(localization.codePrefix), // получение имени объекта, записанного в переменную

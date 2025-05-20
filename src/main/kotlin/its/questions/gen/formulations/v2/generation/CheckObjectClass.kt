@@ -23,7 +23,7 @@ class CheckObjectClass(learningSituation: LearningSituation, val localization: L
         when (context.operator) {
             is CheckClass -> {
                 return localization.IS_OBJ_A_CLASS(
-                    context.classDef!!.metadata.getString(localization.codePrefix, "name")!!,
+                    context.classDef!!.getLocalizedName(localization.codePrefix),
                     (context.objExpr.use(OperatorReasoner.defaultReasoner(learningSituation)) as Obj)
                         .findIn(learningSituation.domainModel)!!
                         .getLocalizedName(localization.codePrefix)
@@ -32,7 +32,7 @@ class CheckObjectClass(learningSituation: LearningSituation, val localization: L
 
             is GetClass -> {
                 return localization.CHECK_OBJECT_CLASS(
-                    context.classDef!!.metadata.getString(localization.codePrefix, "name")!!,
+                    context.classDef!!.getLocalizedName(localization.codePrefix),
                     (context.objExpr.use(OperatorReasoner.defaultReasoner(learningSituation)) as Obj)
                         .findIn(learningSituation.domainModel)!!
                         .getLocalizedName(localization.codePrefix)
@@ -49,19 +49,18 @@ class CheckObjectClass(learningSituation: LearningSituation, val localization: L
         if (operator is CheckClass) {
             val objectType = operator.objectExpr.resolvedType(learningSituation.domainModel) as ObjectType
             val classDef = objectType.findIn(learningSituation.domainModel)
-            return CheckClassContext(operator.objectExpr, operator.classExpr, operator, classDef)
+            return CheckClassContext(operator.objectExpr, operator, classDef)
         }
         if (operator is GetClass) {
             val objectType = operator.objectExpr.resolvedType(learningSituation.domainModel) as ObjectType
             val classDef = objectType.findIn(learningSituation.domainModel)
-            return CheckClassContext(operator.objectExpr, null, operator, classDef)
+            return CheckClassContext(operator.objectExpr, operator, classDef)
         }
         return null
     }
 
     class CheckClassContext(
         val objExpr: Operator,
-        val classExpr: Operator?,
         val operator: Operator,
         val classDef: ClassDef?
     ) : AbstractContext

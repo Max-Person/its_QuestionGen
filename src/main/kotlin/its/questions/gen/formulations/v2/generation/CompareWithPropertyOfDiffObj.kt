@@ -17,7 +17,7 @@ class CompareWithPropertyOfDiffObj(learningSituation: LearningSituation, val loc
 
     override fun generate(context: ComparePropertyOfDiffObjContext): String {
         return localization.COMPARE_WITH_SAME_PROPS_OF_DIFF_OBJ(
-            context.propertyDef.metadata.getString(localization.codePrefix, "name")!!,
+            context.propertyDef.getLocalizedName(localization.codePrefix),
             (context.objExpr1.use(OperatorReasoner.defaultReasoner(learningSituation)) as Obj)
                 .findIn(learningSituation.domainModel)!!
                 .getLocalizedName(localization.codePrefix),

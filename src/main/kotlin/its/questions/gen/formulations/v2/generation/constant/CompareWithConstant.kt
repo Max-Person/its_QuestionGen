@@ -35,7 +35,7 @@ abstract class CompareWithConstant(learningSituation: LearningSituation, val loc
             return localization.IS_IT_TRUE_THAT(interpreted)
         }
         return localization.COMPARE_A_PROPERTY_TO_A_CONSTANT(
-            context.propertyDef.metadata.getString(localization.codePrefix, "name")!!,
+            context.propertyDef.getLocalizedName(localization.codePrefix),
             obj.findIn(learningSituation.domainModel)!!
                 .getLocalizedName(localization.codePrefix),
             context.valueConstant.value.toString()

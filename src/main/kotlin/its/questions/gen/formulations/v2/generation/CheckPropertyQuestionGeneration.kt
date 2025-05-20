@@ -23,7 +23,7 @@ class CheckPropertyQuestionGeneration(learningSituation: LearningSituation, val 
             return question.interpret(learningSituation, localization.codePrefix, contextVars)
         }
         return localization.CHECK_OBJ_PROPERTY_OR_CLASS(
-            context.propertyDef.metadata.getString(localization.codePrefix, "name")!!,
+            context.propertyDef.getLocalizedName(localization.codePrefix),
             (context.objExpr.use(OperatorReasoner.defaultReasoner(learningSituation)) as Obj)
                 .findIn(learningSituation.domainModel)!!
                 .getLocalizedName(localization.codePrefix)
