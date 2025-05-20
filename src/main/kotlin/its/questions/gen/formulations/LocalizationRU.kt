@@ -136,7 +136,7 @@ object LocalizationRU : Localization {
     }
 
     override fun IS_OBJ_A_CLASS(className: String, objName: String): String {
-        return "Является ли $objName ${objName.toCase(Case.Ins)}"
+        return "Является ли $objName ${className.toCase(Case.Ins)}"
     }
 
     private fun extractGender(morphInfo: List<String>): String? {
