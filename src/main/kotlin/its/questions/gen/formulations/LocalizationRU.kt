@@ -122,7 +122,7 @@ object LocalizationRU : Localization {
             operatorMap[operator]!!
         }
 
-        return "$operatorStr $propertyName ${objName1.toCase(Case.Gen)} ${objName2.toCase(Case.Dat)}"
+        return "$operatorStr $propertyName ${objName1.toCase(Case.Gen)} ${propertyName.toCase(Case.Dat)} ${objName2.toCase(Case.Gen)}"
     }
 
     override fun CHECK_OBJECT_CLASS(className: String, objName: String): String {
