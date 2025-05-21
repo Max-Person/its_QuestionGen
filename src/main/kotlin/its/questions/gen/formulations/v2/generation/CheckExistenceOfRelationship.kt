@@ -11,7 +11,7 @@ import its.questions.gen.formulations.v2.AbstractContext
 import its.reasoner.LearningSituation
 import its.reasoner.operators.OperatorReasoner
 
-class CheckExistenceOfRelationship(learningSituation: LearningSituation, val localization: Localization) : AbstractQuestionGeneration<CheckExistenceOfRelationship.CheckExistenceOfRelationshipContext>(learningSituation) {
+class CheckExistenceOfRelationship(learningSituation: LearningSituation, localization: Localization) : AbstractQuestionGeneration<CheckExistenceOfRelationship.CheckExistenceOfRelationshipContext>(learningSituation, localization) {
 
     override fun generate(context: CheckExistenceOfRelationshipContext): String? {
         val question = context.relationShipDef.metadata.getString(localization.codePrefix, "question")

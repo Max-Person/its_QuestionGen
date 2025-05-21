@@ -120,6 +120,10 @@ object LocalizationEN : Localization {
         return "Is $objName ${if (startsWithVowel(className)) "an" else "a"} $className?"
     }
 
+    override fun GREATER_THAN(objName: String): String {
+        return "It's greater for $objName"
+    }
+
     fun startsWithVowel(word: String): Boolean {
         if (word.isEmpty()) return false
         return when (word.first().lowercaseChar()) {

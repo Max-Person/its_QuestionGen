@@ -84,11 +84,17 @@ sealed interface Localization {
 
     fun IS_OBJ_A_CLASS(className : String, objName: String) : String
 
+    fun GREATER_THAN(objName: String) : String
+
     companion object _static{
         @JvmStatic
         val localizations = mapOf(
             LocalizationRU.codePrefix to LocalizationRU,
             LocalizationEN.codePrefix to LocalizationEN
         )
+        @JvmStatic
+        fun getLocalization(locCode : String) : Localization {
+            return localizations[locCode]!!
+        }
     }
 }

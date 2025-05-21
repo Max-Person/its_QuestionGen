@@ -1,6 +1,7 @@
 package its.questions.gen.formulations.v2.generation
 
 import its.model.definition.PropertyDef
+import its.model.definition.types.Comparison
 import its.model.definition.types.Obj
 import its.model.definition.types.ObjectType
 import its.model.expressions.Operator
@@ -13,8 +14,8 @@ import its.questions.gen.formulations.v2.AbstractContext
 import its.reasoner.LearningSituation
 import its.reasoner.operators.OperatorReasoner
 
-class CompareWithPropertyOfDiffObj(learningSituation: LearningSituation, val localization: Localization) :
-    AbstractQuestionGeneration<CompareWithPropertyOfDiffObj.ComparePropertyOfDiffObjContext>(learningSituation) {
+class CompareWithPropertyOfDiffObj(learningSituation: LearningSituation, localization: Localization) :
+    AbstractQuestionGeneration<CompareWithPropertyOfDiffObj.ComparePropertyOfDiffObjContext>(learningSituation, localization) {
 
     override fun generate(context: ComparePropertyOfDiffObjContext): String {
         if (context.operator != null) {
@@ -38,6 +39,31 @@ class CompareWithPropertyOfDiffObj(learningSituation: LearningSituation, val loc
                     .findIn(learningSituation.domainModel)!!
                     .getLocalizedName(localization.codePrefix)
             )
+        }
+    }
+
+    override fun generateAnswer(context: ComparePropertyOfDiffObjContext, value: Any): String? {
+        return if (context.operator != null) {
+            if ((context.operator == CompareWithComparisonOperator.ComparisonOperator.NotEqual ||
+                context.operator == CompareWithComparisonOperator.ComparisonOperator.GreaterEqual ||
+                context.operator == CompareWithComparisonOperator.ComparisonOperator.LessEqual) && value is Boolean) {
+                return super.generateAnswer(context, !value)
+            }
+            return super.generateAnswer(context, value)
+        } else {
+            val obj1 = context.objExpr1.use(OperatorReasoner.defaultReasoner(learningSituation)) as Obj
+            val objName1 = obj1.findIn(learningSituation.domainModel)!!
+                .getLocalizedName(localization.codePrefix)
+
+            val obj2 = context.objExpr2.use(OperatorReasoner.defaultReasoner(learningSituation)) as Obj
+            val objName2 = obj2.findIn(learningSituation.domainModel)!!
+                .getLocalizedName(localization.codePrefix)
+            when (value) {
+                Comparison.Values.Greater -> localization.GREATER_THAN(objName1)
+                Comparison.Values.Equal -> localization.EQUAL
+                Comparison.Values.Less -> localization.GREATER_THAN(objName2)
+                else -> super.generateAnswer(context, value)
+            }
         }
     }
 

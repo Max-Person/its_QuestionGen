@@ -151,6 +151,10 @@ object LocalizationRU : Localization {
         return "Является ли $objName ${className.toCase(Case.Ins)}"
     }
 
+    override fun GREATER_THAN(objName: String): String {
+        return "У ${objName.toCase(Case.Gen)} больше"
+    }
+
     private fun extractGender(morphInfo: List<String>): String? {
         for (info in morphInfo) {
             if (info.contains("жр")) return "жр"

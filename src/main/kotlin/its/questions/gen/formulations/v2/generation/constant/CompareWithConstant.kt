@@ -16,16 +16,17 @@ import its.questions.gen.formulations.v2.generation.AbstractQuestionGeneration
 import its.reasoner.LearningSituation
 import its.reasoner.operators.OperatorReasoner
 
-abstract class CompareWithConstant(learningSituation: LearningSituation, val localization: Localization) :
+abstract class CompareWithConstant(learningSituation: LearningSituation, localization: Localization) :
     AbstractQuestionGeneration<CompareWithConstant.CompareWithConstantContext>(
-        learningSituation
+        learningSituation,
+        localization
     ) {
     override fun generate(context: CompareWithConstantContext): String? {
         val questionOrAssertion = getQuestionOrAssertion(context)
         if (questionOrAssertion != null) {
             return questionOrAssertion
         }
-        val obj =  context.objExpr.use(OperatorReasoner.defaultReasoner(learningSituation)) as Obj
+        val obj = context.objExpr.use(OperatorReasoner.defaultReasoner(learningSituation)) as Obj
         return localization.COMPARE_A_PROPERTY_TO_A_CONSTANT(
             context.propertyDef.getLocalizedName(localization.codePrefix),
             obj.findIn(learningSituation.domainModel)!!
@@ -36,7 +37,7 @@ abstract class CompareWithConstant(learningSituation: LearningSituation, val loc
 
     protected fun getQuestionOrAssertion(context: CompareWithConstantContext): String? {
         val question = context.propertyDef.metadata.getString(localization.codePrefix, "question")
-        val obj =  context.objExpr.use(OperatorReasoner.defaultReasoner(learningSituation)) as Obj
+        val obj = context.objExpr.use(OperatorReasoner.defaultReasoner(learningSituation)) as Obj
         val contextVars = mapOf(
             "obj" to obj,
             "value" to context.valueConstant.value
@@ -50,6 +51,16 @@ abstract class CompareWithConstant(learningSituation: LearningSituation, val loc
             return localization.IS_IT_TRUE_THAT(interpreted)
         }
         return null
+    }
+
+    override fun generateAnswer(context: CompareWithConstantContext, value: Any): String? {
+        var valueToPass = value
+        if ((context.operator == CompareWithComparisonOperator.ComparisonOperator.NotEqual ||
+                    context.operator == CompareWithComparisonOperator.ComparisonOperator.GreaterEqual ||
+                    context.operator == CompareWithComparisonOperator.ComparisonOperator.LessEqual) && value is Boolean) {
+            valueToPass = !value
+        }
+        return super.generateAnswer(context, valueToPass)
     }
 
     override fun fits(operator: Operator): CompareWithConstantContext? {
@@ -70,7 +81,8 @@ abstract class CompareWithConstant(learningSituation: LearningSituation, val loc
         }
         if (operator is Compare
             && operator.firstExpr is GetPropertyValue
-            && operator.secondExpr is ValueLiteral<*, *>) {
+            && operator.secondExpr is ValueLiteral<*, *>
+        ) {
 
             val propertyValue = operator.firstExpr as GetPropertyValue
             val objExpr = propertyValue.objectExpr

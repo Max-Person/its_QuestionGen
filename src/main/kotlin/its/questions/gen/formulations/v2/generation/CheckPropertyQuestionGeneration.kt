@@ -11,8 +11,8 @@ import its.questions.gen.formulations.v2.AbstractContext
 import its.reasoner.LearningSituation
 import its.reasoner.operators.OperatorReasoner
 
-class CheckPropertyQuestionGeneration(learningSituation: LearningSituation, val localization: Localization) :
-    AbstractQuestionGeneration<CheckPropertyQuestionGeneration.CheckPropertyContext>(learningSituation) {
+class CheckPropertyQuestionGeneration(learningSituation: LearningSituation, localization: Localization) :
+    AbstractQuestionGeneration<CheckPropertyQuestionGeneration.CheckPropertyContext>(learningSituation, localization) {
 
     override fun generate(context: CheckPropertyContext): String {
         val question = context.propertyDef.metadata.getString(localization.codePrefix, "question_check_property")

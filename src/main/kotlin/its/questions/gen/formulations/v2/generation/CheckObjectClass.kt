@@ -13,8 +13,8 @@ import its.questions.gen.formulations.v2.AbstractContext
 import its.reasoner.LearningSituation
 import its.reasoner.operators.OperatorReasoner
 
-class CheckObjectClass(learningSituation: LearningSituation, val localization: Localization) :
-    AbstractQuestionGeneration<CheckObjectClass.CheckClassContext>(learningSituation) {
+class CheckObjectClass(learningSituation: LearningSituation, localization: Localization) :
+    AbstractQuestionGeneration<CheckObjectClass.CheckClassContext>(learningSituation, localization) {
 
     override fun generate(context: CheckClassContext): String {
         when (context.operator) {
