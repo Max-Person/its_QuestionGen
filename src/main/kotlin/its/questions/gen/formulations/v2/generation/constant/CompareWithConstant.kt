@@ -13,6 +13,7 @@ import its.questions.gen.formulations.TemplatingUtils.getLocalizedName
 import its.questions.gen.formulations.TemplatingUtils.interpret
 import its.questions.gen.formulations.v2.AbstractContext
 import its.questions.gen.formulations.v2.generation.AbstractQuestionGeneration
+import its.questions.gen.visitors.ValueToAnswerString.toLocalizedString
 import its.reasoner.LearningSituation
 import its.reasoner.operators.OperatorReasoner
 
@@ -31,7 +32,7 @@ abstract class CompareWithConstant(learningSituation: LearningSituation, localiz
             context.propertyDef.getLocalizedName(localization.codePrefix),
             obj.findIn(learningSituation.domainModel)!!
                 .getLocalizedName(localization.codePrefix),
-            context.valueConstant.value.toString()
+            context.valueConstant.value.toLocalizedString(learningSituation, localization.codePrefix)
         )
     }
 

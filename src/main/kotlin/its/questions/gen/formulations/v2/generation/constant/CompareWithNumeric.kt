@@ -6,6 +6,7 @@ import its.model.definition.types.Type
 import its.model.expressions.operators.CompareWithComparisonOperator
 import its.questions.gen.formulations.Localization
 import its.questions.gen.formulations.TemplatingUtils.getLocalizedName
+import its.questions.gen.visitors.ValueToAnswerString.toLocalizedString
 import its.reasoner.LearningSituation
 import its.reasoner.operators.OperatorReasoner
 
@@ -28,7 +29,7 @@ class CompareWithNumeric(learningSituation: LearningSituation, localization: Loc
                 (context.objExpr.use(OperatorReasoner.defaultReasoner(learningSituation)) as Obj)
                     .findIn(learningSituation.domainModel)!!
                     .getLocalizedName(localization.codePrefix), // получение имени объекта, записанного в переменную
-                context.valueConstant.value.toString(), // получение значения константы
+                context.valueConstant.value.toLocalizedString(learningSituation, localization.codePrefix), // получение значения константы
                 context.operator // получение оператора
             )
         } else {
@@ -37,7 +38,7 @@ class CompareWithNumeric(learningSituation: LearningSituation, localization: Loc
                 (context.objExpr.use(OperatorReasoner.defaultReasoner(learningSituation)) as Obj)
                     .findIn(learningSituation.domainModel)!!
                     .getLocalizedName(localization.codePrefix), // получение имени объекта, записанного в переменную
-                context.valueConstant.value.toString() // получение значения константы
+                context.valueConstant.value.toLocalizedString(learningSituation, localization.codePrefix) // получение значения константы
             )
         }
     }
