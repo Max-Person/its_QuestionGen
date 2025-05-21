@@ -11,15 +11,22 @@ import its.questions.gen.formulations.v2.AbstractContext
 import its.reasoner.LearningSituation
 import its.reasoner.operators.OperatorReasoner
 
-class CheckExistenceOfRelationship(learningSituation: LearningSituation, localization: Localization) : AbstractQuestionGeneration<CheckExistenceOfRelationship.CheckExistenceOfRelationshipContext>(learningSituation, localization) {
+class CheckExistenceOfRelationship(learningSituation: LearningSituation, localization: Localization) :
+    AbstractQuestionGeneration<CheckExistenceOfRelationship.CheckExistenceOfRelationshipContext>(
+        learningSituation,
+        localization
+    ) {
 
     override fun generate(context: CheckExistenceOfRelationshipContext): String? {
         val question = context.relationShipDef.metadata.getString(localization.codePrefix, "question")
         val contextVars = mutableMapOf(
-            "subj" to context.subjExpr.use(OperatorReasoner.defaultReasoner(learningSituation)) as Obj,
+            "subj" to context.subjExpr.use(OperatorReasoner.defaultReasoner(learningSituation))!!
         )
-        context.objectExprs.forEachIndexed{index, operator ->
-            contextVars["obj${index+1}"] = operator.use(OperatorReasoner.defaultReasoner(learningSituation)) as Obj
+        context.objectExprs.forEachIndexed { index, operator ->
+            contextVars["obj${index + 1}"] = operator.use(OperatorReasoner.defaultReasoner(learningSituation))!!
+        }
+        context.paramsMap.forEach { (paramName, operator) ->
+            contextVars[paramName] = operator.use(OperatorReasoner.defaultReasoner(learningSituation))!!
         }
         if (question != null) {
             return question.interpret(learningSituation, localization.codePrefix, contextVars)
@@ -37,11 +44,16 @@ class CheckExistenceOfRelationship(learningSituation: LearningSituation, localiz
             val objectType = operator.subjectExpr.resolvedType(learningSituation.domainModel) as ObjectType
             val classDef = objectType.findIn(learningSituation.domainModel)
             val relDef = classDef.findRelationshipDef(operator.relationshipName)!!
-
-            return CheckExistenceOfRelationshipContext(operator.subjectExpr, operator.objectExprs, relDef)
+            val paramsMap = operator.paramsValues.asMap(relDef.effectiveParams)
+            return CheckExistenceOfRelationshipContext(operator.subjectExpr, operator.objectExprs, relDef, paramsMap)
         }
         return null
     }
 
-    class CheckExistenceOfRelationshipContext(val subjExpr : Operator, val objectExprs: List<Operator>, val relationShipDef: RelationshipDef) : AbstractContext
+    class CheckExistenceOfRelationshipContext(
+        val subjExpr: Operator,
+        val objectExprs: List<Operator>,
+        val relationShipDef: RelationshipDef,
+        val paramsMap: Map<String, Operator>
+    ) : AbstractContext
 }

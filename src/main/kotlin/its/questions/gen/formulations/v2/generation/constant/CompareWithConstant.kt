@@ -39,10 +39,13 @@ abstract class CompareWithConstant(learningSituation: LearningSituation, localiz
     protected fun getQuestionOrAssertion(context: CompareWithConstantContext): String? {
         val question = context.propertyDef.metadata.getString(localization.codePrefix, "question")
         val obj = context.objExpr.use(OperatorReasoner.defaultReasoner(learningSituation)) as Obj
-        val contextVars = mapOf(
+        val contextVars = mutableMapOf(
             "obj" to obj,
             "value" to context.valueConstant.value
         )
+        context.paramsMap.forEach { (paramName, operator) ->
+            contextVars[paramName] = operator.use(OperatorReasoner.defaultReasoner(learningSituation))!!
+        }
         if (question != null) {
             return question.interpret(learningSituation, localization.codePrefix, contextVars)
         }
@@ -74,10 +77,9 @@ abstract class CompareWithConstant(learningSituation: LearningSituation, localiz
             val valueLiteral = operator.secondExpr as ValueLiteral<*, *>
 
             val propertyDef = propertyValue.getPropertyDef(learningSituation.domainModel)
+            val paramsMap = propertyValue.paramsValues.asMap(propertyDef.paramsDecl)
             if (typeFits(propertyDef.type)) {
-                return CompareWithConstantContext(
-                    valueLiteral, operator.operator, objExpr, propertyDef
-                )
+                return CompareWithConstantContext(valueLiteral, operator.operator, objExpr, propertyDef, paramsMap)
             }
         }
         if (operator is Compare
@@ -90,10 +92,9 @@ abstract class CompareWithConstant(learningSituation: LearningSituation, localiz
             val valueLiteral = operator.secondExpr as ValueLiteral<*, *>
 
             val propertyDef = propertyValue.getPropertyDef(learningSituation.domainModel)
+            val paramsMap = propertyValue.paramsValues.asMap(propertyDef.paramsDecl)
             if (typeFits(propertyDef.type)) {
-                return CompareWithConstantContext(
-                    valueLiteral, null, objExpr, propertyDef
-                )
+                return CompareWithConstantContext(valueLiteral, null, objExpr, propertyDef, paramsMap)
             }
         }
         return null
@@ -106,6 +107,7 @@ abstract class CompareWithConstant(learningSituation: LearningSituation, localiz
         val operator: CompareWithComparisonOperator.ComparisonOperator?, // оператор
         val objExpr: Operator, // переменная
         val propertyDef: PropertyDef, // для получения мета данных (локализации и тд)
+        val paramsMap: Map<String, Operator>
     ) : AbstractContext
 
 }
