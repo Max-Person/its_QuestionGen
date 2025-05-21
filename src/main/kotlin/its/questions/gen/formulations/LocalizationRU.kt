@@ -140,7 +140,7 @@ object LocalizationRU : Localization {
         objName1: String,
         objName2: String
     ): String {
-        return "Сравните ${propertyName.toCase(Case.Acc)} ${objName1.toCase(Case.Gen)} с ${propertyName.toCase(Case.Ins)} ${objName2.toCase(Case.Gen)}"
+        return "Сравните $propertyName ${objName1.toCase(Case.Gen)} с ${propertyName.toCase(Case.Ins)} ${objName2.toCase(Case.Gen)}"
     }
 
     override fun CHECK_OBJECT_CLASS(className: String, objName: String): String {
