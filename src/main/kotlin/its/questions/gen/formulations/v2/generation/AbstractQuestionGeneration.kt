@@ -14,6 +14,6 @@ abstract class AbstractQuestionGeneration<T : AbstractContext>(protected val lea
         return null
     }
 
-    protected abstract fun generate(context: T) : String
+    protected abstract fun generate(context: T): String?
     protected abstract fun fits(operator: Operator) : T?
 }

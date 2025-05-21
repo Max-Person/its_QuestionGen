@@ -19,7 +19,7 @@ abstract class CompareWithConstant(learningSituation: LearningSituation, val loc
     AbstractQuestionGeneration<CompareWithConstant.CompareWithConstantContext>(
         learningSituation
     ) {
-    override fun generate(context: CompareWithConstantContext): String {
+    override fun generate(context: CompareWithConstantContext): String? {
         val question = context.propertyDef.metadata.getString(localization.codePrefix, "question")
         val obj =  context.objExpr.use(OperatorReasoner.defaultReasoner(learningSituation)) as Obj
         val contextVars = mapOf(

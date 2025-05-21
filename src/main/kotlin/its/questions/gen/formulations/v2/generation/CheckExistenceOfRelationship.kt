@@ -13,7 +13,7 @@ import its.reasoner.operators.OperatorReasoner
 
 class CheckExistenceOfRelationship(learningSituation: LearningSituation, val localization: Localization) : AbstractQuestionGeneration<CheckExistenceOfRelationship.CheckExistenceOfRelationshipContext>(learningSituation) {
 
-    override fun generate(context: CheckExistenceOfRelationshipContext): String {
+    override fun generate(context: CheckExistenceOfRelationshipContext): String? {
         val question = context.relationShipDef.metadata.getString(localization.codePrefix, "question")
         val contextVars = mutableMapOf(
             "subj" to context.subjExpr.use(OperatorReasoner.defaultReasoner(learningSituation)) as Obj,
@@ -24,9 +24,12 @@ class CheckExistenceOfRelationship(learningSituation: LearningSituation, val loc
         if (question != null) {
             return question.interpret(learningSituation, localization.codePrefix, contextVars)
         }
-        val assertion = context.relationShipDef.metadata.getString(localization.codePrefix, "assertion")!!
-        val interpreted = assertion.interpret(learningSituation, localization.codePrefix, contextVars)
-        return localization.IS_IT_TRUE_THAT(interpreted)
+        val assertion = context.relationShipDef.metadata.getString(localization.codePrefix, "assertion")
+        if (assertion != null) {
+            val interpreted = assertion.interpret(learningSituation, localization.codePrefix, contextVars)
+            return localization.IS_IT_TRUE_THAT(interpreted)
+        }
+        return null
     }
 
     override fun fits(operator: Operator): CheckExistenceOfRelationshipContext? {

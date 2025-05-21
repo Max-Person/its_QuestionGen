@@ -1,14 +1,11 @@
 package its.questions.gen.formulations.v2.generation
 
 import its.model.definition.ClassDef
-import its.model.definition.PropertyDef
 import its.model.definition.ThisShouldNotHappen
 import its.model.definition.types.Obj
 import its.model.definition.types.ObjectType
 import its.model.expressions.Operator
-import its.model.expressions.literals.ClassLiteral
 import its.model.expressions.operators.CheckClass
-import its.model.expressions.operators.CompareWithComparisonOperator
 import its.model.expressions.operators.GetClass
 import its.questions.gen.formulations.Localization
 import its.questions.gen.formulations.TemplatingUtils.getLocalizedName
