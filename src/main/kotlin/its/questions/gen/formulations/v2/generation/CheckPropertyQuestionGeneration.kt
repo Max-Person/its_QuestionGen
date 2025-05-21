@@ -1,20 +1,33 @@
 package its.questions.gen.formulations.v2.generation
 
 import its.model.definition.PropertyDef
+import its.model.definition.types.BooleanType
 import its.model.definition.types.Obj
 import its.model.expressions.Operator
+import its.model.expressions.literals.BooleanLiteral
+import its.model.expressions.operators.CompareWithComparisonOperator
 import its.model.expressions.operators.GetPropertyValue
 import its.questions.gen.formulations.Localization
 import its.questions.gen.formulations.TemplatingUtils.getLocalizedName
 import its.questions.gen.formulations.TemplatingUtils.interpret
 import its.questions.gen.formulations.v2.AbstractContext
+import its.questions.gen.formulations.v2.generation.constant.CompareWithBoolean
 import its.reasoner.LearningSituation
 import its.reasoner.operators.OperatorReasoner
 
 class CheckPropertyQuestionGeneration(learningSituation: LearningSituation, localization: Localization) :
     AbstractQuestionGeneration<CheckPropertyQuestionGeneration.CheckPropertyContext>(learningSituation, localization) {
 
-    override fun generate(context: CheckPropertyContext): String {
+    override fun generate(context: CheckPropertyContext): String? {
+        if (context.propertyDef.type is BooleanType) {
+            val questionGenerator = CompareWithBoolean(learningSituation, localization)
+            return questionGenerator.generateQuestion(
+                CompareWithComparisonOperator(
+                    context.objExpr,
+                    CompareWithComparisonOperator.ComparisonOperator.Equal,
+                    BooleanLiteral(true)
+                ))
+        }
         val question = context.propertyDef.metadata.getString(localization.codePrefix, "question_check_property")
         val contextVars = mapOf(
             "obj" to context.objExpr.use(OperatorReasoner.defaultReasoner(learningSituation)) as Obj
