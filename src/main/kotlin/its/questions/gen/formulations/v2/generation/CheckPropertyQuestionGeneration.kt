@@ -7,6 +7,8 @@ import its.model.expressions.Operator
 import its.model.expressions.literals.BooleanLiteral
 import its.model.expressions.operators.CompareWithComparisonOperator
 import its.model.expressions.operators.GetPropertyValue
+import its.model.expressions.operators.LogicalNot
+import its.model.expressions.utils.ParamsValuesExprList
 import its.questions.gen.formulations.Localization
 import its.questions.gen.formulations.TemplatingUtils.getLocalizedName
 import its.questions.gen.formulations.TemplatingUtils.interpret
@@ -23,15 +25,18 @@ class CheckPropertyQuestionGeneration(learningSituation: LearningSituation, loca
             val questionGenerator = CompareWithBoolean(learningSituation, localization)
             return questionGenerator.generateQuestion(
                 CompareWithComparisonOperator(
-                    context.objExpr,
+                    GetPropertyValue(context.objExpr, context.propertyDef.name, context.paramsValues),
                     CompareWithComparisonOperator.ComparisonOperator.Equal,
-                    BooleanLiteral(true)
+                    BooleanLiteral(!context.isInverted)
                 ))
         }
         val question = context.propertyDef.metadata.getString(localization.codePrefix, "question_check_property")
-        val contextVars = mapOf(
-            "obj" to context.objExpr.use(OperatorReasoner.defaultReasoner(learningSituation)) as Obj
+        val contextVars = mutableMapOf(
+            "obj" to context.objExpr.use(OperatorReasoner.defaultReasoner(learningSituation))!!
         )
+        context.paramsMap.forEach { (paramName, operator) ->
+            contextVars[paramName] = operator.use(OperatorReasoner.defaultReasoner(learningSituation))!!
+        }
         if (question != null) {
             return question.interpret(learningSituation, localization.codePrefix, contextVars)
         }
@@ -45,12 +50,27 @@ class CheckPropertyQuestionGeneration(learningSituation: LearningSituation, loca
 
     override fun fits(operator: Operator): CheckPropertyContext? {
         if (operator is GetPropertyValue) {
-            return CheckPropertyContext(operator.objectExpr, operator.getPropertyDef(learningSituation.domainModel))
+            val propertyDef = operator.getPropertyDef(learningSituation.domainModel)
+            val paramsMap = operator.paramsValues.asMap(propertyDef.paramsDecl)
+            return CheckPropertyContext(operator.objectExpr, propertyDef, false, paramsMap, operator.paramsValues)
+        } else if (operator is LogicalNot && operator.operandExpr is GetPropertyValue) {
+            val getPropertyValue = operator.operandExpr as GetPropertyValue
+            val propertyDef = getPropertyValue.getPropertyDef(learningSituation.domainModel)
+            val paramsMap = getPropertyValue.paramsValues.asMap(propertyDef.paramsDecl)
+            return CheckPropertyContext(
+                getPropertyValue.objectExpr,
+                propertyDef,
+                true,
+                paramsMap,
+                getPropertyValue.paramsValues)
         }
         return null
     }
     class CheckPropertyContext(
         val objExpr: Operator, // переменная или любое другое выражение
         val propertyDef: PropertyDef, // для получения мета данных (локализации и тд)
+        val isInverted: Boolean = false,
+        val paramsMap: Map<String, Operator>,
+        val  paramsValues: ParamsValuesExprList
     ) : AbstractContext
 }
