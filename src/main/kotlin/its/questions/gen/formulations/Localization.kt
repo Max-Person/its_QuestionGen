@@ -71,10 +71,14 @@ sealed interface Localization {
     fun COMPARE_A_PROPERTY_TO_A_NUMERIC_CONST(propertyName : String, objName : String, propertyVal : String,
                                               operator : CompareWithComparisonOperator.ComparisonOperator) : String
 
+    fun COMPARE_A_PROPERTY(propertyName: String, objName : String, propertyVal : String) : String
+
     fun CHECK_OBJ_PROPERTY_OR_CLASS(propertyName: String, objName: String) : String
 
     fun COMPARE_WITH_SAME_PROPS_OF_DIFF_OBJ(propertyName: String, objName1: String, objName2: String,
                                             operator: CompareWithComparisonOperator.ComparisonOperator) : String
+
+    fun COMPARE_A_PROPERTY_WITH_SAME_PROPS_OF_DIFF_OBJ(propertyName: String, objName1: String, objName2: String) : String
 
     fun CHECK_OBJECT_CLASS(className : String, objName: String) : String
 

@@ -87,6 +87,10 @@ object LocalizationEN : Localization {
         return "Is $propertyName of $objName ${operatorMap[operator]} $propertyVal?"
     }
 
+    override fun COMPARE_A_PROPERTY(propertyName: String, objName: String, propertyVal: String): String {
+        return "Compare the value of $propertyVal of $objName with value $propertyVal"
+    }
+
     override fun CHECK_OBJ_PROPERTY_OR_CLASS(propertyName: String, objName: String): String {
         return "What is the $propertyName of $objName"
     }
@@ -98,6 +102,14 @@ object LocalizationEN : Localization {
         operator: CompareWithComparisonOperator.ComparisonOperator
     ): String {
         return "Is $propertyName of $objName1 ${operatorMap[operator]} that of $objName2?"
+    }
+
+    override fun COMPARE_A_PROPERTY_WITH_SAME_PROPS_OF_DIFF_OBJ(
+        propertyName: String,
+        objName1: String,
+        objName2: String
+    ): String {
+        return "Compare $propertyName of $objName1 with $propertyName of $objName2"
     }
 
     override fun CHECK_OBJECT_CLASS(className: String, objName: String): String {
