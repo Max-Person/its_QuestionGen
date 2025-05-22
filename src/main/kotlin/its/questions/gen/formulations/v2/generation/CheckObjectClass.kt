@@ -14,33 +14,7 @@ import its.reasoner.LearningSituation
 import its.reasoner.operators.OperatorReasoner
 
 class CheckObjectClass(learningSituation: LearningSituation, localization: Localization) :
-    AbstractQuestionGeneration<CheckObjectClass.CheckClassContext>(learningSituation, localization) {
-
-    override fun generate(context: CheckClassContext): String {
-        when (context.operator) {
-            is CheckClass -> {
-                return localization.IS_OBJ_A_CLASS(
-                    context.classDef!!.getLocalizedName(localization.codePrefix),
-                    (context.objExpr.use(OperatorReasoner.defaultReasoner(learningSituation)) as Obj)
-                        .findIn(learningSituation.domainModel)!!
-                        .getLocalizedName(localization.codePrefix)
-                )
-            }
-
-            is GetClass -> {
-                return localization.CHECK_OBJECT_CLASS(
-                    context.classDef!!.getLocalizedName(localization.codePrefix),
-                    (context.objExpr.use(OperatorReasoner.defaultReasoner(learningSituation)) as Obj)
-                        .findIn(learningSituation.domainModel)!!
-                        .getLocalizedName(localization.codePrefix)
-                )
-            }
-
-            else -> {
-                throw ThisShouldNotHappen()
-            }
-        }
-    }
+    AbstractQuestionGeneration(learningSituation, localization) {
 
     override fun fits(operator: Operator): CheckClassContext? {
         if (operator is CheckClass) {
@@ -60,5 +34,31 @@ class CheckObjectClass(learningSituation: LearningSituation, localization: Local
         val objExpr: Operator,
         val operator: Operator,
         val classDef: ClassDef?
-    ) : AbstractContext
+    ) : AbstractContext {
+        override fun generate(learningSituation: LearningSituation, localization: Localization): String? {
+            when (operator) {
+                is CheckClass -> {
+                    return localization.IS_OBJ_A_CLASS(
+                        classDef!!.getLocalizedName(localization.codePrefix),
+                        (objExpr.use(OperatorReasoner.defaultReasoner(learningSituation)) as Obj)
+                            .findIn(learningSituation.domainModel)!!
+                            .getLocalizedName(localization.codePrefix)
+                    )
+                }
+
+                is GetClass -> {
+                    return localization.CHECK_OBJECT_CLASS(
+                        classDef!!.getLocalizedName(localization.codePrefix),
+                        (objExpr.use(OperatorReasoner.defaultReasoner(learningSituation)) as Obj)
+                            .findIn(learningSituation.domainModel)!!
+                            .getLocalizedName(localization.codePrefix)
+                    )
+                }
+
+                else -> {
+                    throw ThisShouldNotHappen()
+                }
+            }
+        }
+    }
 }

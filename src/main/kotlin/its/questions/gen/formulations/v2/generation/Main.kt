@@ -43,7 +43,7 @@ fun main() {
             string + "\t\t" + QuestionGeneratorFabric(
                 LearningSituation(domainModel, HashMap()),
                 LocalizationRU
-            ).generateQuestion(expr)
+            ).getContext(expr)?.generate(LearningSituation(domainModel, HashMap()), LocalizationRU)
         )
     }
 
