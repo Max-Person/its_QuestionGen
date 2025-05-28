@@ -94,9 +94,14 @@ object LocalizationRU : Localization {
     ): String {
         val operatorStr: String = if (operator == CompareWithComparisonOperator.ComparisonOperator.Equal ||
             operator == CompareWithComparisonOperator.ComparisonOperator.NotEqual) {
-            val morphInfo = morphology.getMorphInfo(propertyName)
-            val gender = extractGender(morphInfo)
-            genderToEqualOpMap[gender]!!
+            try {
+                val morphInfo = morphology.getMorphInfo(propertyName)
+                val gender = extractGender(morphInfo)
+                genderToEqualOpMap[gender]!!
+            } catch (e : Exception) {
+                "Равно ли"
+            }
+
         } else {
             operatorMap[operator]!!
         }
@@ -119,9 +124,14 @@ object LocalizationRU : Localization {
     ): String {
         val operatorStr: String = if (operator == CompareWithComparisonOperator.ComparisonOperator.Equal ||
             operator == CompareWithComparisonOperator.ComparisonOperator.NotEqual) {
-            val morphInfo = morphology.getMorphInfo(propertyName)
-            val gender = extractGender(morphInfo)
-            genderToEqualOpMap[gender]!!
+            try {
+                val morphInfo = morphology.getMorphInfo(propertyName)
+                val gender = extractGender(morphInfo)
+                genderToEqualOpMap[gender]!!
+            } catch (e : Exception) {
+                return "Равно ли"
+            }
+
         } else {
             operatorMap[operator]!!
         }

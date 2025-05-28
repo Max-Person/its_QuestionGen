@@ -1,10 +1,12 @@
 package its.questions.gen.formulations.v2.generation
 
 import its.model.definition.ClassDef
+import its.model.definition.ClassRef
 import its.model.definition.ThisShouldNotHappen
 import its.model.definition.types.Obj
 import its.model.definition.types.ObjectType
 import its.model.expressions.Operator
+import its.model.expressions.literals.ClassLiteral
 import its.model.expressions.operators.CheckClass
 import its.model.expressions.operators.GetClass
 import its.questions.gen.formulations.Localization
@@ -17,9 +19,8 @@ class CheckObjectClass(learningSituation: LearningSituation, localization: Local
     AbstractQuestionGeneration(learningSituation, localization) {
 
     override fun fits(operator: Operator): CheckClassContext? {
-        if (operator is CheckClass) {
-            val objectType = operator.objectExpr.resolvedType(learningSituation.domainModel) as ObjectType
-            val classDef = objectType.findIn(learningSituation.domainModel)
+        if (operator is CheckClass && operator.classExpr is ClassLiteral) {
+            val classDef = ClassRef((operator.classExpr as ClassLiteral).name).findIn(learningSituation.domainModel)
             return CheckClassContext(operator.objectExpr, operator, classDef)
         }
         if (operator is GetClass) {
