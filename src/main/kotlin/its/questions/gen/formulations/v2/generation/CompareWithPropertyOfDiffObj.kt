@@ -58,60 +58,60 @@ class CompareWithPropertyOfDiffObj(learningSituation: LearningSituation, localiz
         }
         return null
     }
+}
 
-    class ComparePropertyOfDiffObjContext(
-        val objExpr1: Operator, // переменная или любое другое выражение
-        val objExpr2: Operator, // переменная или любое другое выражение
-        val operator: CompareWithComparisonOperator.ComparisonOperator?, // оператор
-        val propertyDef: PropertyDef, // для получения мета данных (локализации и тд)
-    ) : AbstractContext {
-        override fun generate(learningSituation: LearningSituation, localization: Localization): String? {
-            if (operator != null) {
-                return localization.COMPARE_WITH_SAME_PROPS_OF_DIFF_OBJ(
-                    propertyDef.getLocalizedName(localization.codePrefix),
-                    (objExpr1.use(OperatorReasoner.defaultReasoner(learningSituation)) as Obj)
-                        .findIn(learningSituation.domainModel)!!
-                        .getLocalizedName(localization.codePrefix),
-                    (objExpr2.use(OperatorReasoner.defaultReasoner(learningSituation)) as Obj)
-                        .findIn(learningSituation.domainModel)!!
-                        .getLocalizedName(localization.codePrefix),
-                    operator
-                )
-            } else {
-                return localization.COMPARE_A_PROPERTY_WITH_SAME_PROPS_OF_DIFF_OBJ(
-                    propertyDef.getLocalizedName(localization.codePrefix),
-                    (objExpr1.use(OperatorReasoner.defaultReasoner(learningSituation)) as Obj)
-                        .findIn(learningSituation.domainModel)!!
-                        .getLocalizedName(localization.codePrefix),
-                    (objExpr2.use(OperatorReasoner.defaultReasoner(learningSituation)) as Obj)
-                        .findIn(learningSituation.domainModel)!!
-                        .getLocalizedName(localization.codePrefix)
-                )
-            }
+class ComparePropertyOfDiffObjContext(
+    val objExpr1: Operator, // переменная или любое другое выражение
+    val objExpr2: Operator, // переменная или любое другое выражение
+    val operator: CompareWithComparisonOperator.ComparisonOperator?, // оператор
+    val propertyDef: PropertyDef, // для получения мета данных (локализации и тд)
+) : AbstractContext {
+    override fun generate(learningSituation: LearningSituation, localization: Localization): String? {
+        if (operator != null) {
+            return localization.COMPARE_WITH_SAME_PROPS_OF_DIFF_OBJ(
+                propertyDef.getLocalizedName(localization.codePrefix),
+                (objExpr1.use(OperatorReasoner.defaultReasoner(learningSituation)) as Obj)
+                    .findIn(learningSituation.domainModel)!!
+                    .getLocalizedName(localization.codePrefix),
+                (objExpr2.use(OperatorReasoner.defaultReasoner(learningSituation)) as Obj)
+                    .findIn(learningSituation.domainModel)!!
+                    .getLocalizedName(localization.codePrefix),
+                operator
+            )
+        } else {
+            return localization.COMPARE_A_PROPERTY_WITH_SAME_PROPS_OF_DIFF_OBJ(
+                propertyDef.getLocalizedName(localization.codePrefix),
+                (objExpr1.use(OperatorReasoner.defaultReasoner(learningSituation)) as Obj)
+                    .findIn(learningSituation.domainModel)!!
+                    .getLocalizedName(localization.codePrefix),
+                (objExpr2.use(OperatorReasoner.defaultReasoner(learningSituation)) as Obj)
+                    .findIn(learningSituation.domainModel)!!
+                    .getLocalizedName(localization.codePrefix)
+            )
         }
+    }
 
-        override fun generateAnswer(learningSituation: LearningSituation, localization: Localization, value : Any): String? {
-            return if (operator != null) {
-                if ((operator == CompareWithComparisonOperator.ComparisonOperator.NotEqual ||
-                            operator == CompareWithComparisonOperator.ComparisonOperator.GreaterEqual ||
-                            operator == CompareWithComparisonOperator.ComparisonOperator.LessEqual) && value is Boolean) {
-                    return super.generateAnswer(learningSituation, localization, !value)
-                }
-                return super.generateAnswer(learningSituation, localization, value)
-            } else {
-                val obj1 = objExpr1.use(OperatorReasoner.defaultReasoner(learningSituation)) as Obj
-                val objName1 = obj1.findIn(learningSituation.domainModel)!!
-                    .getLocalizedName(localization.codePrefix)
+    override fun generateAnswer(learningSituation: LearningSituation, localization: Localization, value : Any): String? {
+        return if (operator != null) {
+            if ((operator == CompareWithComparisonOperator.ComparisonOperator.NotEqual ||
+                        operator == CompareWithComparisonOperator.ComparisonOperator.GreaterEqual ||
+                        operator == CompareWithComparisonOperator.ComparisonOperator.LessEqual) && value is Boolean) {
+                return super.generateAnswer(learningSituation, localization, !value)
+            }
+            return super.generateAnswer(learningSituation, localization, value)
+        } else {
+            val obj1 = objExpr1.use(OperatorReasoner.defaultReasoner(learningSituation)) as Obj
+            val objName1 = obj1.findIn(learningSituation.domainModel)!!
+                .getLocalizedName(localization.codePrefix)
 
-                val obj2 = objExpr2.use(OperatorReasoner.defaultReasoner(learningSituation)) as Obj
-                val objName2 = obj2.findIn(learningSituation.domainModel)!!
-                    .getLocalizedName(localization.codePrefix)
-                when (value) {
-                    Comparison.Values.Greater -> localization.GREATER_THAN(objName1)
-                    Comparison.Values.Equal -> localization.EQUAL
-                    Comparison.Values.Less -> localization.GREATER_THAN(objName2)
-                    else -> super.generateAnswer(learningSituation, localization, value)
-                }
+            val obj2 = objExpr2.use(OperatorReasoner.defaultReasoner(learningSituation)) as Obj
+            val objName2 = obj2.findIn(learningSituation.domainModel)!!
+                .getLocalizedName(localization.codePrefix)
+            when (value) {
+                Comparison.Values.Greater -> localization.GREATER_THAN(objName1)
+                Comparison.Values.Equal -> localization.EQUAL
+                Comparison.Values.Less -> localization.GREATER_THAN(objName2)
+                else -> super.generateAnswer(learningSituation, localization, value)
             }
         }
     }

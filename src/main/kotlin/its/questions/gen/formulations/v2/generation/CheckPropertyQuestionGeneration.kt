@@ -12,7 +12,7 @@ import its.questions.gen.formulations.Localization
 import its.questions.gen.formulations.TemplatingUtils.getLocalizedName
 import its.questions.gen.formulations.TemplatingUtils.interpret
 import its.questions.gen.formulations.v2.AbstractContext
-import its.questions.gen.formulations.v2.generation.constant.CompareWithConstant
+import its.questions.gen.formulations.v2.generation.constant.CompareWithConstantContext
 import its.reasoner.LearningSituation
 import its.reasoner.operators.OperatorReasoner
 
@@ -24,7 +24,7 @@ class CheckPropertyQuestionGeneration(learningSituation: LearningSituation, loca
             val propertyDef = operator.getPropertyDef(learningSituation.domainModel)
             val paramsMap = operator.paramsValues.asMap(propertyDef.paramsDecl)
             if (propertyDef.type is BooleanType) {
-                return CompareWithConstant.CompareWithConstantContext(
+                return CompareWithConstantContext(
                     BooleanLiteral(true),
                     CompareWithComparisonOperator.ComparisonOperator.Equal,
                     operator.objectExpr,
@@ -37,7 +37,7 @@ class CheckPropertyQuestionGeneration(learningSituation: LearningSituation, loca
             val getPropertyValue = operator.operandExpr as GetPropertyValue
             val propertyDef = getPropertyValue.getPropertyDef(learningSituation.domainModel)
             val paramsMap = getPropertyValue.paramsValues.asMap(propertyDef.paramsDecl)
-            return CompareWithConstant.CompareWithConstantContext(
+            return CompareWithConstantContext(
                 BooleanLiteral(false),
                 CompareWithComparisonOperator.ComparisonOperator.Equal,
                 getPropertyValue.objectExpr,
@@ -47,28 +47,29 @@ class CheckPropertyQuestionGeneration(learningSituation: LearningSituation, loca
         }
         return null
     }
-    class CheckPropertyContext(
-        val objExpr: Operator, // переменная или любое другое выражение
-        val propertyDef: PropertyDef, // для получения мета данных (локализации и тд)
-        val paramsMap: Map<String, Operator>
-    ) : AbstractContext {
-        override fun generate(learningSituation: LearningSituation, localization: Localization): String? {
-            val question = propertyDef.metadata.getString(localization.codePrefix, "question_check_property")
-            val contextVars = mutableMapOf(
-                "obj" to objExpr.use(OperatorReasoner.defaultReasoner(learningSituation))!!
-            )
-            paramsMap.forEach { (paramName, operator) ->
-                contextVars[paramName] = operator.use(OperatorReasoner.defaultReasoner(learningSituation))!!
-            }
-            if (question != null) {
-                return question.interpret(learningSituation, localization.codePrefix, contextVars)
-            }
-            return localization.CHECK_OBJ_PROPERTY_OR_CLASS(
-                propertyDef.getLocalizedName(localization.codePrefix),
-                (objExpr.use(OperatorReasoner.defaultReasoner(learningSituation)) as Obj)
-                    .findIn(learningSituation.domainModel)!!
-                    .getLocalizedName(localization.codePrefix)
-            )
+}
+
+class CheckPropertyContext(
+    val objExpr: Operator, // переменная или любое другое выражение
+    val propertyDef: PropertyDef, // для получения мета данных (локализации и тд)
+    val paramsMap: Map<String, Operator>
+) : AbstractContext {
+    override fun generate(learningSituation: LearningSituation, localization: Localization): String? {
+        val question = propertyDef.metadata.getString(localization.codePrefix, "question_check_property")
+        val contextVars = mutableMapOf(
+            "obj" to objExpr.use(OperatorReasoner.defaultReasoner(learningSituation))!!
+        )
+        paramsMap.forEach { (paramName, operator) ->
+            contextVars[paramName] = operator.use(OperatorReasoner.defaultReasoner(learningSituation))!!
         }
+        if (question != null) {
+            return question.interpret(learningSituation, localization.codePrefix, contextVars)
+        }
+        return localization.CHECK_OBJ_PROPERTY_OR_CLASS(
+            propertyDef.getLocalizedName(localization.codePrefix),
+            (objExpr.use(OperatorReasoner.defaultReasoner(learningSituation)) as Obj)
+                .findIn(learningSituation.domainModel)!!
+                .getLocalizedName(localization.codePrefix)
+        )
     }
 }

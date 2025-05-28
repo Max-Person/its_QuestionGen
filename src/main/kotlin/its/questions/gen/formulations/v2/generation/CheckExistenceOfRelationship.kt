@@ -26,33 +26,32 @@ class CheckExistenceOfRelationship(learningSituation: LearningSituation, localiz
         }
         return null
     }
-
-    class CheckExistenceOfRelationshipContext(
-        val subjExpr: Operator,
-        val objectExprs: List<Operator>,
-        val relationShipDef: RelationshipDef,
-        val paramsMap: Map<String, Operator>
-    ) : AbstractContext {
-        override fun generate(learningSituation: LearningSituation, localization: Localization): String? {
-            val question = relationShipDef.metadata.getString(localization.codePrefix, "question")
-            val contextVars = mutableMapOf(
-                "subj" to subjExpr.use(OperatorReasoner.defaultReasoner(learningSituation))!!
-            )
-            objectExprs.forEachIndexed { index, operator ->
-                contextVars["obj${index + 1}"] = operator.use(OperatorReasoner.defaultReasoner(learningSituation))!!
-            }
-            paramsMap.forEach { (paramName, operator) ->
-                contextVars[paramName] = operator.use(OperatorReasoner.defaultReasoner(learningSituation))!!
-            }
-            if (question != null) {
-                return question.interpret(learningSituation, localization.codePrefix, contextVars)
-            }
-            val assertion = relationShipDef.metadata.getString(localization.codePrefix, "assertion")
-            if (assertion != null) {
-                val interpreted = assertion.interpret(learningSituation, localization.codePrefix, contextVars)
-                return localization.IS_IT_TRUE_THAT(interpreted)
-            }
-            return null
+}
+class CheckExistenceOfRelationshipContext(
+    val subjExpr: Operator,
+    val objectExprs: List<Operator>,
+    val relationShipDef: RelationshipDef,
+    val paramsMap: Map<String, Operator>
+) : AbstractContext {
+    override fun generate(learningSituation: LearningSituation, localization: Localization): String? {
+        val question = relationShipDef.metadata.getString(localization.codePrefix, "question")
+        val contextVars = mutableMapOf(
+            "subj" to subjExpr.use(OperatorReasoner.defaultReasoner(learningSituation))!!
+        )
+        objectExprs.forEachIndexed { index, operator ->
+            contextVars["obj${index + 1}"] = operator.use(OperatorReasoner.defaultReasoner(learningSituation))!!
         }
+        paramsMap.forEach { (paramName, operator) ->
+            contextVars[paramName] = operator.use(OperatorReasoner.defaultReasoner(learningSituation))!!
+        }
+        if (question != null) {
+            return question.interpret(learningSituation, localization.codePrefix, contextVars)
+        }
+        val assertion = relationShipDef.metadata.getString(localization.codePrefix, "assertion")
+        if (assertion != null) {
+            val interpreted = assertion.interpret(learningSituation, localization.codePrefix, contextVars)
+            return localization.IS_IT_TRUE_THAT(interpreted)
+        }
+        return null
     }
 }
