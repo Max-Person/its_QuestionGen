@@ -92,7 +92,7 @@ object LocalizationEN : Localization {
     }
 
     override fun CHECK_OBJ_PROPERTY_OR_CLASS(propertyName: String, objName: String): String {
-        return "What is the $propertyName of $objName"
+        return "What is the $propertyName of $objName?"
     }
 
     override fun COMPARE_WITH_SAME_PROPS_OF_DIFF_OBJ(
