@@ -127,7 +127,7 @@ open class CompareWithConstantContext(
         if (assertion != null) {
             val contextVars = mutableMapOf(
                 "obj" to obj,
-                "value" to correctAnswer
+                "value" to obj.findIn(learningSituation.domainModel)!!.getPropertyValue(propertyDef.name, paramsMap)
             )
             paramsMap.forEach { (paramName, operator) ->
                 contextVars[paramName] = operator.use(OperatorReasoner.defaultReasoner(learningSituation))!!
