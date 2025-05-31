@@ -113,7 +113,7 @@ object LocalizationRU : Localization {
     }
 
     override fun CHECK_OBJ_PROPERTY_OR_CLASS(propertyName: String, objName: String): String {
-        return "Каково значение ${propertyName.toCase(Case.Gen)} ${objName.toCase(Case.Gen)}"
+        return "Каково значение ${propertyName.toCase(Case.Gen)} ${objName.toCase(Case.Gen)}?"
     }
 
     override fun COMPARE_WITH_SAME_PROPS_OF_DIFF_OBJ(
@@ -142,7 +142,7 @@ object LocalizationRU : Localization {
         } else {
             propertyName.toCase(Case.Gen)
         }
-        return "$operatorStr $propertyName ${objName1.toCase(Case.Gen)} $propertyOfObj2 ${objName2.toCase(Case.Gen)}"
+        return "$operatorStr $propertyName ${objName1.toCase(Case.Gen)} $propertyOfObj2 ${objName2.toCase(Case.Gen)}?"
     }
 
     override fun COMPARE_A_PROPERTY_WITH_SAME_PROPS_OF_DIFF_OBJ(
@@ -158,7 +158,7 @@ object LocalizationRU : Localization {
     }
 
     override fun IS_OBJ_A_CLASS(className: String, objName: String): String {
-        return "Является ли $objName ${className.toCase(Case.Ins)}"
+        return "Является ли $objName ${className.toCase(Case.Ins)}?"
     }
 
     override fun GREATER_THAN(objName: String): String {
