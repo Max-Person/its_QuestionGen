@@ -10,6 +10,7 @@ import its.model.expressions.operators.CompareWithComparisonOperator
 import its.model.expressions.operators.GetPropertyValue
 import its.questions.gen.formulations.Localization
 import its.questions.gen.formulations.TemplatingUtils.getLocalizedName
+import its.questions.gen.formulations.TemplatingUtils.topLevelLlmCleanup
 import its.questions.gen.formulations.v2.AbstractContext
 import its.reasoner.LearningSituation
 import its.reasoner.operators.OperatorReasoner
@@ -77,7 +78,7 @@ class ComparePropertyOfDiffObjContext(
                     .findIn(learningSituation.domainModel)!!
                     .getLocalizedName(localization.codePrefix),
                 operator
-            )
+            ).topLevelLlmCleanup()
         } else {
             return localization.COMPARE_A_PROPERTY_WITH_SAME_PROPS_OF_DIFF_OBJ(
                 propertyDef.getLocalizedName(localization.codePrefix),
@@ -87,7 +88,7 @@ class ComparePropertyOfDiffObjContext(
                 (objExpr2.use(OperatorReasoner.defaultReasoner(learningSituation)) as Obj)
                     .findIn(learningSituation.domainModel)!!
                     .getLocalizedName(localization.codePrefix)
-            )
+            ).topLevelLlmCleanup()
         }
     }
 

@@ -11,6 +11,8 @@ import its.model.expressions.operators.GetPropertyValue
 import its.questions.gen.formulations.Localization
 import its.questions.gen.formulations.TemplatingUtils.getLocalizedName
 import its.questions.gen.formulations.TemplatingUtils.interpret
+import its.questions.gen.formulations.TemplatingUtils.interpretTopLevel
+import its.questions.gen.formulations.TemplatingUtils.topLevelLlmCleanup
 import its.questions.gen.formulations.v2.AbstractContext
 import its.questions.gen.formulations.v2.generation.AbstractQuestionGeneration
 import its.questions.gen.visitors.ValueToAnswerString.toLocalizedString
@@ -85,7 +87,7 @@ open class CompareWithConstantContext(
             obj.findIn(learningSituation.domainModel)!!
                 .getLocalizedName(localization.codePrefix),
             valueConstant.value.toLocalizedString(learningSituation, localization.codePrefix)
-        )
+        ).topLevelLlmCleanup()
     }
 
     protected fun getQuestionOrAssertion(learningSituation: LearningSituation, localization: Localization): String? {
@@ -99,12 +101,12 @@ open class CompareWithConstantContext(
             contextVars[paramName] = operator.use(OperatorReasoner.defaultReasoner(learningSituation))!!
         }
         if (question != null) {
-            return question.interpret(learningSituation, localization.codePrefix, contextVars)
+            return question.interpretTopLevel(learningSituation, localization.codePrefix, contextVars)
         }
         val assertion = propertyDef.metadata.getString(localization.codePrefix, "assertion")
         if (assertion != null) {
             val interpreted = assertion.interpret(learningSituation, localization.codePrefix, contextVars)
-            return localization.IS_IT_TRUE_THAT(interpreted)
+            return localization.IS_IT_TRUE_THAT(interpreted).topLevelLlmCleanup()
         }
         return null
     }

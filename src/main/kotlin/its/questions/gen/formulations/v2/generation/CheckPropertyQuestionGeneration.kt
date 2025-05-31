@@ -10,7 +10,8 @@ import its.model.expressions.operators.GetPropertyValue
 import its.model.expressions.operators.LogicalNot
 import its.questions.gen.formulations.Localization
 import its.questions.gen.formulations.TemplatingUtils.getLocalizedName
-import its.questions.gen.formulations.TemplatingUtils.interpret
+import its.questions.gen.formulations.TemplatingUtils.interpretTopLevel
+import its.questions.gen.formulations.TemplatingUtils.topLevelLlmCleanup
 import its.questions.gen.formulations.v2.AbstractContext
 import its.questions.gen.formulations.v2.generation.constant.CompareWithConstantContext
 import its.reasoner.LearningSituation
@@ -63,13 +64,13 @@ class CheckPropertyContext(
             contextVars[paramName] = operator.use(OperatorReasoner.defaultReasoner(learningSituation))!!
         }
         if (question != null) {
-            return question.interpret(learningSituation, localization.codePrefix, contextVars)
+            return question.interpretTopLevel(learningSituation, localization.codePrefix, contextVars)
         }
         return localization.CHECK_OBJ_PROPERTY_OR_CLASS(
             propertyDef.getLocalizedName(localization.codePrefix),
             (objExpr.use(OperatorReasoner.defaultReasoner(learningSituation)) as Obj)
                 .findIn(learningSituation.domainModel)!!
                 .getLocalizedName(localization.codePrefix)
-        )
+        ).topLevelLlmCleanup()
     }
 }

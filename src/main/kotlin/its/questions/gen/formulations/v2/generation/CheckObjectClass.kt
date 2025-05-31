@@ -11,6 +11,7 @@ import its.model.expressions.operators.CheckClass
 import its.model.expressions.operators.GetClass
 import its.questions.gen.formulations.Localization
 import its.questions.gen.formulations.TemplatingUtils.getLocalizedName
+import its.questions.gen.formulations.TemplatingUtils.topLevelLlmCleanup
 import its.questions.gen.formulations.v2.AbstractContext
 import its.reasoner.LearningSituation
 import its.reasoner.operators.OperatorReasoner
@@ -45,7 +46,7 @@ class CheckClassContext(
                     (objExpr.use(OperatorReasoner.defaultReasoner(learningSituation)) as Obj)
                         .findIn(learningSituation.domainModel)!!
                         .getLocalizedName(localization.codePrefix)
-                )
+                ).topLevelLlmCleanup()
             }
 
             is GetClass -> {
@@ -54,7 +55,7 @@ class CheckClassContext(
                     (objExpr.use(OperatorReasoner.defaultReasoner(learningSituation)) as Obj)
                         .findIn(learningSituation.domainModel)!!
                         .getLocalizedName(localization.codePrefix)
-                )
+                ).topLevelLlmCleanup()
             }
 
             else -> {

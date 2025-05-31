@@ -5,7 +5,7 @@ import its.model.definition.types.ObjectType
 import its.model.expressions.Operator
 import its.model.expressions.operators.CheckRelationship
 import its.questions.gen.formulations.Localization
-import its.questions.gen.formulations.TemplatingUtils.interpret
+import its.questions.gen.formulations.TemplatingUtils.interpretTopLevel
 import its.questions.gen.formulations.v2.AbstractContext
 import its.reasoner.LearningSituation
 import its.reasoner.operators.OperatorReasoner
@@ -45,11 +45,11 @@ class CheckExistenceOfRelationshipContext(
             contextVars[paramName] = operator.use(OperatorReasoner.defaultReasoner(learningSituation))!!
         }
         if (question != null) {
-            return question.interpret(learningSituation, localization.codePrefix, contextVars)
+            return question.interpretTopLevel(learningSituation, localization.codePrefix, contextVars)
         }
         val assertion = relationShipDef.metadata.getString(localization.codePrefix, "assertion")
         if (assertion != null) {
-            val interpreted = assertion.interpret(learningSituation, localization.codePrefix, contextVars)
+            val interpreted = assertion.interpretTopLevel(learningSituation, localization.codePrefix, contextVars)
             return localization.IS_IT_TRUE_THAT(interpreted)
         }
         return null

@@ -30,9 +30,6 @@ object TemplatingUtils {
 
     @JvmStatic
     fun String.toCase(case: Case?) : String{
-        if (GigaChatAPI.isActive) {
-            return GigaChatAPI.toCase(this, case?: Case.Nom)
-        }
         return Padeg.getAppointmentPadeg(this, (case?: Case.Nom).ordinal+1).replace(Regex("\\s+"), " ")
     }
 
@@ -68,10 +65,24 @@ object TemplatingUtils {
                 .withVar(OperatorTemplateParser.LOCALIZATION_CODE, localizationCode)
                 .withVar(OperatorTemplateParser.CONTEXT_VARS, contextVars)
         ).cleanup()
-        if (GigaChatAPI.isActive) {
-            return GigaChatAPI.generate(parsed)
-        }
         return parsed
+    }
+
+    @JvmStatic
+    fun String.topLevelLlmCleanup() : String {
+        return if(GigaChatAPI.isActive)
+            GigaChatAPI.generate(this)
+        else
+            this
+    }
+
+    @JvmStatic
+    fun String.interpretTopLevel(
+        learningSituation: LearningSituation,
+        localizationCode: String,
+        contextVars: Map<String, Any> = emptyMap(),
+    ) : String {
+        return this.interpret(learningSituation, localizationCode, contextVars).topLevelLlmCleanup()
     }
 
     //region Получение и шаблонизация текстовой информации
@@ -100,7 +111,7 @@ object TemplatingUtils {
             metaName + "_" + branchResult.toString().lowercase()
         )
         return template?.toString()?.let {
-            val result = it.interpret(
+            val result = it.interpretTopLevel(
                 situation, localizationCode, mapOf("branchResult" to EnumValue("BranchResult", branchResult.name))
             )
             result
@@ -113,7 +124,7 @@ object TemplatingUtils {
         val localizationCode = situation.localizationCode
         return getMeta(localizationCode, "asNextStep")
             .stringCheck("Node '$this' doesn't have a $localizationCode associated 'as next step' description")
-            .interpret(situation, localizationCode)
+            .interpretTopLevel(situation, localizationCode)
     }
 
     @JvmStatic
@@ -121,22 +132,19 @@ object TemplatingUtils {
         val localizationCode = situation.localizationCode
         return getMeta(localizationCode, "question")
             .stringCheck("Node '$this' doesn't have a $localizationCode associated question")
-            .interpret(situation, localizationCode)
+            .interpretTopLevel(situation, localizationCode)
     }
 
     @JvmStatic
     internal fun QuestionNode.question(situation: QuestioningSituation) : String {
         val localizationCode = situation.localizationCode
-        return (getMeta(localizationCode, "question")
-            ?.let { it as? String }
-            ?.interpret(situation, localizationCode)
-            ?: this.expr.generateQuestion(situation))
-            .stringCheck("Node '$this' doesn't have a $localizationCode associated question")
+        return (
+                getMeta(localizationCode, "question")
+                    ?.let { it as? String }
+                    ?.interpretTopLevel(situation, localizationCode)
+                ?: this.expr.generateQuestion(situation)
+               ).stringCheck("Node '$this' doesn't have a $localizationCode associated question")
 
-    }
-
-    fun String.useLLM() : String {
-        return GigaChatAPI.generate(this)
     }
 
     @JvmStatic
@@ -144,7 +152,7 @@ object TemplatingUtils {
         val localizationCode = situation.localizationCode
         return getMeta(localizationCode, "question")
             .stringCheck("'$this' doesn't have a $localizationCode associated question")
-            .interpret(situation, localizationCode)
+            .interpretTopLevel(situation, localizationCode)
     }
 
     @JvmStatic
@@ -152,7 +160,7 @@ object TemplatingUtils {
         val localizationCode = situation.localizationCode
         return getMeta(localizationCode, "endingCause")
             .stringCheck("Node '$this' doesn't have a $localizationCode ending cause")
-            .interpret(situation, localizationCode) //TODO Если такого нет - т.е. у не-конечных узлов
+            .interpretTopLevel(situation, localizationCode) //TODO Если такого нет - т.е. у не-конечных узлов
     }
 
     @JvmStatic
@@ -166,38 +174,49 @@ object TemplatingUtils {
     internal fun AggregationNode.nullFormulation(situation: QuestioningSituation): String {
         val localizationCode = situation.localizationCode
         return getMeta(localizationCode, "nullFormulation").let { it as? String }
-                   ?.interpret(situation, localizationCode) ?: situation.localization.NO_EFFECT
+                   ?.interpretTopLevel(situation, localizationCode)
+               ?: situation.localization.NO_EFFECT
     }
 
     @JvmStatic
     internal fun QuestionNode.trivialityExplanation(situation: QuestioningSituation) : String? {
         val localizationCode = situation.localizationCode
-        return getMeta(localizationCode, "triviality")?.let{it as String}?.interpret(situation, localizationCode)
+        return getMeta(localizationCode, "triviality")
+            ?.let{it as String}
+            ?.interpretTopLevel(situation, localizationCode)
     }
 
     //Выходы (стрелки)
     @JvmStatic
     internal fun Outcome<*>.text(situation: QuestioningSituation) : String? {
         val localizationCode = situation.localizationCode
-        return getMeta(localizationCode, "text")?.let{it as String}?.interpret(situation, localizationCode)
+        return getMeta(localizationCode, "text")
+            ?.let{it as String}
+            ?.interpretTopLevel(situation, localizationCode)
     }
 
     @JvmStatic
     internal fun Outcome<*>.explanation(situation: QuestioningSituation) : String? {
         val localizationCode = situation.localizationCode
-        return getMeta(localizationCode, "explanation")?.let{it as String}?.interpret(situation, localizationCode)
+        return getMeta(localizationCode, "explanation")
+            ?.let{it as String}
+            ?.interpretTopLevel(situation, localizationCode)
     }
 
     @JvmStatic
     internal fun TupleQuestionNode.TupleQuestionOutcome.text(situation: QuestioningSituation) : String? {
         val localizationCode = situation.localizationCode
-        return getMeta(localizationCode, "text")?.let{it as String}?.interpret(situation, localizationCode)
+        return getMeta(localizationCode, "text")
+            ?.let{it as String}
+            ?.interpretTopLevel(situation, localizationCode)
     }
 
     @JvmStatic
     internal fun TupleQuestionNode.TupleQuestionOutcome.explanation(situation: QuestioningSituation) : String? {
         val localizationCode = situation.localizationCode
-        return getMeta(localizationCode, "explanation")?.let{it as String}?.interpret(situation, localizationCode)
+        return getMeta(localizationCode, "explanation")
+            ?.let{it as String}
+            ?.interpretTopLevel(situation, localizationCode)
     }
 
     @JvmStatic
@@ -205,7 +224,7 @@ object TemplatingUtils {
         val localizationCode = situation.localizationCode
         return getMeta(localizationCode, "explanation")!!
             .stringCheck("FindErrorCategory '$this' doesn't have a $localizationCode explanation")
-            .interpret(situation, localizationCode, mapOf("checked" to Obj(entityAlias)))
+            .interpretTopLevel(situation, localizationCode, mapOf("checked" to Obj(entityAlias)))
     }
 
     @JvmStatic
@@ -213,7 +232,7 @@ object TemplatingUtils {
         val localizationCode = situation.localizationCode
         return getMeta(localizationCode, "nextStepQuestion")
             ?.let{it as String}
-            ?.interpret(situation, localizationCode)
+            ?.interpretTopLevel(situation, localizationCode)
     }
 
     @JvmStatic
@@ -227,7 +246,7 @@ object TemplatingUtils {
         val localizationCode = situation.localizationCode
         return getMeta(localizationCode, "nextStepExplanation")
             ?.let{it as String}
-            ?.interpret(situation, localizationCode)
+            ?.interpretTopLevel(situation, localizationCode)
     }
 
     //Ветки
@@ -243,7 +262,7 @@ object TemplatingUtils {
         val localizationCode = situation.localizationCode
         return getMeta(localizationCode, "nextStepQuestion")
             ?.let{it as String}
-            ?.interpret(situation, localizationCode)
+            ?.interpretTopLevel(situation, localizationCode)
     }
 
     @JvmStatic
@@ -256,7 +275,7 @@ object TemplatingUtils {
         val localizationCode = situation.localizationCode
         return getMeta(localizationCode, "nextStepExplanation")
             .stringCheck("Branch '$this' doesn't have a $localizationCode next step explanation")
-            .interpret(situation ,localizationCode)
+            .interpretTopLevel(situation ,localizationCode)
     }
 
     private fun Operator.generateQuestion(situation: QuestioningSituation) : String? {

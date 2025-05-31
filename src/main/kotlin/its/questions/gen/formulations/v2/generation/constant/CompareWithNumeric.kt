@@ -9,6 +9,7 @@ import its.model.expressions.literals.ValueLiteral
 import its.model.expressions.operators.CompareWithComparisonOperator
 import its.questions.gen.formulations.Localization
 import its.questions.gen.formulations.TemplatingUtils.getLocalizedName
+import its.questions.gen.formulations.TemplatingUtils.topLevelLlmCleanup
 import its.questions.gen.visitors.ValueToAnswerString.toLocalizedString
 import its.reasoner.LearningSituation
 import its.reasoner.operators.OperatorReasoner
@@ -52,7 +53,7 @@ class CompareWithNumericConstantContext(
                     .getLocalizedName(localization.codePrefix), // получение имени объекта, записанного в переменную
                 valueConstant.value.toLocalizedString(learningSituation, localization.codePrefix), // получение значения константы
                 operator // получение оператора
-            )
+            ).topLevelLlmCleanup()
         } else {
             return localization.COMPARE_A_PROPERTY(
                 propertyDef.getLocalizedName(localization.codePrefix), // получение названия свойства
@@ -60,7 +61,7 @@ class CompareWithNumericConstantContext(
                     .findIn(learningSituation.domainModel)!!
                     .getLocalizedName(localization.codePrefix), // получение имени объекта, записанного в переменную
                 valueConstant.value.toLocalizedString(learningSituation, localization.codePrefix) // получение значения константы
-            )
+            ).topLevelLlmCleanup()
         }
     }
 
