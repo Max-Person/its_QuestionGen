@@ -106,10 +106,8 @@ object TemplatingUtils {
         branchResult: BranchResult,
     ): String? {
         val localizationCode = situation.localizationCode
-        val template = getMeta(localizationCode, metaName) ?: getMeta(
-            localizationCode,
-            metaName + "_" + branchResult.toString().lowercase()
-        )
+        val template = getMeta(localizationCode, metaName + "_" + branchResult.toString().lowercase())
+                       ?: getMeta(localizationCode, metaName)
         return template?.toString()?.let {
             val result = it.interpretTopLevel(
                 situation, localizationCode, mapOf("branchResult" to EnumValue("BranchResult", branchResult.name))
