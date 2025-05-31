@@ -86,6 +86,14 @@ sealed interface Localization {
 
     fun GREATER_THAN(objName: String) : String
 
+    fun COMPARE_PROP_EXPL(propertyName: String, objName: String, value: String) : String
+
+    fun CHECK_OBJ_CLASS_EXPL(className : String, objName: String) : String
+
+    fun COMPARE_PROP_OF_DIFF_OBJS_EXPL(firstStatement: String, secondStatement: String) : String
+
+    fun DEFAULT_PROP_ASSERTION(propertyName: String, objName: String, value: String) : String
+
     companion object _static{
         @JvmStatic
         val localizations = mapOf(

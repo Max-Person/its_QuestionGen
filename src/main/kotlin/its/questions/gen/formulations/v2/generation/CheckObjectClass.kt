@@ -3,6 +3,7 @@ package its.questions.gen.formulations.v2.generation
 import its.model.definition.ClassDef
 import its.model.definition.ClassRef
 import its.model.definition.ThisShouldNotHappen
+import its.model.definition.types.Clazz
 import its.model.definition.types.Obj
 import its.model.definition.types.ObjectType
 import its.model.expressions.Operator
@@ -62,5 +63,31 @@ class CheckClassContext(
                 throw ThisShouldNotHappen()
             }
         }
+    }
+
+    override fun generateExplanation(
+        learningSituation: LearningSituation,
+        localization: Localization,
+        correctAnswer: Any
+    ): String? {
+        val objDef =  (objExpr.use(OperatorReasoner.defaultReasoner(learningSituation)) as Obj)
+            .findIn(learningSituation.domainModel)!!
+        val clazz = when(operator) {
+            is CheckClass -> {
+                objDef.clazz
+            }
+            is GetClass -> {
+                (correctAnswer as Clazz).findIn(learningSituation.domainModel)
+            }
+            else -> {
+                throw ThisShouldNotHappen()
+            }
+        }
+        return localization.THATS_INCORRECT_BECAUSE(
+            localization.CHECK_OBJ_CLASS_EXPL(
+            clazz!!.getLocalizedName(localization.codePrefix),
+            objDef.getLocalizedName(localization.codePrefix)
+            )
+        ).topLevelLlmCleanup()
     }
 }

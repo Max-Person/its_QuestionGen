@@ -124,6 +124,22 @@ object LocalizationEN : Localization {
         return "It's greater for $objName"
     }
 
+    override fun COMPARE_PROP_EXPL(propertyName: String, objName: String, value: String): String {
+        return "$propertyName of $objName is $value"
+    }
+
+    override fun CHECK_OBJ_CLASS_EXPL(className: String, objName: String): String {
+        return "$objName is ${if (startsWithVowel(className)) "an" else "a"} $className"
+    }
+
+    override fun COMPARE_PROP_OF_DIFF_OBJS_EXPL(firstStatement: String, secondStatement: String): String {
+        return "$firstStatement and $secondStatement"
+    }
+
+    override fun DEFAULT_PROP_ASSERTION(propertyName: String, objName: String, value: String): String {
+        return "the value of $propertyName $objName is $value"
+    }
+
     fun startsWithVowel(word: String): Boolean {
         if (word.isEmpty()) return false
         return when (word.first().lowercaseChar()) {

@@ -10,4 +10,8 @@ interface AbstractContext {
     fun generateAnswer(learningSituation: LearningSituation, localization: Localization, value : Any) : String? {
         return value.toLocalizedString(learningSituation, localization.codePrefix)
     }
+
+    fun generateExplanation(learningSituation: LearningSituation, localization: Localization, correctAnswer : Any) : String? {
+        return null
+    }
 }

@@ -14,6 +14,7 @@ import its.questions.gen.formulations.TemplatingUtils.interpretTopLevel
 import its.questions.gen.formulations.TemplatingUtils.topLevelLlmCleanup
 import its.questions.gen.formulations.v2.AbstractContext
 import its.questions.gen.formulations.v2.generation.constant.CompareWithConstantContext
+import its.questions.gen.visitors.ValueToAnswerString.toLocalizedString
 import its.reasoner.LearningSituation
 import its.reasoner.operators.OperatorReasoner
 
@@ -71,6 +72,26 @@ class CheckPropertyContext(
             (objExpr.use(OperatorReasoner.defaultReasoner(learningSituation)) as Obj)
                 .findIn(learningSituation.domainModel)!!
                 .getLocalizedName(localization.codePrefix)
+        ).topLevelLlmCleanup()
+    }
+
+    override fun generateExplanation(
+        learningSituation: LearningSituation,
+        localization: Localization,
+        correctAnswer: Any
+    ): String? {
+        val value = (objExpr.use(OperatorReasoner.defaultReasoner(learningSituation)) as Obj)
+            .findIn(learningSituation.domainModel)!!
+            .getPropertyValue(propertyDef.name, paramsMap)
+
+        return localization.THATS_INCORRECT_BECAUSE(
+            localization.COMPARE_PROP_EXPL(
+                propertyDef.getLocalizedName(localization.codePrefix),
+                (objExpr.use(OperatorReasoner.defaultReasoner(learningSituation)) as Obj)
+                    .findIn(learningSituation.domainModel)!!
+                    .getLocalizedName(localization.codePrefix),
+                value.toLocalizedString(learningSituation, localization.codePrefix)
+            )
         ).topLevelLlmCleanup()
     }
 }

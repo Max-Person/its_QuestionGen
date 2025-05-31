@@ -165,6 +165,23 @@ object LocalizationRU : Localization {
         return "У ${objName.toCase(Case.Gen)} больше"
     }
 
+    override fun COMPARE_PROP_EXPL(propertyName: String, objName: String, value: String) : String {
+        return "$propertyName ${objName.toCase(Case.Gen)} имеет значение $value"
+    }
+
+    override fun CHECK_OBJ_CLASS_EXPL(className: String, objName: String): String {
+        return "$objName является ${className.toCase(Case.Ins)}"
+    }
+
+    override fun COMPARE_PROP_OF_DIFF_OBJS_EXPL(firstStatement: String, secondStatement: String): String {
+        return "$firstStatement, a $secondStatement"
+    }
+
+    override fun DEFAULT_PROP_ASSERTION(propertyName: String, objName: String, value: String): String {
+        return "$propertyName ${objName.toCase(Case.Gen)} имеет значение $value"
+    }
+
+
     private fun extractGender(morphInfo: List<String>): String? {
         for (info in morphInfo) {
             if (info.contains("жр")) return "жр"

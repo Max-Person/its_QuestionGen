@@ -120,4 +120,28 @@ open class CompareWithConstantContext(
         }
         return super.generateAnswer(learningSituation, localization, valueToPass)
     }
+
+    override fun generateExplanation(learningSituation: LearningSituation, localization: Localization, correctAnswer : Any): String? {
+        val assertion = propertyDef.metadata.getString(localization.codePrefix, "assertion")
+        val obj = objExpr.use(OperatorReasoner.defaultReasoner(learningSituation)) as Obj
+        if (assertion != null) {
+            val contextVars = mutableMapOf(
+                "obj" to obj,
+                "value" to correctAnswer
+            )
+            paramsMap.forEach { (paramName, operator) ->
+                contextVars[paramName] = operator.use(OperatorReasoner.defaultReasoner(learningSituation))!!
+            }
+            val interpreted = assertion.interpret(learningSituation, localization.codePrefix, contextVars)
+            return localization.THATS_INCORRECT_BECAUSE(interpreted).topLevelLlmCleanup()
+        }
+        return localization.THATS_INCORRECT_BECAUSE(
+            localization.COMPARE_PROP_EXPL(
+                propertyDef.getLocalizedName(localization.codePrefix),
+                obj.findIn(learningSituation.domainModel)!!
+                    .getLocalizedName(localization.codePrefix),
+                valueConstant.value.toLocalizedString(learningSituation, localization.codePrefix)
+            )
+        ).topLevelLlmCleanup()
+    }
 }
