@@ -8,8 +8,11 @@ import its.model.definition.DomainModel
 import its.model.definition.DomainRef
 import its.model.definition.types.EnumValue
 import its.model.definition.types.Obj
+import its.model.expressions.Operator
 import its.model.nodes.*
 import its.questions.gen.QuestioningSituation
+import its.questions.gen.formulations.v2.generation.GigaChatAPI
+import its.questions.gen.formulations.v2.generation.QuestionGeneratorFabric
 import its.reasoner.LearningSituation
 import padeg.lib.Padeg
 
@@ -27,6 +30,9 @@ object TemplatingUtils {
 
     @JvmStatic
     fun String.toCase(case: Case?) : String{
+        if (GigaChatAPI.isActive) {
+            return GigaChatAPI.toCase(this, case?: Case.Nom)
+        }
         return Padeg.getAppointmentPadeg(this, (case?: Case.Nom).ordinal+1).replace(Regex("\\s+"), " ")
     }
 
@@ -55,13 +61,17 @@ object TemplatingUtils {
         contextVars: Map<String, Any> = emptyMap(),
     ) : String{
         val parse = Template(this, OperatorTemplateParser)
-        return parse.interpret(
+        val parsed = parse.interpret(
             InterpretationData()
                 .withModifierObj(TemplateModifier)
                 .withVar(OperatorTemplateParser.LEARNING_SITUATION, learningSituation)
                 .withVar(OperatorTemplateParser.LOCALIZATION_CODE, localizationCode)
                 .withVar(OperatorTemplateParser.CONTEXT_VARS, contextVars)
         ).cleanup()
+        if (GigaChatAPI.isActive) {
+            return GigaChatAPI.generate(parsed)
+        }
+        return parsed
     }
 
     //region Получение и шаблонизация текстовой информации
@@ -112,6 +122,21 @@ object TemplatingUtils {
         return getMeta(localizationCode, "question")
             .stringCheck("Node '$this' doesn't have a $localizationCode associated question")
             .interpret(situation, localizationCode)
+    }
+
+    @JvmStatic
+    internal fun QuestionNode.question(situation: QuestioningSituation) : String {
+        val localizationCode = situation.localizationCode
+        return (getMeta(localizationCode, "question")
+            ?.let { it as? String }
+            ?.interpret(situation, localizationCode)
+            ?: this.expr.generateQuestion(situation))
+            .stringCheck("Node '$this' doesn't have a $localizationCode associated question")
+
+    }
+
+    fun String.useLLM() : String {
+        return GigaChatAPI.generate(this)
     }
 
     @JvmStatic
@@ -233,16 +258,22 @@ object TemplatingUtils {
             .stringCheck("Branch '$this' doesn't have a $localizationCode next step explanation")
             .interpret(situation ,localizationCode)
     }
+
+    private fun Operator.generateQuestion(situation: QuestioningSituation) : String? {
+        return QuestionGeneratorFabric(situation, situation.localization)
+            .getContext(this)
+            ?.generate(situation, situation.localization)
+    }
 }
 
 
-enum class Case{
-    Nom, //именительный (кто? что?)
-    Gen, //родительный (кого? чего?)
-    Dat, //дательный (кому? чему?)
-    Acc, //винительный (кого? что?)
-    Ins, //творительный (кем? чем?)
-    Pre, //предложный (о ком? о чем?)
+enum class Case(val description: String) {
+    Nom("именительный"), //именительный (кто? что?)
+    Gen("родительный"), //родительный (кого? чего?)
+    Dat("дательный"), //дательный (кому? чему?)
+    Acc("винительный"), //винительный (кого? что?)
+    Ins("творительный"), //творительный (кем? чем?)
+    Pre("предложный"), //предложный (о ком? о чем?)
     ;
 
     companion object {

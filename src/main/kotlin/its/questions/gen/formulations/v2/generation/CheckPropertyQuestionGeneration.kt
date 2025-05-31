@@ -55,7 +55,7 @@ class CheckPropertyContext(
     val paramsMap: Map<String, Operator>
 ) : AbstractContext {
     override fun generate(learningSituation: LearningSituation, localization: Localization): String? {
-        val question = propertyDef.metadata.getString(localization.codePrefix, "question_check_property")
+        val question = propertyDef.metadata.getString(localization.codePrefix, "question")
         val contextVars = mutableMapOf(
             "obj" to objExpr.use(OperatorReasoner.defaultReasoner(learningSituation))!!
         )

@@ -35,7 +35,8 @@ fun main() {
         "obj:alice=>hasPet(obj:murzik)",
 
         "obj:murzik.class()",
-        "obj:murzik is Pet",
+        "obj:murzik is class:Pet",
+        "obj:murzik == class:Pet",
     ).associateWith { OperatorLoqiBuilder.buildExp(it) }
 
     exprs.forEach { (string, expr) ->
@@ -43,7 +44,7 @@ fun main() {
             string + "\t\t" + QuestionGeneratorFabric(
                 LearningSituation(domainModel, HashMap()),
                 LocalizationRU
-            ).getContext(expr)?.generate(LearningSituation(domainModel, HashMap()), LocalizationRU)
+            ).getContext(expr)?.generate(LearningSituation(domainModel, HashMap()), LocalizationRU)?.useLLM()
         )
     }
 

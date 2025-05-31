@@ -20,22 +20,38 @@ object GigaChatAPI {
     var clientSecret = ""
     private var lastCreatedTokenTime = 0L
     private var access_token = ""
+    var isActive = false
 
     private val client = createUnsafeOkHttpClient()
     private val mapper = jacksonObjectMapper()
 
-    fun generate(string: String) : String {
+    fun generate(string: String): String {
         return try {
             if (lastCreatedTokenTime == 0L || lastCreatedTokenTime + 30 * 60 * 1000 > System.currentTimeMillis()) {
-                access_token = getAccessToken()?: ""
+                access_token = getAccessToken() ?: ""
             }
-            sendMessageToGigaChat(string)
+            sendMessageToGigaChat(
+                string,
+                "Перепиши текст, исправив грамматические, орфографические и пунктуационные ошибки в тексте."
+            )
         } catch (e: Exception) {
             println("Ошибка во время отправки запроса на генерацию текста: ${e.message}")
             string
         }
-
     }
+
+    fun toCase(string: String, case: Case) : String {
+        return try {
+            if (lastCreatedTokenTime == 0L || lastCreatedTokenTime + 30 * 60 * 1000 > System.currentTimeMillis()) {
+                access_token = getAccessToken()?: ""
+            }
+            sendMessageToGigaChat(string, "Приведи слово к падежу ${case.description}. Объяснения не нужны, верни весь переданный текст полностью.")
+        } catch (e: Exception) {
+            println("Ошибка во время отправки запроса на приведение слова к падежу: ${e.message}")
+            return string.toCase(case)
+        }
+    }
+
     private fun getAccessToken(): String? {
         val mediaType = "application/x-www-form-urlencoded".toMediaTypeOrNull()
         val body = "scope=GIGACHAT_API_PERS".toRequestBody(mediaType)
@@ -62,7 +78,7 @@ object GigaChatAPI {
         return parsed.access_token
     }
 
-    private fun sendMessageToGigaChat(message: String): String {
+    private fun sendMessageToGigaChat(message: String, prompt: String): String {
         if (access_token.isEmpty()) {
             return message
         }
@@ -71,7 +87,7 @@ object GigaChatAPI {
         {
           "model": "GigaChat",
           "messages": [
-            {"role": "system", "content": "Перепиши текст, исправив грамматические, орфографические и пунктуационные ошибки в тексте."},
+            {"role": "system", "content": "${prompt.replace("\"", "\\")}}"},
             {
             "created_at": 1748373231,
             "role": "user",
@@ -100,7 +116,11 @@ object GigaChatAPI {
 
             // Печатаем content первого сообщения
             val content = parsed.choices.firstOrNull()?.message?.content
-            return@use content?:message
+            var msg = content?:message
+            if (message.first().isLowerCase()) {
+                msg = msg.replaceFirstChar { it.lowercase(Locale.getDefault()) }
+            }
+            return@use msg
         }
     }
 

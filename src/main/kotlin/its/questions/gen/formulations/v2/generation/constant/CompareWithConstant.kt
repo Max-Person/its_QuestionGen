@@ -89,7 +89,7 @@ open class CompareWithConstantContext(
     }
 
     protected fun getQuestionOrAssertion(learningSituation: LearningSituation, localization: Localization): String? {
-        val question = propertyDef.metadata.getString(localization.codePrefix, "question")
+        val question = propertyDef.metadata.getString(localization.codePrefix, "compareValueQuestion")
         val obj = objExpr.use(OperatorReasoner.defaultReasoner(learningSituation)) as Obj
         val contextVars = mutableMapOf(
             "obj" to obj,
