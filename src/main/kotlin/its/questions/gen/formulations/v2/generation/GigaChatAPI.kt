@@ -3,6 +3,8 @@ package its.questions.gen.formulations.v2.generation
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
+import its.questions.gen.formulations.Case
+import its.questions.gen.formulations.TemplatingUtils.toCase
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request

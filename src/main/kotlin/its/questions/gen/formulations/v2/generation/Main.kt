@@ -44,7 +44,7 @@ fun main() {
             string + "\t\t" + QuestionGeneratorFabric(
                 LearningSituation(domainModel, HashMap()),
                 LocalizationRU
-            ).getContext(expr)?.generate(LearningSituation(domainModel, HashMap()), LocalizationRU)?.useLLM()
+            ).getContext(expr)?.generate(LearningSituation(domainModel, HashMap()), LocalizationRU)
         )
     }
 
