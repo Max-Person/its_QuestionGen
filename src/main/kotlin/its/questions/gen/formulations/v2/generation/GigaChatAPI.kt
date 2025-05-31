@@ -28,30 +28,35 @@ object GigaChatAPI {
     private val mapper = jacksonObjectMapper()
 
     fun generate(string: String): String {
-        return try {
-            if (lastCreatedTokenTime == 0L || lastCreatedTokenTime + 30 * 60 * 1000 > System.currentTimeMillis()) {
-                access_token = getAccessToken() ?: ""
+        try {
+            if (isActive) {
+                if (lastCreatedTokenTime == 0L || lastCreatedTokenTime + 30 * 60 * 1000 > System.currentTimeMillis()) {
+                    access_token = getAccessToken() ?: ""
+                }
+                return sendMessageToGigaChat(
+                    string,
+                    "Перепиши текст, исправив грамматические, орфографические и пунктуационные ошибки в тексте."
+                )
             }
-            sendMessageToGigaChat(
-                string,
-                "Перепиши текст, исправив грамматические, орфографические и пунктуационные ошибки в тексте."
-            )
+
         } catch (e: Exception) {
             println("Ошибка во время отправки запроса на генерацию текста: ${e.message}")
-            string
         }
+        return string
     }
 
     fun toCase(string: String, case: Case) : String {
-        return try {
-            if (lastCreatedTokenTime == 0L || lastCreatedTokenTime + 30 * 60 * 1000 > System.currentTimeMillis()) {
-                access_token = getAccessToken()?: ""
+        try {
+            if (isActive) {
+                if (lastCreatedTokenTime == 0L || lastCreatedTokenTime + 30 * 60 * 1000 > System.currentTimeMillis()) {
+                    access_token = getAccessToken()?: ""
+                }
+                return sendMessageToGigaChat(string, "Приведи слово к падежу ${case.description}. Объяснения не нужны, верни весь переданный текст полностью.")
             }
-            sendMessageToGigaChat(string, "Приведи слово к падежу ${case.description}. Объяснения не нужны, верни весь переданный текст полностью.")
         } catch (e: Exception) {
             println("Ошибка во время отправки запроса на приведение слова к падежу: ${e.message}")
-            return string.toCase(case)
         }
+        return string.toCase(case)
     }
 
     private fun getAccessToken(): String? {
