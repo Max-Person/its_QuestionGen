@@ -283,6 +283,18 @@ object TemplatingUtils {
             .getContext(this)
             ?.generate(situation, situation.localization)
     }
+
+    fun Operator.generateExplanation(situation: QuestioningSituation, correctAnswer : Any) : String? {
+        return QuestionGeneratorFabric(situation, situation.localization)
+            .getContext(this)
+            ?.generateExplanation(situation, situation.localization, correctAnswer)
+    }
+
+    fun Operator.generateAnswer(situation: QuestioningSituation, answer : Any) : String? {
+        return QuestionGeneratorFabric(situation, situation.localization)
+            .getContext(this)
+            ?.generateAnswer(situation, situation.localization, answer)
+    }
 }
 
 

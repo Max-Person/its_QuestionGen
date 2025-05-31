@@ -7,6 +7,8 @@ import its.questions.gen.QuestioningSituation
 import its.questions.gen.formulations.TemplatingUtils.asNextStep
 import its.questions.gen.formulations.TemplatingUtils.description
 import its.questions.gen.formulations.TemplatingUtils.explanation
+import its.questions.gen.formulations.TemplatingUtils.generateAnswer
+import its.questions.gen.formulations.TemplatingUtils.generateExplanation
 import its.questions.gen.formulations.TemplatingUtils.getLocalizedName
 import its.questions.gen.formulations.TemplatingUtils.nextStepBranchResult
 import its.questions.gen.formulations.TemplatingUtils.nextStepExplanation
@@ -304,15 +306,18 @@ object SequentialStrategy : QuestioningStrategyWithInfo<SequentialStrategy.Seque
 
             val question = object : CorrectnessCheckQuestionState<Any>() {
                 override fun text(situation: QuestioningSituation): String {
-                    return node.question(situation) // TODO впихнуться сюда
+                    return node.question(situation)
                 }
 
                 override fun options(situation: QuestioningSituation): List<SingleChoiceOption<Correctness<Any>>> {
-                    val answer = node.getAnswer(situation) // TODO сюда тоже впихнуться
+                    val answer = node.getAnswer(situation)
                     val correctOutcome = node.outcomes[answer]!!
                     val explText = correctOutcome.explanation(situation)
+                        ?:node.expr.generateExplanation(situation, correctOutcome.key)
                     return node.outcomes.map { SingleChoiceOption(
-                        it.text(situation)?:it.key.toLocalizedString(situation),
+                        it.text(situation)
+                            ?:node.expr.generateAnswer(situation, it.key)
+                            ?:it.key.toLocalizedString(situation),
                         if(explText != null) Explanation(explText, type = ExplanationType.Error) else null,
                         Correctness(it.key, it == correctOutcome),
                     )}
