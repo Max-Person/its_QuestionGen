@@ -145,10 +145,15 @@ class AggregationQuestionState<Node : AggregationNode, BranchInfo>(
 
         val thoughtBranches = helper.getThoughtBranches()
         val branchAutomata = thoughtBranches.associateWith { QuestioningStrategy.defaultFullBranchStrategy.build(it) }
-        thoughtBranches.filter { branch -> branchAutomata[branch]!!.hasQuestions() }.forEach { branch ->
-                state.linkTo(branchAutomata[branch]!!.initState) { situation, answer ->
-                    helper.getThoughtBranch(answer) == branch
-                }
+        thoughtBranches.forEach { branch ->
+            val nextState = if(branchAutomata[branch]!!.hasQuestions())
+                branchAutomata[branch]!!.initState
+            else
+                RedirectQuestionState()
+
+            state.linkTo(nextState) { situation, answer ->
+                helper.getThoughtBranch(answer) == branch
+            }
         }
 
         return state
