@@ -40,7 +40,8 @@ object GigaChatAPI {
             }
 
         } catch (e: Exception) {
-            println("Ошибка во время отправки запроса на генерацию текста: ${e.message}")
+            System.err.println("Ошибка во время отправки запроса на генерацию текста: ${e.message}")
+            System.err.println(e.stackTrace)
         }
         return string
     }
@@ -54,7 +55,8 @@ object GigaChatAPI {
                 return sendMessageToGigaChat(string, "Приведи слово к падежу ${case.description}. Объяснения не нужны, верни весь переданный текст полностью.")
             }
         } catch (e: Exception) {
-            println("Ошибка во время отправки запроса на приведение слова к падежу: ${e.message}")
+            System.err.println("Ошибка во время отправки запроса на приведение слова к падежу: ${e.message}")
+            System.err.println(e.stackTrace)
         }
         return string.toCase(case)
     }
@@ -73,16 +75,21 @@ object GigaChatAPI {
                 "Basic " + Base64.getEncoder().encodeToString("$clientId:$clientSecret".toByteArray())
             )
             .build()
-        val response = client.newCall(request).execute()
-        if (!response.isSuccessful) {
-            println("Ошибка: ${response.code}")
+        try {
+            val response = client.newCall(request).execute()
+            if (!response.isSuccessful) {
+                System.err.println("Ошибка: ${response.code}, проверьте данные для авторизации")
+                return null
+            }
+
+            val parsed: GigaTokenResponse = mapper.readValue(response.body!!.string())
+
+            lastCreatedTokenTime = parsed.expires_at
+            return parsed.access_token
+        } catch (e : Exception) {
+            System.err.println("Ошибка: ${e.message}, проверьте данные для авторизации")
             return null
         }
-
-        val parsed: GigaTokenResponse = mapper.readValue(response.body!!.string())
-
-        lastCreatedTokenTime = parsed.expires_at
-        return parsed.access_token
     }
 
     private fun sendMessageToGigaChat(message: String, prompt: String): String {
