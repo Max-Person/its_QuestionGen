@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <metadata>
   <groupId>org.apache.lucene.morphology</groupId>
-  <artifactId>russian</artifactId>
+  <artifactId>morph</artifactId>
   <versioning>
     <release>1.5</release>
     <versions>
