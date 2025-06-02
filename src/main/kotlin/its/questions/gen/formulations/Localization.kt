@@ -1,5 +1,6 @@
 package its.questions.gen.formulations
 
+import its.model.expressions.operators.CompareWithComparisonOperator
 import its.model.nodes.AggregationMethod
 
 sealed interface Localization {
@@ -65,11 +66,43 @@ sealed interface Localization {
 
     fun SIM_AGGREGATION_NULL_EXPLANATION(branchesDescription: String): String
 
+    fun COMPARE_A_PROPERTY_TO_A_CONSTANT(propertyName : String, objName : String, propertyVal : String) : String
+
+    fun COMPARE_A_PROPERTY_TO_A_NUMERIC_CONST(propertyName : String, objName : String, propertyVal : String,
+                                              operator : CompareWithComparisonOperator.ComparisonOperator) : String
+
+    fun COMPARE_A_PROPERTY(propertyName: String, objName : String, propertyVal : String) : String
+
+    fun CHECK_OBJ_PROPERTY_OR_CLASS(propertyName: String, objName: String) : String
+
+    fun COMPARE_WITH_SAME_PROPS_OF_DIFF_OBJ(propertyName: String, objName1: String, objName2: String,
+                                            operator: CompareWithComparisonOperator.ComparisonOperator) : String
+
+    fun COMPARE_A_PROPERTY_WITH_SAME_PROPS_OF_DIFF_OBJ(propertyName: String, objName1: String, objName2: String) : String
+
+    fun CHECK_OBJECT_CLASS(className : String, objName: String) : String
+
+    fun IS_OBJ_A_CLASS(className : String, objName: String) : String
+
+    fun GREATER_THAN(objName: String) : String
+
+    fun COMPARE_PROP_EXPL(propertyName: String, objName: String, value: String) : String
+
+    fun CHECK_OBJ_CLASS_EXPL(className : String, objName: String) : String
+
+    fun COMPARE_PROP_OF_DIFF_OBJS_EXPL(firstStatement: String, secondStatement: String) : String
+
+    fun DEFAULT_PROP_ASSERTION(propertyName: String, objName: String, value: String) : String
+
     companion object _static{
         @JvmStatic
         val localizations = mapOf(
             LocalizationRU.codePrefix to LocalizationRU,
             LocalizationEN.codePrefix to LocalizationEN
         )
+        @JvmStatic
+        fun getLocalization(locCode : String) : Localization {
+            return localizations[locCode]!!
+        }
     }
 }

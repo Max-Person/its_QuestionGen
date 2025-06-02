@@ -1,6 +1,9 @@
 package its.questions.gen.formulations
 
+import its.model.expressions.operators.CompareWithComparisonOperator
 import its.model.nodes.AggregationMethod
+import its.questions.gen.formulations.TemplatingUtils.toCase
+import org.apache.lucene.morphology.russian.RussianLuceneMorphology
 
 object LocalizationRU : Localization {
     override val codePrefix: String = "RU"
@@ -63,4 +66,128 @@ object LocalizationRU : Localization {
 
     override fun SIM_AGGREGATION_NULL_EXPLANATION(branchesDescription: String): String =
         "Это неверно, поскольку в данной ситуации все из описанных выше факторов (${branchesDescription}) " + "не влияют на решение, а значит, об общем результате в данном случае говорить не приходится."
+
+    override fun COMPARE_A_PROPERTY_TO_A_CONSTANT(propertyName: String, objName: String, propertyVal: String): String {
+        return "Имеет ли $propertyName ${objName.toCase(Case.Gen)} значение $propertyVal?" // TODO использовать это для оператора равно
+    }
+
+    private val morphology = RussianLuceneMorphology()
+
+    private val operatorMap = mapOf(
+        CompareWithComparisonOperator.ComparisonOperator.Greater to "Больше ли",
+        CompareWithComparisonOperator.ComparisonOperator.LessEqual to "Больше ли",
+        CompareWithComparisonOperator.ComparisonOperator.Less to "Меньше ли",
+        CompareWithComparisonOperator.ComparisonOperator.GreaterEqual to "Меньше ли"
+    )
+
+    private val genderToEqualOpMap = mapOf(
+        "мр" to "Равен ли",
+        "жр" to "Равна ли",
+        "ср" to "Равно ли"
+    )
+
+    override fun COMPARE_A_PROPERTY_TO_A_NUMERIC_CONST(
+        propertyName: String,
+        objName: String,
+        propertyVal: String,
+        operator: CompareWithComparisonOperator.ComparisonOperator
+    ): String {
+        val operatorStr: String = if (operator == CompareWithComparisonOperator.ComparisonOperator.Equal ||
+            operator == CompareWithComparisonOperator.ComparisonOperator.NotEqual) {
+            try {
+                val morphInfo = morphology.getMorphInfo(propertyName)
+                val gender = extractGender(morphInfo)
+                genderToEqualOpMap[gender]!!
+            } catch (e : Exception) {
+                "Равно ли"
+            }
+
+        } else {
+            operatorMap[operator]!!
+        }
+        return "$operatorStr $propertyName ${objName.toCase(Case.Gen)} $propertyVal?"
+    }
+
+    override fun COMPARE_A_PROPERTY(propertyName: String, objName: String, propertyVal: String): String {
+        return "Сравните значение ${propertyName.toCase(Case.Gen)} ${objName.toCase(Case.Gen)} со значением $propertyVal"
+    }
+
+    override fun CHECK_OBJ_PROPERTY_OR_CLASS(propertyName: String, objName: String): String {
+        return "Каково значение ${propertyName.toCase(Case.Gen)} ${objName.toCase(Case.Gen)}?"
+    }
+
+    override fun COMPARE_WITH_SAME_PROPS_OF_DIFF_OBJ(
+        propertyName: String,
+        objName1: String,
+        objName2: String,
+        operator: CompareWithComparisonOperator.ComparisonOperator
+    ): String {
+        val operatorStr: String = if (operator == CompareWithComparisonOperator.ComparisonOperator.Equal ||
+            operator == CompareWithComparisonOperator.ComparisonOperator.NotEqual) {
+            try {
+                val morphInfo = morphology.getMorphInfo(propertyName)
+                val gender = extractGender(morphInfo)
+                genderToEqualOpMap[gender]!!
+            } catch (e : Exception) {
+                return "Равно ли"
+            }
+
+        } else {
+            operatorMap[operator]!!
+        }
+
+        val propertyOfObj2: String = if (operator == CompareWithComparisonOperator.ComparisonOperator.Equal ||
+            operator == CompareWithComparisonOperator.ComparisonOperator.NotEqual) {
+            propertyName.toCase(Case.Dat)
+        } else {
+            propertyName.toCase(Case.Gen)
+        }
+        return "$operatorStr $propertyName ${objName1.toCase(Case.Gen)} $propertyOfObj2 ${objName2.toCase(Case.Gen)}?"
+    }
+
+    override fun COMPARE_A_PROPERTY_WITH_SAME_PROPS_OF_DIFF_OBJ(
+        propertyName: String,
+        objName1: String,
+        objName2: String
+    ): String {
+        return "Сравните $propertyName ${objName1.toCase(Case.Gen)} с ${propertyName.toCase(Case.Ins)} ${objName2.toCase(Case.Gen)}"
+    }
+
+    override fun CHECK_OBJECT_CLASS(className: String, objName: String): String {
+        return "Каким ${className.toCase(Case.Ins)} является $objName?"
+    }
+
+    override fun IS_OBJ_A_CLASS(className: String, objName: String): String {
+        return "Является ли $objName ${className.toCase(Case.Ins)}?"
+    }
+
+    override fun GREATER_THAN(objName: String): String {
+        return "У ${objName.toCase(Case.Gen)} больше"
+    }
+
+    override fun COMPARE_PROP_EXPL(propertyName: String, objName: String, value: String) : String {
+        return "$propertyName ${objName.toCase(Case.Gen)} имеет значение $value"
+    }
+
+    override fun CHECK_OBJ_CLASS_EXPL(className: String, objName: String): String {
+        return "$objName является ${className.toCase(Case.Ins)}"
+    }
+
+    override fun COMPARE_PROP_OF_DIFF_OBJS_EXPL(firstStatement: String, secondStatement: String): String {
+        return "$firstStatement, a $secondStatement"
+    }
+
+    override fun DEFAULT_PROP_ASSERTION(propertyName: String, objName: String, value: String): String {
+        return "$propertyName ${objName.toCase(Case.Gen)} имеет значение $value"
+    }
+
+
+    private fun extractGender(morphInfo: List<String>): String? {
+        for (info in morphInfo) {
+            if (info.contains("жр")) return "жр"
+            if (info.contains("мр")) return "мр"
+            if (info.contains("ср")) return "ср"
+        }
+        return null
+    }
 }

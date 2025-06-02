@@ -1,5 +1,6 @@
 package its.questions.gen.formulations
 
+import its.model.expressions.operators.CompareWithComparisonOperator
 import its.model.nodes.AggregationMethod
 
 object LocalizationEN : Localization {
@@ -63,4 +64,87 @@ object LocalizationEN : Localization {
 
     override fun SIM_AGGREGATION_NULL_EXPLANATION(branchesDescription: String): String =
         "That's incorrect, because in this case none of the factors mentioned (${branchesDescription}) " + "have no effect, which means that no determined result can be decided on this stage."
+
+    override fun COMPARE_A_PROPERTY_TO_A_CONSTANT(propertyName: String, objName: String, propertyVal: String) : String {
+        return "Is $propertyName of $objName equal to $propertyVal?"
+    }
+
+    private val operatorMap = mapOf(
+        CompareWithComparisonOperator.ComparisonOperator.Equal to "equal to",
+        CompareWithComparisonOperator.ComparisonOperator.NotEqual to "equal to",
+        CompareWithComparisonOperator.ComparisonOperator.GreaterEqual to "greater than",
+        CompareWithComparisonOperator.ComparisonOperator.Greater to "greater than",
+        CompareWithComparisonOperator.ComparisonOperator.Less to "less than",
+        CompareWithComparisonOperator.ComparisonOperator.LessEqual to "less than"
+    )
+
+    override fun COMPARE_A_PROPERTY_TO_A_NUMERIC_CONST(
+        propertyName: String,
+        objName: String,
+        propertyVal: String,
+        operator: CompareWithComparisonOperator.ComparisonOperator
+    ): String {
+        return "Is $propertyName of $objName ${operatorMap[operator]} $propertyVal?"
+    }
+
+    override fun COMPARE_A_PROPERTY(propertyName: String, objName: String, propertyVal: String): String {
+        return "Compare the value of $propertyVal of $objName with value $propertyVal"
+    }
+
+    override fun CHECK_OBJ_PROPERTY_OR_CLASS(propertyName: String, objName: String): String {
+        return "What is the $propertyName of $objName?"
+    }
+
+    override fun COMPARE_WITH_SAME_PROPS_OF_DIFF_OBJ(
+        propertyName: String,
+        objName1: String,
+        objName2: String,
+        operator: CompareWithComparisonOperator.ComparisonOperator
+    ): String {
+        return "Is $propertyName of $objName1 ${operatorMap[operator]} that of $objName2?"
+    }
+
+    override fun COMPARE_A_PROPERTY_WITH_SAME_PROPS_OF_DIFF_OBJ(
+        propertyName: String,
+        objName1: String,
+        objName2: String
+    ): String {
+        return "Compare $propertyName of $objName1 with $propertyName of $objName2"
+    }
+
+    override fun CHECK_OBJECT_CLASS(className: String, objName: String): String {
+        return "Which $className is $objName?"
+    }
+
+    override fun IS_OBJ_A_CLASS(className: String, objName: String): String {
+        return "Is $objName ${if (startsWithVowel(className)) "an" else "a"} $className?"
+    }
+
+    override fun GREATER_THAN(objName: String): String {
+        return "It's greater for $objName"
+    }
+
+    override fun COMPARE_PROP_EXPL(propertyName: String, objName: String, value: String): String {
+        return "$propertyName of $objName is $value"
+    }
+
+    override fun CHECK_OBJ_CLASS_EXPL(className: String, objName: String): String {
+        return "$objName is ${if (startsWithVowel(className)) "an" else "a"} $className"
+    }
+
+    override fun COMPARE_PROP_OF_DIFF_OBJS_EXPL(firstStatement: String, secondStatement: String): String {
+        return "$firstStatement and $secondStatement"
+    }
+
+    override fun DEFAULT_PROP_ASSERTION(propertyName: String, objName: String, value: String): String {
+        return "the value of $propertyName $objName is $value"
+    }
+
+    fun startsWithVowel(word: String): Boolean {
+        if (word.isEmpty()) return false
+        return when (word.first().lowercaseChar()) {
+            'a', 'e', 'i', 'o', 'u' -> true
+            else -> false
+        }
+    }
 }

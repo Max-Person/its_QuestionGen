@@ -8,8 +8,11 @@ import its.model.definition.DomainModel
 import its.model.definition.DomainRef
 import its.model.definition.types.EnumValue
 import its.model.definition.types.Obj
+import its.model.expressions.Operator
 import its.model.nodes.*
 import its.questions.gen.QuestioningSituation
+import its.questions.gen.formulations.v2.generation.GigaChatAPI
+import its.questions.gen.formulations.v2.generation.QuestionGeneratorFabric
 import its.reasoner.LearningSituation
 import padeg.lib.Padeg
 
@@ -55,13 +58,31 @@ object TemplatingUtils {
         contextVars: Map<String, Any> = emptyMap(),
     ) : String{
         val parse = Template(this, OperatorTemplateParser)
-        return parse.interpret(
+        val parsed = parse.interpret(
             InterpretationData()
                 .withModifierObj(TemplateModifier)
                 .withVar(OperatorTemplateParser.LEARNING_SITUATION, learningSituation)
                 .withVar(OperatorTemplateParser.LOCALIZATION_CODE, localizationCode)
                 .withVar(OperatorTemplateParser.CONTEXT_VARS, contextVars)
         ).cleanup()
+        return parsed
+    }
+
+    @JvmStatic
+    fun String.topLevelLlmCleanup() : String {
+        return if(GigaChatAPI.isActive)
+            GigaChatAPI.generate(this)
+        else
+            this
+    }
+
+    @JvmStatic
+    fun String.interpretTopLevel(
+        learningSituation: LearningSituation,
+        localizationCode: String,
+        contextVars: Map<String, Any> = emptyMap(),
+    ) : String {
+        return this.interpret(learningSituation, localizationCode, contextVars).topLevelLlmCleanup()
     }
 
     //region Получение и шаблонизация текстовой информации
@@ -85,12 +106,10 @@ object TemplatingUtils {
         branchResult: BranchResult,
     ): String? {
         val localizationCode = situation.localizationCode
-        val template = getMeta(localizationCode, metaName) ?: getMeta(
-            localizationCode,
-            metaName + "_" + branchResult.toString().lowercase()
-        )
+        val template = getMeta(localizationCode, metaName + "_" + branchResult.toString().lowercase())
+                       ?: getMeta(localizationCode, metaName)
         return template?.toString()?.let {
-            val result = it.interpret(
+            val result = it.interpretTopLevel(
                 situation, localizationCode, mapOf("branchResult" to EnumValue("BranchResult", branchResult.name))
             )
             result
@@ -103,7 +122,7 @@ object TemplatingUtils {
         val localizationCode = situation.localizationCode
         return getMeta(localizationCode, "asNextStep")
             .stringCheck("Node '$this' doesn't have a $localizationCode associated 'as next step' description")
-            .interpret(situation, localizationCode)
+            .interpretTopLevel(situation, localizationCode)
     }
 
     @JvmStatic
@@ -111,7 +130,19 @@ object TemplatingUtils {
         val localizationCode = situation.localizationCode
         return getMeta(localizationCode, "question")
             .stringCheck("Node '$this' doesn't have a $localizationCode associated question")
-            .interpret(situation, localizationCode)
+            .interpretTopLevel(situation, localizationCode)
+    }
+
+    @JvmStatic
+    internal fun QuestionNode.question(situation: QuestioningSituation) : String {
+        val localizationCode = situation.localizationCode
+        return (
+                getMeta(localizationCode, "question")
+                    ?.let { it as? String }
+                    ?.interpretTopLevel(situation, localizationCode)
+                ?: this.expr.generateQuestion(situation)
+               ).stringCheck("Node '$this' doesn't have a $localizationCode associated question")
+
     }
 
     @JvmStatic
@@ -119,7 +150,7 @@ object TemplatingUtils {
         val localizationCode = situation.localizationCode
         return getMeta(localizationCode, "question")
             .stringCheck("'$this' doesn't have a $localizationCode associated question")
-            .interpret(situation, localizationCode)
+            .interpretTopLevel(situation, localizationCode)
     }
 
     @JvmStatic
@@ -127,7 +158,7 @@ object TemplatingUtils {
         val localizationCode = situation.localizationCode
         return getMeta(localizationCode, "endingCause")
             .stringCheck("Node '$this' doesn't have a $localizationCode ending cause")
-            .interpret(situation, localizationCode) //TODO Если такого нет - т.е. у не-конечных узлов
+            .interpretTopLevel(situation, localizationCode) //TODO Если такого нет - т.е. у не-конечных узлов
     }
 
     @JvmStatic
@@ -141,38 +172,49 @@ object TemplatingUtils {
     internal fun AggregationNode.nullFormulation(situation: QuestioningSituation): String {
         val localizationCode = situation.localizationCode
         return getMeta(localizationCode, "nullFormulation").let { it as? String }
-                   ?.interpret(situation, localizationCode) ?: situation.localization.NO_EFFECT
+                   ?.interpretTopLevel(situation, localizationCode)
+               ?: situation.localization.NO_EFFECT
     }
 
     @JvmStatic
     internal fun QuestionNode.trivialityExplanation(situation: QuestioningSituation) : String? {
         val localizationCode = situation.localizationCode
-        return getMeta(localizationCode, "triviality")?.let{it as String}?.interpret(situation, localizationCode)
+        return getMeta(localizationCode, "triviality")
+            ?.let{it as String}
+            ?.interpretTopLevel(situation, localizationCode)
     }
 
     //Выходы (стрелки)
     @JvmStatic
     internal fun Outcome<*>.text(situation: QuestioningSituation) : String? {
         val localizationCode = situation.localizationCode
-        return getMeta(localizationCode, "text")?.let{it as String}?.interpret(situation, localizationCode)
+        return getMeta(localizationCode, "text")
+            ?.let{it as String}
+            ?.interpretTopLevel(situation, localizationCode)
     }
 
     @JvmStatic
     internal fun Outcome<*>.explanation(situation: QuestioningSituation) : String? {
         val localizationCode = situation.localizationCode
-        return getMeta(localizationCode, "explanation")?.let{it as String}?.interpret(situation, localizationCode)
+        return getMeta(localizationCode, "explanation")
+            ?.let{it as String}
+            ?.interpretTopLevel(situation, localizationCode)
     }
 
     @JvmStatic
     internal fun TupleQuestionNode.TupleQuestionOutcome.text(situation: QuestioningSituation) : String? {
         val localizationCode = situation.localizationCode
-        return getMeta(localizationCode, "text")?.let{it as String}?.interpret(situation, localizationCode)
+        return getMeta(localizationCode, "text")
+            ?.let{it as String}
+            ?.interpretTopLevel(situation, localizationCode)
     }
 
     @JvmStatic
     internal fun TupleQuestionNode.TupleQuestionOutcome.explanation(situation: QuestioningSituation) : String? {
         val localizationCode = situation.localizationCode
-        return getMeta(localizationCode, "explanation")?.let{it as String}?.interpret(situation, localizationCode)
+        return getMeta(localizationCode, "explanation")
+            ?.let{it as String}
+            ?.interpretTopLevel(situation, localizationCode)
     }
 
     @JvmStatic
@@ -180,7 +222,7 @@ object TemplatingUtils {
         val localizationCode = situation.localizationCode
         return getMeta(localizationCode, "explanation")!!
             .stringCheck("FindErrorCategory '$this' doesn't have a $localizationCode explanation")
-            .interpret(situation, localizationCode, mapOf("checked" to Obj(entityAlias)))
+            .interpretTopLevel(situation, localizationCode, mapOf("checked" to Obj(entityAlias)))
     }
 
     @JvmStatic
@@ -188,7 +230,7 @@ object TemplatingUtils {
         val localizationCode = situation.localizationCode
         return getMeta(localizationCode, "nextStepQuestion")
             ?.let{it as String}
-            ?.interpret(situation, localizationCode)
+            ?.interpretTopLevel(situation, localizationCode)
     }
 
     @JvmStatic
@@ -202,7 +244,7 @@ object TemplatingUtils {
         val localizationCode = situation.localizationCode
         return getMeta(localizationCode, "nextStepExplanation")
             ?.let{it as String}
-            ?.interpret(situation, localizationCode)
+            ?.interpretTopLevel(situation, localizationCode)
     }
 
     //Ветки
@@ -218,7 +260,7 @@ object TemplatingUtils {
         val localizationCode = situation.localizationCode
         return getMeta(localizationCode, "nextStepQuestion")
             ?.let{it as String}
-            ?.interpret(situation, localizationCode)
+            ?.interpretTopLevel(situation, localizationCode)
     }
 
     @JvmStatic
@@ -231,18 +273,36 @@ object TemplatingUtils {
         val localizationCode = situation.localizationCode
         return getMeta(localizationCode, "nextStepExplanation")
             .stringCheck("Branch '$this' doesn't have a $localizationCode next step explanation")
-            .interpret(situation ,localizationCode)
+            .interpretTopLevel(situation ,localizationCode)
+    }
+
+    private fun Operator.generateQuestion(situation: QuestioningSituation) : String? {
+        return QuestionGeneratorFabric(situation, situation.localization)
+            .getContext(this)
+            ?.generate(situation, situation.localization)
+    }
+
+    fun Operator.generateExplanation(situation: QuestioningSituation, correctAnswer : Any) : String? {
+        return QuestionGeneratorFabric(situation, situation.localization)
+            .getContext(this)
+            ?.generateExplanation(situation, situation.localization, correctAnswer)
+    }
+
+    fun Operator.generateAnswer(situation: QuestioningSituation, answer : Any) : String? {
+        return QuestionGeneratorFabric(situation, situation.localization)
+            .getContext(this)
+            ?.generateAnswer(situation, situation.localization, answer)
     }
 }
 
 
-enum class Case{
-    Nom, //именительный (кто? что?)
-    Gen, //родительный (кого? чего?)
-    Dat, //дательный (кому? чему?)
-    Acc, //винительный (кого? что?)
-    Ins, //творительный (кем? чем?)
-    Pre, //предложный (о ком? о чем?)
+enum class Case(val description: String) {
+    Nom("именительный"), //именительный (кто? что?)
+    Gen("родительный"), //родительный (кого? чего?)
+    Dat("дательный"), //дательный (кому? чему?)
+    Acc("винительный"), //винительный (кого? что?)
+    Ins("творительный"), //творительный (кем? чем?)
+    Pre("предложный"), //предложный (о ком? о чем?)
     ;
 
     companion object {

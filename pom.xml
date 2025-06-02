@@ -107,6 +107,34 @@
                             <packaging>jar</packaging>
                         </configuration>
                     </execution>
+                    <execution>
+                        <id>install-morphology</id>
+                        <phase>initialize</phase>
+                        <goals>
+                            <goal>install-file</goal>
+                        </goals>
+                        <configuration>
+                            <file>${basedir}/lib/org/apache/lucene/morphology/morphology/morph-1.5.jar</file>
+                            <groupId>org.apache.lucene.morphology</groupId>
+                            <artifactId>morphology</artifactId>
+                            <version>1.5</version>
+                            <packaging>jar</packaging>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>install-morphology-russian</id>
+                        <phase>initialize</phase>
+                        <goals>
+                            <goal>install-file</goal>
+                        </goals>
+                        <configuration>
+                            <file>${basedir}/lib/org/apache/lucene/morphology/russian/russian-1.5.jar</file>
+                            <groupId>org.apache.lucene.morphology</groupId>
+                            <artifactId>russian</artifactId>
+                            <version>1.5</version>
+                            <packaging>jar</packaging>
+                        </configuration>
+                    </execution>
                 </executions>
             </plugin>
         </plugins>
@@ -135,7 +163,7 @@
         <dependency>
             <groupId>com.github.Max-Person</groupId>
             <artifactId>its_DomainModel</artifactId>
-            <version>2.17.0</version>
+            <version>2.17.2</version>
         </dependency>
         <dependency>
             <groupId>com.github.Max-Person</groupId>
@@ -151,6 +179,34 @@
             <groupId>padeg</groupId>
             <artifactId>padeg</artifactId>
             <version>3.3.0.24</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.lucene.morphology</groupId>
+            <artifactId>morphology</artifactId>
+            <version>1.5</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.lucene.morphology</groupId>
+            <artifactId>russian</artifactId>
+            <version>1.5</version>
+        </dependency>
+        <dependency>
+            <groupId>com.squareup.okhttp3</groupId>
+            <artifactId>okhttp</artifactId>
+            <version>4.12.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.module</groupId>
+            <artifactId>jackson-module-kotlin</artifactId>
+            <version>2.17.0</version>
+        </dependency>
+
+
+        <!-- Lucene Core -->
+        <dependency>
+            <groupId>org.apache.lucene</groupId>
+            <artifactId>lucene-core</artifactId>
+            <version>9.10.0</version> <!-- Актуальная версия -->
         </dependency>
 
     </dependencies>

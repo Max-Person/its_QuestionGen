@@ -8,6 +8,7 @@ import its.model.definition.loqi.OperatorLoqiBuilder
 import its.model.definition.types.*
 import its.model.expressions.Operator
 import its.questions.gen.formulations.TemplatingUtils.getLocalizedName
+import its.questions.gen.visitors.ValueToAnswerString.toLocalizedString
 import its.reasoner.LearningSituation
 import its.reasoner.operators.DomainInterpreterReasoner
 import its.reasoner.operators.OperatorReasoner.Companion.evalAs
@@ -30,17 +31,7 @@ object OperatorTemplateParser : TemplateInterpolationParser<OperatorTemplatePars
             val reasoner = DomainInterpreterReasoner(situation, contextVars)
             val res = operator.evalAs<Any>(reasoner)
             val localizationCode = data.getVar(LOCALIZATION_CODE).toString()
-            return when (Type.of(res)) {
-                    BooleanType -> (res as Boolean).toString()
-                    is DoubleType -> (res as Double).toString()
-                    is IntegerType -> (res as Int).toString()
-                    StringType -> res as String
-                    is ClassType -> (res as Clazz).getLocalizedName(situation.domainModel, localizationCode)
-                    is ObjectType -> (res as Obj).getLocalizedName(situation.domainModel, localizationCode)
-                    is EnumType -> (res as EnumValue).getLocalizedName(situation.domainModel, localizationCode)
-                    NoneType, AnyType -> throw ThisShouldNotHappen()
-                }
-
+            return res.toLocalizedString(situation, localizationCode)
         }
     }
 }

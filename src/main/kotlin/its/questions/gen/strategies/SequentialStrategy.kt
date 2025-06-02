@@ -7,6 +7,8 @@ import its.questions.gen.QuestioningSituation
 import its.questions.gen.formulations.TemplatingUtils.asNextStep
 import its.questions.gen.formulations.TemplatingUtils.description
 import its.questions.gen.formulations.TemplatingUtils.explanation
+import its.questions.gen.formulations.TemplatingUtils.generateAnswer
+import its.questions.gen.formulations.TemplatingUtils.generateExplanation
 import its.questions.gen.formulations.TemplatingUtils.getLocalizedName
 import its.questions.gen.formulations.TemplatingUtils.nextStepBranchResult
 import its.questions.gen.formulations.TemplatingUtils.nextStepExplanation
@@ -17,7 +19,7 @@ import its.questions.gen.formulations.TemplatingUtils.trivialityExplanation
 import its.questions.gen.states.*
 import its.questions.gen.visitors.GetPossibleJumps.Companion.getPossibleJumps
 import its.questions.gen.visitors.GetPossibleResults
-import its.questions.gen.visitors.ValueToAnswerString.toAnswerString
+import its.questions.gen.visitors.ValueToAnswerString.toLocalizedString
 import its.reasoner.nodes.DecisionTreeReasoner
 import its.reasoner.nodes.DecisionTreeReasoner.Companion.getAnswer
 import its.reasoner.operators.OperatorReasoner
@@ -311,8 +313,11 @@ object SequentialStrategy : QuestioningStrategyWithInfo<SequentialStrategy.Seque
                     val answer = node.getAnswer(situation)
                     val correctOutcome = node.outcomes[answer]!!
                     val explText = correctOutcome.explanation(situation)
+                        ?:node.expr.generateExplanation(situation, correctOutcome.key)
                     return node.outcomes.map { SingleChoiceOption(
-                        it.text(situation)?:it.key.toAnswerString(situation),
+                        it.text(situation)
+                            ?:node.expr.generateAnswer(situation, it.key)
+                            ?:it.key.toLocalizedString(situation),
                         if(explText != null) Explanation(explText, type = ExplanationType.Error) else null,
                         Correctness(it.key, it == correctOutcome),
                     )}
@@ -365,7 +370,7 @@ object SequentialStrategy : QuestioningStrategyWithInfo<SequentialStrategy.Seque
                         val correctOutcome = part.possibleOutcomes.first { it.value == answer }
                         val explText = correctOutcome.explanation(situation)
                         return part.possibleOutcomes.map { SingleChoiceOption(
-                            it.text(situation) ?: it.value.toAnswerString(situation),
+                            it.text(situation) ?: it.value.toLocalizedString(situation),
                             explText?.let { Explanation(it, ExplanationType.Error) },
                             Correctness(it.value, it == correctOutcome),
                         )}
