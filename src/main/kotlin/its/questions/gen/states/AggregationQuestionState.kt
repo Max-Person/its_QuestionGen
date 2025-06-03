@@ -104,6 +104,9 @@ class AggregationQuestionState<Node : AggregationNode, BranchInfo>(
     }
 
     private fun createSelectBranchState(): SingleChoiceQuestionState<BranchInfo> {
+        val thoughtBranches = helper.getThoughtBranches()
+        val branchAutomata = thoughtBranches.associateWith { QuestioningStrategy.defaultFullBranchStrategy.build(it) }
+
         //Если были сделаны ошибки в ветках, то спросить про углубление в одну из веток
         val state = object : SingleChoiceQuestionState<BranchInfo>() {
             override fun text(situation: QuestioningSituation): String {
@@ -134,8 +137,11 @@ class AggregationQuestionState<Node : AggregationNode, BranchInfo>(
             override fun explanationIfSkipped(
                 situation: QuestioningSituation,
                 skipOption: SingleChoiceOption<BranchInfo>
-            ): Explanation {
-                return Explanation(situation.localization.LETS_FIGURE_IT_OUT, shouldPause = false)
+            ): Explanation? {
+                return if(branchAutomata[helper.getThoughtBranch(skipOption.assocAnswer)]!!.hasQuestions())
+                    Explanation(situation.localization.LETS_FIGURE_IT_OUT, shouldPause = false)
+                else
+                    null
             }
 
             override fun additionalActions(situation: QuestioningSituation, chosenAnswer: BranchInfo) {
@@ -143,8 +149,6 @@ class AggregationQuestionState<Node : AggregationNode, BranchInfo>(
             }
         }
 
-        val thoughtBranches = helper.getThoughtBranches()
-        val branchAutomata = thoughtBranches.associateWith { QuestioningStrategy.defaultFullBranchStrategy.build(it) }
         thoughtBranches.forEach { branch ->
             val nextState = if(branchAutomata[branch]!!.hasQuestions())
                 branchAutomata[branch]!!.initState

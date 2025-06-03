@@ -117,6 +117,7 @@ object SequentialStrategy : QuestioningStrategyWithInfo<SequentialStrategy.Seque
         ): QuestionState { //сначала задать вопрос про результаты веток
             val aggregationQuestion = AggregationQuestionState(node, helper)
 
+            val possibleResults = BranchResult.entries.filter { it != BranchResult.NULL || node.canHaveNullResult() }
             //Затем спрашиваем про общий результат узла
             val nodeResultQuestion = object : CorrectnessCheckQuestionState<BranchResult>() {
                 override fun text(situation: QuestioningSituation): String {
@@ -126,34 +127,34 @@ object SequentialStrategy : QuestioningStrategyWithInfo<SequentialStrategy.Seque
 
                 override fun options(situation: QuestioningSituation): List<SingleChoiceOption<Correctness<BranchResult>>> {
                     val correctAnswer = node.getAnswer(situation)
-                    return node.outcomes.map {
+                    return possibleResults.map {
                         SingleChoiceOption(
-                            when (it.key) {
+                            when (it) {
                                 BranchResult.CORRECT -> situation.localization.TRUE
                                 BranchResult.ERROR -> situation.localization.FALSE
                                 BranchResult.NULL -> situation.localization.NO_EFFECT
                             },
                             Explanation(
-                                if (it.key != BranchResult.NULL) situation.localization.SIM_AGGREGATION_EXPLANATION(
+                                if (it != BranchResult.NULL) situation.localization.SIM_AGGREGATION_EXPLANATION(
                                     node.aggregationMethod,
                                     node.description(situation, BranchResult.CORRECT),
                                     helper.getBranchDescriptions(situation).joinToString(", "),
-                                    it.key == BranchResult.CORRECT
+                                    it == BranchResult.CORRECT
                                 )
                                 else situation.localization.SIM_AGGREGATION_NULL_EXPLANATION(
                                     helper.getBranchDescriptions(situation).joinToString(", "),
                                 ), type = ExplanationType.Error, shouldPause = false
                             ),
-                            Correctness(it.key, it.key == correctAnswer),
+                            Correctness(it, it == correctAnswer),
                         )
                     }
                 }
             }
             aggregationQuestion.linkNested(nodeResultQuestion)
 
-            node.outcomes.keys.forEach { outcomeValue ->
-                nodeResultQuestion.linkTo(nextStep(node, outcomeValue)) { situation, answer ->
-                    node.getAnswer(situation) == outcomeValue
+            possibleResults.forEach { branchResult ->
+                nodeResultQuestion.linkTo(nextStep(node, branchResult)) { situation, answer ->
+                    node.getAnswer(situation) == branchResult
                 }
             }
             return aggregationQuestion
@@ -415,19 +416,35 @@ object SequentialStrategy : QuestioningStrategyWithInfo<SequentialStrategy.Seque
             return question
         }
 
+        private fun ThoughtBranch.canHaveNullResult() : Boolean {
+            return this.start.checkNullResult()
+        }
+
+        private fun DecisionTreeNode.checkNullResult(): Boolean {
+            return this is BranchResultNode && this.value == BranchResult.NULL
+                   || (this is AggregationNode && this.canHaveNullResult())
+                   || (this is LinkNode<*> && this.children.any { it.checkNullResult() })
+        }
+
+        private fun AggregationNode.canHaveNullResult(): Boolean {
+            //TODO нормальное определение возможных результатов
+            return this.outcomes.keys.contains(BranchResult.NULL)
+        }
+
         fun <AnswerType : Any> nextStep(node: LinkNode<AnswerType>, answer: AnswerType): QuestionState {
-            val outcome = node.outcomes[answer]!!
-            val nextNode = outcome.node
+            val outcome = node.outcomes[answer]
+            val nextNode = outcome?.node
             val currentBranch = currentBranch
+            val branchHasNullResults = currentBranch.canHaveNullResult()
 
             val question = object : CorrectnessCheckQuestionState<DecisionTreeNode>() {
                 override fun text(situation: QuestioningSituation): String {
-                    return outcome.nextStepQuestion(situation) ?: situation.localization.DEFAULT_NEXT_STEP_QUESTION
+                    return outcome?.nextStepQuestion(situation) ?: situation.localization.DEFAULT_NEXT_STEP_QUESTION
                 }
 
                 override fun options(situation: QuestioningSituation): List<SingleChoiceOption<Correctness<DecisionTreeNode>>> {
-                    val explText = outcome.nextStepExplanation(situation)
-                    val explanation = if(explText == null) null else Explanation(explText, type = ExplanationType.Error)
+                    val explanation = outcome?.nextStepExplanation(situation)
+                        ?.let{ explText -> Explanation(explText, type = ExplanationType.Error)}
                     val jumps = node.getPossibleJumps(situation) //TODO? правильная работа со структурой дерева, включая известность переменных
 
                     val options = jumps
@@ -439,31 +456,35 @@ object SequentialStrategy : QuestioningStrategyWithInfo<SequentialStrategy.Seque
                                 Correctness(it, it == nextNode),
                             )
                         }
-                        .plus(BranchResult.entries.map { result ->
-                            SingleChoiceOption(
-                                outcome.nextStepBranchResult(situation, result)
+                        .plus(BranchResult.entries
+                            .filter { it != BranchResult.NULL || branchHasNullResults }
+                            .map { result ->
+                                SingleChoiceOption(
+                                    outcome?.nextStepBranchResult(situation, result)
                                     ?: situation.localization.WE_CAN_CONCLUDE_THAT(
                                         currentBranch.description(
                                             situation,
                                             result
                                         )
                                     ),
-                                explanation,
-                                Correctness(
-                                    nextNode,
-                                    nextNode is BranchResultNode && nextNode.value == BranchResult.CORRECT
-                                ),
-                            )
-                        })
+                                    explanation,
+                                    Correctness<DecisionTreeNode>(
+                                        BranchResultNode(result, null),
+                                        (nextNode is BranchResultNode && result == nextNode.value)
+                                        || (nextNode == null && result == answer)
+                                    ),
+                                )
+                            }
+                        )
                     //WARN Дополнительные опции не работают с situation.addGivenAnswer() потому что BranchResultNode сравниваются по ссылке.
                     //Пока с этим ничего не делаем, однако в дальнейшем это может повлиять на что-то
                     return options
                 }
             }
 
-            question.linkTo(nextNode.use(this))
+            question.linkTo(nextNode?.use(this) ?: RedirectQuestionState())
 
-            preNodeStates[nextNode] = question
+            nextNode?.let { preNodeStates[nextNode] = question }
             return question
         }
     }
