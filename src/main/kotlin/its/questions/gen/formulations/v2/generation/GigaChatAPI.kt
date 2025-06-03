@@ -24,8 +24,8 @@ object GigaChatAPI {
     private var access_token = ""
     var isActive = false
 
-    private val client = createUnsafeOkHttpClient()
-    private val mapper = jacksonObjectMapper()
+    private val client by lazy { createUnsafeOkHttpClient() }
+    private val mapper by lazy { jacksonObjectMapper() }
 
     fun generate(string: String): String {
         try {
