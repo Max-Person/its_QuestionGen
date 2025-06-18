@@ -42,6 +42,7 @@ object LocalizationRU : Localization {
 
     override fun IS_IT_TRUE_THAT(statement: String): String = "Верно ли, что $statement?"
     override fun WHY_IS_IT_THAT(statement: String): String = "Почему $statement?"
+    override fun WE_NEED_TO_CHECK_THAT(statement: String): String = "Необходимо проверить, что $statement"
 
     override fun DEFAULT_REASONING_START_QUESTION(reasoning_topic: String): String = "С чего надо начать, чтобы проверить, что $reasoning_topic?"
     override val DEFAULT_NEXT_STEP_QUESTION: String = "Какой следующий шаг необходим для решения задачи?"

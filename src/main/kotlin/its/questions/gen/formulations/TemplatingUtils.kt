@@ -134,15 +134,41 @@ object TemplatingUtils {
     }
 
     @JvmStatic
+    internal fun WhileCycleNode.question(situation: QuestioningSituation) : String {
+        return questionMetaOrByExpr(situation, conditionExpr)
+    }
+
+    @JvmStatic
     internal fun QuestionNode.question(situation: QuestioningSituation) : String {
+        return questionMetaOrByExpr(situation, expr)
+    }
+
+    @JvmStatic
+    private fun DecisionTreeNode.questionMetaOrByExpr(situation: QuestioningSituation, expr: Operator) : String {
         val localizationCode = situation.localizationCode
         return (
                 getMeta(localizationCode, "question")
                     ?.let { it as? String }
                     ?.interpretTopLevel(situation, localizationCode)
-                ?: this.expr.generateQuestion(situation)
+                ?: expr.generateQuestion(situation)
                ).stringCheck("Node '$this' doesn't have a $localizationCode associated question")
 
+    }
+
+    @JvmStatic
+    internal fun WhileCycleNode.bodyNextStepQuestion(situation: QuestioningSituation) : String? {
+        val localizationCode = situation.localizationCode
+        return getMeta(localizationCode, "bodyNextStepQuestion")
+            ?.let { it as? String }
+            ?.interpretTopLevel(situation, localizationCode)
+    }
+
+    @JvmStatic
+    internal fun WhileCycleNode.bodyNextStepExplanation(situation: QuestioningSituation) : String? {
+        val localizationCode = situation.localizationCode
+        return getMeta(localizationCode, "bodyNextStepExplanation")
+            ?.let { it as? String }
+            ?.interpretTopLevel(situation, localizationCode)
     }
 
     @JvmStatic

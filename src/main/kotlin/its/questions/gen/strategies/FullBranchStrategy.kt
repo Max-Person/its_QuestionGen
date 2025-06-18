@@ -29,7 +29,9 @@ object FullBranchStrategy : QuestioningStrategy {
 
         val endingNodeSelect = object : SingleChoiceQuestionState<NodeLCAinfo>() {
             override fun text(situation: QuestioningSituation): String {
-                return situation.localization.WHY_DO_YOU_THINK_THAT(assumed_result = branch.description(situation, situation.assumedResult(branch)!!))
+                return situation.assumedResult(branch)
+                           ?.let { assumedResult -> situation.localization.WHY_DO_YOU_THINK_THAT(branch.description(situation, assumedResult)) }
+                       ?:situation.localization.WHICH_IS_TRUE_HERE
             }
 
             override fun options(situation: QuestioningSituation): List<SingleChoiceOption<NodeLCAinfo>> {

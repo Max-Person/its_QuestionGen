@@ -4,7 +4,9 @@ import its.model.definition.types.Obj
 import its.model.nodes.*
 import its.model.nodes.visitors.DecisionTreeBehaviour
 import its.questions.gen.QuestioningSituation
+import its.questions.gen.formulations.TemplatingUtils.alias
 import its.questions.gen.formulations.TemplatingUtils.asNextStep
+import its.questions.gen.formulations.TemplatingUtils.bodyNextStepQuestion
 import its.questions.gen.formulations.TemplatingUtils.description
 import its.questions.gen.formulations.TemplatingUtils.explanation
 import its.questions.gen.formulations.TemplatingUtils.generateAnswer
@@ -23,6 +25,7 @@ import its.questions.gen.visitors.ValueToAnswerString.toLocalizedString
 import its.reasoner.nodes.DecisionTreeReasoner
 import its.reasoner.nodes.DecisionTreeReasoner.Companion.getAnswer
 import its.reasoner.operators.OperatorReasoner
+import its.reasoner.operators.OperatorReasoner.Companion.evalAs
 import java.util.*
 
 object SequentialStrategy : QuestioningStrategyWithInfo<SequentialStrategy.SequentialAutomataInfo>{
@@ -51,11 +54,223 @@ object SequentialStrategy : QuestioningStrategyWithInfo<SequentialStrategy.Seque
             get() = branchDiving.peek()
 
         override fun process(node: BranchResultNode): QuestionState {
-            return RedirectQuestionState()
+            val redirect = RedirectQuestionState()
+            val branch = currentBranch
+            return object : SkipQuestionState(){
+                override fun skip(situation: QuestioningSituation): QuestionStateChange {
+                    //Выполняем действия узла
+                    node.actionExpr?.evalAs<Any?>(OperatorReasoner.defaultReasoner(situation))
+                    //Обсудили результат
+                    situation.addAssumedResult(branch, node.value)
+                    return QuestionStateChange(null, redirect)
+                }
+
+                override val reachableStates = listOf(redirect)
+            }
         }
 
         override fun process(node: WhileCycleNode): QuestionState {
-            return getNotImplementedState()
+            val conditionQuestion = object : CorrectnessCheckQuestionState<Any>() {
+                override fun text(situation: QuestioningSituation): String {
+                    return node.question(situation)
+                }
+
+                override fun options(situation: QuestioningSituation): List<SingleChoiceOption<Correctness<Any>>> {
+                    val answer = node.getAnswer(situation)
+                    val correctOutcome = node.outcomes[answer]!!
+                    val explText = correctOutcome.explanation(situation)
+                                   ?:node.conditionExpr.generateExplanation(situation, correctOutcome.key)
+                    return node.outcomes.map { SingleChoiceOption(
+                        it.text(situation)
+                            ?: node.conditionExpr.generateAnswer(situation, it.key)
+                            ?: it.key.toLocalizedString(situation),
+                        if(explText != null) Explanation(explText, type = ExplanationType.Error) else null,
+                        Correctness(it.key, it == correctOutcome),
+                    )}
+                }
+            }
+
+            val bodyBranchAutomata = QuestioningStrategy.defaultFullBranchStrategy.build(node.thoughtBranch)
+            val bodyEnterState = object : SkipQuestionState(){
+                override fun skip(situation: QuestioningSituation): QuestionStateChange {
+                    situation.assumedResults.remove(node.thoughtBranch.alias)
+                    return QuestionStateChange(null, bodyBranchAutomata.initState)
+                }
+
+                override val reachableStates = listOf(bodyBranchAutomata.initState)
+
+            }
+
+            val nextNodesStates = node.outcomes.associate { outcome -> outcome.key to outcome.node.use(this) }
+
+            listOf(true, false).forEach { conditionResult ->
+                conditionQuestion.linkTo (getWhileCycleNextStepAfterConditionState(
+                    node,
+                    conditionResult,
+                    bodyEnterState,
+                    nextNodesStates[BranchResult.NULL] ?: RedirectQuestionState()
+                ))
+            }
+
+            val afterBodyStates = BranchResult.entries.associateWith { branchResult ->
+                getWhileCycleNextStepAfterBodyState(node, branchResult, conditionQuestion, nextNodesStates)
+            }
+            val afterBodySkip = object : SkipQuestionState() {
+                override fun skip(situation: QuestioningSituation): QuestionStateChange {
+                    val bodyResult = situation.assumedResult(node.thoughtBranch)
+                    return QuestionStateChange(null, afterBodyStates[bodyResult])
+                }
+
+                override val reachableStates = afterBodyStates.values
+            }
+
+            bodyBranchAutomata.finalize(afterBodySkip)
+
+            nodeStates[node] = conditionQuestion
+            return conditionQuestion
+        }
+
+        private fun getWhileCycleNextStepAfterConditionState(
+            node: WhileCycleNode,
+            conditionResult: Boolean,
+            branchEnterState: QuestionState,
+            nullOutcomeNextStep: QuestionState,
+        ): QuestionState {
+            val outcome = if(!conditionResult) node.outcomes[BranchResult.NULL] else null
+            val nextNode = outcome?.node
+            val currentBranch = currentBranch
+            val branchHasNullResults = currentBranch.canHaveNullResult()
+
+            val question = object : CorrectnessCheckQuestionState<DecisionTreeElement>() {
+                override fun text(situation: QuestioningSituation): String {
+                    return outcome?.nextStepQuestion(situation)
+                           ?: node.bodyNextStepQuestion(situation)
+                           ?: situation.localization.DEFAULT_NEXT_STEP_QUESTION
+                }
+
+                override fun options(situation: QuestioningSituation): List<SingleChoiceOption<Correctness<DecisionTreeElement>>> {
+                    val explanation = (outcome?.nextStepExplanation(situation) ?: node.bodyNextStepQuestion(situation))
+                                          ?.let{ explText -> Explanation(explText, type = ExplanationType.Error)}
+                    val jumps = node.getPossibleJumps(situation)
+
+                    val options = jumps
+                        .filter { it !is BranchResultNode }
+                        .map {
+                            SingleChoiceOption(
+                                it.asNextStep(situation),
+                                explanation,
+                                Correctness<DecisionTreeElement>(it, it == nextNode),
+                            )
+                        }
+                        .plus(BranchResult.entries
+                            .filter { it != BranchResult.NULL || branchHasNullResults }
+                            .map { result ->
+                                SingleChoiceOption(
+                                    outcome?.nextStepBranchResult(situation, result)
+                                    ?: situation.localization.WE_CAN_CONCLUDE_THAT(
+                                        currentBranch.description(
+                                            situation,
+                                            result
+                                        )
+                                    ),
+                                    explanation,
+                                    Correctness<DecisionTreeElement>(
+                                        BranchResultNode(result, null),
+                                        (nextNode is BranchResultNode && result == nextNode.value)
+                                        || (nextNode == null && result == BranchResult.NULL && !conditionResult)
+                                    )
+                                )
+                            }
+                        )
+                        .plus(SingleChoiceOption(
+                            situation.localization.WE_NEED_TO_CHECK_THAT(
+                                node.thoughtBranch.description(situation, BranchResult.CORRECT)
+                            ),
+                            explanation,
+                            Correctness<DecisionTreeElement>(node.thoughtBranch, conditionResult)
+                        ))
+                    //WARN Дополнительные опции не работают с situation.addGivenAnswer() потому что BranchResultNode сравниваются по ссылке.
+                    //Пока с этим ничего не делаем, однако в дальнейшем это может повлиять на что-то
+                    return options
+                }
+            }
+
+            val nextState = if(conditionResult)
+                branchEnterState
+            else {
+                nextNode?.let { preNodeStates[it] = question }
+                nullOutcomeNextStep
+            }
+            question.linkTo(nextState)
+            return question
+        }
+
+        private fun getWhileCycleNextStepAfterBodyState(
+            node: WhileCycleNode,
+            branchResult: BranchResult,
+            nodeConditionQuestion: QuestionState,
+            nextNodesStates: Map<BranchResult, QuestionState>,
+        ): QuestionState {
+            val outcome = if(branchResult != BranchResult.NULL) node.outcomes[branchResult] else null
+            val nextNode = if(branchResult != BranchResult.NULL) outcome?.node else node
+            val currentBranch = currentBranch
+            val branchHasNullResults = currentBranch.canHaveNullResult()
+
+            val question = object : CorrectnessCheckQuestionState<DecisionTreeNode>() {
+                override fun text(situation: QuestioningSituation): String {
+                    return outcome?.nextStepQuestion(situation) ?: situation.localization.DEFAULT_NEXT_STEP_QUESTION
+                }
+
+                override fun options(situation: QuestioningSituation): List<SingleChoiceOption<Correctness<DecisionTreeNode>>> {
+                    val explanation = outcome?.nextStepExplanation(situation)
+                        ?.let{ explText -> Explanation(explText, type = ExplanationType.Error)}
+                    val jumps = node.getPossibleJumps(situation)
+                        .plus(node) //можем перейти обратно к узлу цикла
+
+                    val options = jumps
+                        .filter { it !is BranchResultNode }
+                        .map {
+                            SingleChoiceOption(
+                                it.asNextStep(situation),
+                                explanation,
+                                Correctness(it, it == nextNode),
+                            )
+                        }
+                        .plus(BranchResult.entries
+                            .filter { it != BranchResult.NULL || branchHasNullResults }
+                            .map { result ->
+                                SingleChoiceOption(
+                                    outcome?.nextStepBranchResult(situation, result)
+                                    ?: situation.localization.WE_CAN_CONCLUDE_THAT(
+                                        currentBranch.description(
+                                            situation,
+                                            result
+                                        )
+                                    ),
+                                    explanation,
+                                    Correctness<DecisionTreeNode>(
+                                        BranchResultNode(result, null),
+                                        (nextNode is BranchResultNode && result == nextNode.value)
+                                        || (nextNode == null && result == branchResult)
+                                    ),
+                                )
+                            }
+                        )
+                    //WARN Дополнительные опции не работают с situation.addGivenAnswer() потому что BranchResultNode сравниваются по ссылке.
+                    //Пока с этим ничего не делаем, однако в дальнейшем это может повлиять на что-то
+                    return options
+                }
+            }
+
+            question.linkTo(
+                if(branchResult == BranchResult.NULL)
+                    nodeConditionQuestion
+                else
+                    nextNodesStates[branchResult] ?: RedirectQuestionState()
+            )
+
+            if(nextNode != node) nextNode?.let { preNodeStates[nextNode] = question }
+            return question
         }
 
         private fun getNotImplementedState() : QuestionState{

@@ -41,6 +41,7 @@ sealed interface Localization {
 
     fun IS_IT_TRUE_THAT(statement: String): String
     fun WHY_IS_IT_THAT(statement: String): String
+    fun WE_NEED_TO_CHECK_THAT(statement: String): String
 
     fun DEFAULT_REASONING_START_QUESTION(reasoning_topic: String): String
     val DEFAULT_NEXT_STEP_QUESTION: String
