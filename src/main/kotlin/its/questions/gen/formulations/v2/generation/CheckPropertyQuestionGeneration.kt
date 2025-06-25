@@ -10,6 +10,7 @@ import its.model.expressions.operators.GetPropertyValue
 import its.model.expressions.operators.LogicalNot
 import its.questions.gen.formulations.Localization
 import its.questions.gen.formulations.TemplatingUtils.getLocalizedName
+import its.questions.gen.formulations.TemplatingUtils.interpret
 import its.questions.gen.formulations.TemplatingUtils.interpretTopLevel
 import its.questions.gen.formulations.TemplatingUtils.topLevelLlmCleanup
 import its.questions.gen.formulations.v2.AbstractContext
@@ -23,7 +24,7 @@ class CheckPropertyQuestionGeneration(learningSituation: LearningSituation, loca
 
     override fun fits(operator: Operator): AbstractContext? {
         if (operator is GetPropertyValue) {
-            val propertyDef = operator.getPropertyDef(learningSituation.domainModel)
+            val propertyDef = operator.getPropertyDef(learningSituation)
             val paramsMap = operator.paramsValues.asMap(propertyDef.paramsDecl)
             if (propertyDef.type is BooleanType) {
                 return CompareWithConstantContext(
@@ -37,7 +38,7 @@ class CheckPropertyQuestionGeneration(learningSituation: LearningSituation, loca
             return CheckPropertyContext(operator.objectExpr, propertyDef, paramsMap)
         } else if (operator is LogicalNot && operator.operandExpr is GetPropertyValue) {
             val getPropertyValue = operator.operandExpr as GetPropertyValue
-            val propertyDef = getPropertyValue.getPropertyDef(learningSituation.domainModel)
+            val propertyDef = getPropertyValue.getPropertyDef(learningSituation)
             val paramsMap = getPropertyValue.paramsValues.asMap(propertyDef.paramsDecl)
             return CompareWithConstantContext(
                 BooleanLiteral(false),
@@ -79,16 +80,24 @@ class CheckPropertyContext(
         learningSituation: LearningSituation,
         localization: Localization,
         correctAnswer: Any
-    ): String? {
-        val value = (objExpr.use(OperatorReasoner.defaultReasoner(learningSituation)) as Obj)
-            .findIn(learningSituation.domainModel)!!
-            .getPropertyValue(propertyDef.name, paramsMap)
-
+    ): String {
+        val assertion = propertyDef.metadata.getString(localization.codePrefix, "assertion")
+        val obj = objExpr.use(OperatorReasoner.defaultReasoner(learningSituation)) as Obj
+        val params = paramsMap.map { (name, expr) -> name to expr.use(OperatorReasoner.defaultReasoner(learningSituation))!!}.toMap()
+        val value = obj.findIn(learningSituation.domainModel)!!.getPropertyValue(propertyDef.name, params)
+        if (assertion != null) {
+            val contextVars = mutableMapOf(
+                "obj" to obj,
+                "value" to value
+            )
+            contextVars.putAll(params)
+            val interpreted = assertion.interpret(learningSituation, localization.codePrefix, contextVars)
+            return localization.THATS_INCORRECT_BECAUSE(interpreted).topLevelLlmCleanup()
+        }
         return localization.THATS_INCORRECT_BECAUSE(
             localization.COMPARE_PROP_EXPL(
                 propertyDef.getLocalizedName(localization.codePrefix),
-                (objExpr.use(OperatorReasoner.defaultReasoner(learningSituation)) as Obj)
-                    .findIn(learningSituation.domainModel)!!
+                obj.findIn(learningSituation.domainModel)!!
                     .getLocalizedName(localization.codePrefix),
                 value.toLocalizedString(learningSituation, localization.codePrefix)
             )

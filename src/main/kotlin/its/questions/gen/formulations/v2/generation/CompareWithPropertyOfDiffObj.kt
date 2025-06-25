@@ -10,8 +10,8 @@ import its.model.expressions.operators.CompareWithComparisonOperator
 import its.model.expressions.operators.GetPropertyValue
 import its.questions.gen.formulations.Localization
 import its.questions.gen.formulations.TemplatingUtils.getLocalizedName
-import its.questions.gen.formulations.TemplatingUtils.topLevelLlmCleanup
 import its.questions.gen.formulations.TemplatingUtils.interpret
+import its.questions.gen.formulations.TemplatingUtils.topLevelLlmCleanup
 import its.questions.gen.formulations.v2.AbstractContext
 import its.questions.gen.visitors.ValueToAnswerString.toLocalizedString
 import its.reasoner.LearningSituation
@@ -29,11 +29,11 @@ class CompareWithPropertyOfDiffObj(learningSituation: LearningSituation, localiz
             if (!getPropVal1.paramsValues.getExprList().isEmpty() && !getPropVal2.paramsValues.getExprList().isEmpty()) {
                 return null
             }
-            val objectType1 = getPropVal1.objectExpr.resolvedType(learningSituation.domainModel) as ObjectType
+            val objectType1 = getPropVal1.objectExpr.resolvedType(learningSituation) as ObjectType
             val classDef1 = objectType1.findIn(learningSituation.domainModel)
             val propertyDef1 = classDef1.findPropertyDef(getPropVal1.propertyName)!!
 
-            val objectType2 = getPropVal2.objectExpr.resolvedType(learningSituation.domainModel) as ObjectType
+            val objectType2 = getPropVal2.objectExpr.resolvedType(learningSituation) as ObjectType
             val classDef2 = objectType2.findIn(learningSituation.domainModel)
             val propertyDef2 = classDef2.findPropertyDef(getPropVal1.propertyName)!!
 
@@ -46,12 +46,12 @@ class CompareWithPropertyOfDiffObj(learningSituation: LearningSituation, localiz
         }
         if (operator is Compare && operator.firstExpr is GetPropertyValue && operator.secondExpr is GetPropertyValue) {
             val getPropVal1 = operator.firstExpr as GetPropertyValue
-            val objectType1 = getPropVal1.objectExpr.resolvedType(learningSituation.domainModel) as ObjectType
+            val objectType1 = getPropVal1.objectExpr.resolvedType(learningSituation) as ObjectType
             val classDef1 = objectType1.findIn(learningSituation.domainModel)
             val propertyDef1 = classDef1.findPropertyDef(getPropVal1.propertyName)!!
 
             val getPropVal2 = operator.secondExpr as GetPropertyValue
-            val objectType2 = getPropVal2.objectExpr.resolvedType(learningSituation.domainModel) as ObjectType
+            val objectType2 = getPropVal2.objectExpr.resolvedType(learningSituation) as ObjectType
             val classDef2 = objectType2.findIn(learningSituation.domainModel)
             val propertyDef2 = classDef2.findPropertyDef(getPropVal1.propertyName)!!
 

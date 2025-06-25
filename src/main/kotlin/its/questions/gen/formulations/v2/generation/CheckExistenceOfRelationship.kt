@@ -20,7 +20,7 @@ class CheckExistenceOfRelationship(learningSituation: LearningSituation, localiz
 
     override fun fits(operator: Operator): CheckExistenceOfRelationshipContext? {
         if (operator is CheckRelationship) {
-            val objectType = operator.subjectExpr.resolvedType(learningSituation.domainModel) as ObjectType
+            val objectType = operator.subjectExpr.resolvedType(learningSituation) as ObjectType
             val classDef = objectType.findIn(learningSituation.domainModel)
             val relDef = classDef.findRelationshipDef(operator.relationshipName)!!
             val paramsMap = operator.paramsValues.asMap(relDef.effectiveParams)

@@ -34,7 +34,7 @@ abstract class CompareWithConstant(learningSituation: LearningSituation, localiz
             val objExpr = propertyValue.objectExpr
             val valueLiteral = operator.secondExpr as ValueLiteral<*, *>
 
-            val propertyDef = propertyValue.getPropertyDef(learningSituation.domainModel)
+            val propertyDef = propertyValue.getPropertyDef(learningSituation)
             val paramsMap = propertyValue.paramsValues.asMap(propertyDef.paramsDecl)
             if (typeFits(propertyDef.type)) {
                 return createContext(valueLiteral, operator.operator, objExpr, propertyDef, paramsMap)
@@ -49,7 +49,7 @@ abstract class CompareWithConstant(learningSituation: LearningSituation, localiz
             val objExpr = propertyValue.objectExpr
             val valueLiteral = operator.secondExpr as ValueLiteral<*, *>
 
-            val propertyDef = propertyValue.getPropertyDef(learningSituation.domainModel)
+            val propertyDef = propertyValue.getPropertyDef(learningSituation)
             val paramsMap = propertyValue.paramsValues.asMap(propertyDef.paramsDecl)
             if (typeFits(propertyDef.type)) {
                 return createContext(valueLiteral, null, objExpr, propertyDef, paramsMap)
@@ -124,14 +124,14 @@ open class CompareWithConstantContext(
     override fun generateExplanation(learningSituation: LearningSituation, localization: Localization, correctAnswer : Any): String? {
         val assertion = propertyDef.metadata.getString(localization.codePrefix, "assertion")
         val obj = objExpr.use(OperatorReasoner.defaultReasoner(learningSituation)) as Obj
+        val params = paramsMap.map { (name, expr) -> name to expr.use(OperatorReasoner.defaultReasoner(learningSituation))!!}.toMap()
+        val value = obj.findIn(learningSituation.domainModel)!!.getPropertyValue(propertyDef.name, params)
         if (assertion != null) {
             val contextVars = mutableMapOf(
                 "obj" to obj,
-                "value" to obj.findIn(learningSituation.domainModel)!!.getPropertyValue(propertyDef.name, paramsMap)
+                "value" to value
             )
-            paramsMap.forEach { (paramName, operator) ->
-                contextVars[paramName] = operator.use(OperatorReasoner.defaultReasoner(learningSituation))!!
-            }
+            contextVars.putAll(params)
             val interpreted = assertion.interpret(learningSituation, localization.codePrefix, contextVars)
             return localization.THATS_INCORRECT_BECAUSE(interpreted).topLevelLlmCleanup()
         }
@@ -140,7 +140,7 @@ open class CompareWithConstantContext(
                 propertyDef.getLocalizedName(localization.codePrefix),
                 obj.findIn(learningSituation.domainModel)!!
                     .getLocalizedName(localization.codePrefix),
-                valueConstant.value.toLocalizedString(learningSituation, localization.codePrefix)
+                value.toLocalizedString(learningSituation, localization.codePrefix)
             )
         ).topLevelLlmCleanup()
     }

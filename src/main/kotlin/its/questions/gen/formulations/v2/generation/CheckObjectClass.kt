@@ -26,7 +26,7 @@ class CheckObjectClass(learningSituation: LearningSituation, localization: Local
             return CheckClassContext(operator.objectExpr, operator, classDef)
         }
         if (operator is GetClass) {
-            val objectType = operator.objectExpr.resolvedType(learningSituation.domainModel) as ObjectType
+            val objectType = operator.objectExpr.resolvedType(learningSituation) as ObjectType
             val classDef = objectType.findIn(learningSituation.domainModel)
             return CheckClassContext(operator.objectExpr, operator, classDef)
         }
