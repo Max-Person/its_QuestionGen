@@ -22,6 +22,7 @@ import its.questions.gen.states.*
 import its.questions.gen.visitors.GetPossibleJumps.Companion.getPossibleJumps
 import its.questions.gen.visitors.GetPossibleResults
 import its.questions.gen.visitors.ValueToAnswerString.toLocalizedString
+import its.questions.gen.visitors.canHaveNullResult
 import its.reasoner.nodes.DecisionTreeReasoner
 import its.reasoner.nodes.DecisionTreeReasoner.Companion.getAnswer
 import its.reasoner.operators.OperatorReasoner
@@ -629,21 +630,6 @@ object SequentialStrategy : QuestioningStrategyWithInfo<SequentialStrategy.Seque
             branchDiving.pop()
             preNodeStates[branch.start] = question
             return question
-        }
-
-        private fun ThoughtBranch.canHaveNullResult() : Boolean {
-            return this.start.checkNullResult()
-        }
-
-        private fun DecisionTreeNode.checkNullResult(): Boolean {
-            return this is BranchResultNode && this.value == BranchResult.NULL
-                   || (this is AggregationNode && this.canHaveNullResult())
-                   || (this is LinkNode<*> && this.children.any { it.checkNullResult() })
-        }
-
-        private fun AggregationNode.canHaveNullResult(): Boolean {
-            //TODO нормальное определение возможных результатов
-            return this.outcomes.keys.contains(BranchResult.NULL)
         }
 
         fun <AnswerType : Any> nextStep(node: LinkNode<AnswerType>, answer: AnswerType): QuestionState {

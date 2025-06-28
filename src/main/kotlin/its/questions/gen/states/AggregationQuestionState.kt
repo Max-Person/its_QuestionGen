@@ -8,6 +8,7 @@ import its.questions.gen.formulations.TemplatingUtils.description
 import its.questions.gen.formulations.TemplatingUtils.nullFormulation
 import its.questions.gen.strategies.QuestionAutomata
 import its.questions.gen.strategies.QuestioningStrategy
+import its.questions.gen.visitors.canHaveNullResult
 import its.reasoner.nodes.DecisionTreeReasoner.Companion.getAnswer
 
 //Можно выделить над ним некий AssociationQuestionState, но пока что это не нужно
@@ -38,12 +39,15 @@ class AggregationQuestionState<Node : AggregationNode, BranchInfo>(
         val matchingOptions = mapOf(
             BranchResult.CORRECT to situation.localization.TRUE,
             BranchResult.ERROR to situation.localization.FALSE,
-            BranchResult.NULL to node.nullFormulation(situation)
-        )
-        return Question(text,
+        ).apply { if(helper.getThoughtBranches().any { it.canHaveNullResult() })
+            plus(BranchResult.NULL to node.nullFormulation(situation))
+        }
+        return Question(
+            text,
             options,
             QuestionType.matching,
-            matchingOptions = BranchResult.entries.map { matchingOptions[it]!! })
+            matchingOptions = BranchResult.entries.mapNotNull { matchingOptions[it] }
+        )
     }
 
     override fun proceedWithAnswer(situation: QuestioningSituation, answer: List<Int>): QuestionStateChange {
