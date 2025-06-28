@@ -333,6 +333,11 @@ object SequentialStrategy : QuestioningStrategyWithInfo<SequentialStrategy.Seque
         ): QuestionState { //сначала задать вопрос про результаты веток
             val aggregationQuestion = AggregationQuestionState(node, helper)
 
+            if(currentBranch.isTrivial()){
+                aggregationQuestion.linkNested(RedirectQuestionState())
+                return aggregationQuestion
+            }
+
             val possibleResults = BranchResult.entries.filter { it != BranchResult.NULL || node.canHaveNullResult() }
             //Затем спрашиваем про общий результат узла
             val nodeResultQuestion = object : CorrectnessCheckQuestionState<BranchResult>() {
@@ -474,7 +479,7 @@ object SequentialStrategy : QuestioningStrategyWithInfo<SequentialStrategy.Seque
             node: Node,
             helper: AggregationHelper<Node, BranchInfo>,
         ): QuestionState {
-            return getNotImplementedState()
+            TODO("HYP aggregation not supported yet")
         }
 
         override fun process(node: BranchAggregationNode): QuestionState {
